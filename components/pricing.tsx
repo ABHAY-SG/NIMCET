@@ -4,17 +4,17 @@ const PLANS = [
   {
     name: "Free", price: "₹0", per: "forever",
     lines: ["5 mocks / month", "Demo explanations", "Basic score report", "No card required"],
-    cta: "Start free", hot: false,
+    cta: "Start free", hot: false, href: "/signup",
   },
   {
     name: "Monthly", price: "₹149", per: "/month",
     lines: ["Unlimited mocks", "Full section analytics", "All PYQ sets", "All future papers", "Cancel anytime"],
-    cta: "Choose Monthly", hot: true,
+    cta: "Choose Monthly", hot: false, href: "/login",
   },
   {
     name: "Annual", price: "₹699", per: "/year",
     lines: ["12 months full access", "Everything in Monthly", "Priority support", "Early new papers"],
-    cta: "Choose Annual", hot: false,
+    cta: "Choose Annual", hot: true, href: "/login",
   },
 ];
 
@@ -77,7 +77,7 @@ export default function Pricing() {
                 ))}
               </ul>
               <a
-                href="#contact"
+                href={p.href}
                 className={`mt-6 block rounded-full py-2.5 text-center text-sm font-bold ${p.hot ? "" : "cta-glow"}`}
                 style={
                   p.hot
@@ -89,7 +89,7 @@ export default function Pricing() {
               </a>
               {p.hot || p.name !== "Free" ? (
                 <p className="mt-2 text-center text-[11px] leading-4" style={{ color: "var(--muted)" }}>
-                  Pay via UPI • activated on your email within a day
+                  Log in, pay via UPI • activated within a day
                 </p>
               ) : (
                 <p className="mt-2 text-center text-[11px] leading-4" style={{ color: "var(--muted)" }}>
