@@ -122,7 +122,33 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 62%, transparent), color-mix(in srgb, var(--bg) 82%, transparent))", backdropFilter: "blur(3px)" }}
         />
       </div>
-      <main className="relative mx-auto w-full max-w-md px-4 pb-20 pt-28">
+      <main className="relative mx-auto w-full max-w-5xl px-4 pb-20 pt-28">
+      <div className="grid items-center gap-8 md:grid-cols-2">
+      <div className="hidden md:block">
+        <p className="mono text-[12px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.24em" }}>
+          {mode === "in" ? "WELCOME BACK" : "START FREE FOREVER"}
+        </p>
+        <h2 className="mt-3 text-4xl font-extrabold leading-[1.05] tracking-tight lg:text-5xl">
+          {mode === "in" ? <>Pick up exactly<br />where you left.</> : <>Your rank journey<br />starts here.</>}
+        </h2>
+        <p className="mt-4 max-w-sm text-sm leading-7" style={{ color: "var(--muted)" }}>
+          {mode === "in"
+            ? "All your mocks, reports and streaks are waiting. One login brings back the full dashboard."
+            : "One account unlocks every mock, every report and every streak — free tier included, no card needed."}
+        </p>
+        <ul className="mt-6 space-y-3 text-sm">
+          {[
+            "Real NIMCET + CUET PG pattern",
+            "Negative marking done right",
+            "Reports that show the leak",
+          ].map((t) => (
+            <li key={t} className="flex items-center gap-3 font-semibold">
+              <span className="mono flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>✓</span>
+              {t}
+            </li>
+          ))}
+        </ul>
+      </div>
       <div
         className="rounded-[22px] p-6 backdrop-blur-2xl sm:p-7"
         style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}
@@ -196,6 +222,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
         </a>
         <p className="mt-4 text-center text-[11px]" style={{ color: "var(--muted)" }}>● Secure & encrypted</p>
+      </div>
       </div>
     </main>
     </>
