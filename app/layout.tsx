@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/navbar";
-import Chrome from "@/components/chrome";
+import Chrome, { NavGate } from "@/components/chrome";
 
 export const metadata: Metadata = {
   title: "NimCuet — NIMCET & CUET PG MCA Mock Tests",
@@ -19,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeInit() }} />
       </head>
       <body className="flex min-h-screen flex-col antialiased">
-        <Navbar />
+        <NavGate />
         <div className="flex-1">{children}</div>
         <Chrome />
       </body>

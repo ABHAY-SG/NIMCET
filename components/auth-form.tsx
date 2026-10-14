@@ -232,7 +232,10 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 58%, transparent), color-mix(in srgb, var(--bg) 80%, transparent))", backdropFilter: "blur(3px)" }}
         />
       </div>
-      <main className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-28">
+      <main className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-8">
+      <a href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
+        <span aria-hidden>←</span> Back to home
+      </a>
       <div
         className="relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[620px]"
         style={{ border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.22)" }}

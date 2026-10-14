@@ -1,13 +1,25 @@
 "use client";
 import { usePathname } from "next/navigation";
+import Navbar from "@/components/navbar";
 import ContactStrip from "@/components/contact";
 import Footer from "@/components/footer";
 
 const BARE = ["/login", "/signup"];
 
-export default function Chrome() {
+function useBare() {
   const path = usePathname();
-  if (BARE.some((p) => path === p || path.startsWith(p + "/"))) return null;
+  return BARE.some((p) => path === p || path.startsWith(p + "/"));
+}
+
+export function NavGate() {
+  const bare = useBare();
+  if (bare) return null;
+  return <Navbar />;
+}
+
+export default function Chrome() {
+  const bare = useBare();
+  if (bare) return null;
   return (
     <>
       <ContactStrip />
