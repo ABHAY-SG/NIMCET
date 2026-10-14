@@ -215,34 +215,55 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   );
 
   return (
-    <main className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-28">
-      <div className="grid overflow-hidden rounded-[26px] backdrop-blur-2xl md:grid-cols-2 md:min-h-[620px]"
-        style={{ background: "color-mix(in srgb, var(--nav-bg) 72%, transparent)", border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.5)" }}
+    <>
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+        {BG.map(([cls, src, fallback]) => (
+          <img
+            key={cls}
+            src={src}
+            alt=""
+            loading="eager"
+            className={`authbg absolute inset-0 h-full w-full object-cover ${cls}`}
+            style={{ background: fallback, filter: "saturate(1.25)" }}
+          />
+        ))}
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 58%, transparent), color-mix(in srgb, var(--bg) 80%, transparent))", backdropFilter: "blur(3px)" }}
+        />
+      </div>
+      <main className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-28">
+      <div
+        className="relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[620px]"
+        style={{ border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.22)" }}
       >
-        <div className="relative hidden min-h-[420px] overflow-hidden md:block">
-          {BG.map(([cls, src, fallback]) => (
-            <img
-              key={cls}
-              src={src}
-              alt=""
-              loading="eager"
-              className={`authbg absolute inset-0 h-full w-full object-cover ${cls}`}
-              style={{ background: fallback }}
-            />
-          ))}
-          <div className="absolute inset-0" style={{ background: "linear-gradient(200deg, rgba(0,0,0,0.15), rgba(0,0,0,0.62))" }} />
-          <div className="absolute inset-x-0 bottom-0 p-8">
-            <p className="logo-script text-4xl text-white" style={{ transform: "rotate(-2deg)" }}>NimCuet</p>
-            <p className="mt-3 max-w-xs text-xl font-extrabold leading-snug text-white">
-              {mode === "in" ? "Welcome back to the practice room." : "Your rank journey starts with one account."}
-            </p>
-            <div className="mono mt-4 flex gap-2 text-[11px] font-bold text-white">
-              <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.16)" }}>120Q NIMCET</span>
-              <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.16)" }}>75Q CUET</span>
-            </div>
+        {BG.map(([cls, src, fallback]) => (
+          <img
+            key={cls}
+            src={src}
+            alt=""
+            loading="eager"
+            aria-hidden
+            className={`authbg pointer-events-none absolute inset-0 h-full w-full object-cover ${cls}`}
+            style={{ background: fallback }}
+          />
+        ))}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.22) 36%, color-mix(in srgb, var(--nav-bg) 88%, transparent) 58%, color-mix(in srgb, var(--nav-bg) 96%, transparent) 100%)" }}
+        />
+        <div className="relative z-10 hidden flex-col justify-end p-8 md:flex">
+          <p className="logo-script text-4xl text-white" style={{ transform: "rotate(-2deg)", textShadow: "0 2px 18px rgba(0,0,0,0.5)" }}>NimCuet</p>
+          <p className="mt-3 max-w-xs text-xl font-extrabold leading-snug text-white" style={{ textShadow: "0 2px 18px rgba(0,0,0,0.5)" }}>
+            {mode === "in" ? "Welcome back to the practice room." : "Your rank journey starts with one account."}
+          </p>
+          <div className="mono mt-4 flex gap-2 text-[11px] font-bold text-white">
+            <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)" }}>120Q NIMCET</span>
+            <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)" }}>75Q CUET</span>
           </div>
         </div>
-        <div className="p-6 sm:p-9">
+        <div className="relative z-10 p-6 sm:p-9">
           <h1 className="text-2xl font-extrabold tracking-tight">
             {mode === "in" ? "Welcome back" : "Join NimCuet"}
           </h1>
@@ -323,11 +344,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           <p className="mt-3 text-center text-[11px]" style={{ color: "var(--muted)" }}>● Secure & encrypted</p>
         </div>
       </div>
-      <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-semibold" style={{ color: "var(--muted)" }}>
-        <span>✓ Free tier forever</span>
-        <span>✓ No card required</span>
-        <span>✓ Cancel anytime</span>
-      </div>
     </main>
+    </>
   );
 }
