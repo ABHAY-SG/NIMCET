@@ -47,11 +47,11 @@ export default function Hero() {
         <Reveal>
           <div className="rise mt-8 flex flex-wrap justify-center gap-3" style={{ animationDelay: "0.35s" }}>
             <a
-              href="/#exams"
+              href="/#demo"
               className="cta-glow rounded-full px-8 py-3.5 text-sm font-bold"
               style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
             >
-              Explore Exams <span className="carr">→</span>
+              Start Free Mock <span className="carr">→</span>
             </a>
             <a
               href="/#pricing"

@@ -197,6 +197,14 @@ footer .nlink::after { display: none; }
 .soc { transition: transform 0.25s, filter 0.25s; }
 .soc:hover { transform: translateY(-3px) scale(1.06); filter: brightness(1.1); }
 
+/* auth photo backgrounds — one per theme */
+.authbg { opacity: 0; transition: opacity 0.6s; }
+[data-theme="light"] .authbg-light,
+[data-theme="midnight"] .authbg-midnight,
+[data-theme="ocean"] .authbg-ocean,
+[data-theme="forest"] .authbg-forest,
+[data-theme="sunset"] .authbg-sunset { opacity: 1; }
+
 .logo-script {
   font-family: "Alex Brush", cursive;
   font-weight: 400;

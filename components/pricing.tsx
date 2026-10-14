@@ -87,6 +87,15 @@ export default function Pricing() {
               >
                 {p.cta} →
               </a>
+              {p.hot || p.name !== "Free" ? (
+                <p className="mt-2 text-center text-[11px] leading-4" style={{ color: "var(--muted)" }}>
+                  Pay via UPI • activated on your email within a day
+                </p>
+              ) : (
+                <p className="mt-2 text-center text-[11px] leading-4" style={{ color: "var(--muted)" }}>
+                  No card • no login needed
+                </p>
+              )}
             </div>
           </Reveal>
         ))}

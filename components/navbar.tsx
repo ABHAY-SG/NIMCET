@@ -235,7 +235,7 @@ export default function Navbar() {
 
           <a href="/login" className={plainCls + " hidden sm:block"}>Log in</a>
           <a
-            href="/login"
+            href="/signup"
             className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
             style={{ background: "var(--text)", color: "var(--bg)" }}
           >

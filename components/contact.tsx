@@ -52,7 +52,7 @@ export default function ContactStrip() {
           <div className="mt-6 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
             <a
               href="mailto:abhayincodingworld@gmail.com"
-              className="cta-glow flex items-center gap-2.5 rounded-full px-6 py-3 text-sm font-bold"
+              className="cta-glow flex max-w-full items-center justify-center gap-2.5 break-all rounded-full px-5 py-3 text-[13px] font-bold sm:px-6 sm:text-sm"
               style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
             >
               <MailIcon />
@@ -60,7 +60,7 @@ export default function ContactStrip() {
             </a>
             <a
               href="tel:+917425097293"
-              className="cta-glow flex items-center gap-2.5 rounded-full px-6 py-3 text-sm font-bold"
+              className="cta-glow flex shrink-0 items-center gap-2.5 rounded-full px-5 py-3 text-[13px] font-bold sm:px-6 sm:text-sm"
               style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
             >
               <PhoneIcon />
