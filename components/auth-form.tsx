@@ -47,6 +47,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
