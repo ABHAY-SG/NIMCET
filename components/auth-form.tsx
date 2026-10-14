@@ -254,14 +254,17 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           style={{ background: "linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.22) 36%, color-mix(in srgb, var(--nav-bg) 88%, transparent) 58%, color-mix(in srgb, var(--nav-bg) 96%, transparent) 100%)" }}
         />
         <div className="relative z-10 hidden flex-col justify-end p-8 md:flex">
-          <p className="logo-script text-4xl text-white" style={{ transform: "rotate(-2deg)", textShadow: "0 2px 18px rgba(0,0,0,0.5)" }}>NimCuet</p>
-          <p className="mt-3 max-w-xs text-xl font-extrabold leading-snug text-white" style={{ textShadow: "0 2px 18px rgba(0,0,0,0.5)" }}>
+          <span className="inline-flex w-fit items-center rounded-2xl bg-white/95 px-4 py-2.5" style={{ boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)" }}>
+            <img src="/logo.png" alt="NimCuet" className="block h-7 w-auto" />
+          </span>
+          <p className="mt-4 max-w-xs text-xl font-extrabold leading-snug text-white" style={{ textShadow: "0 2px 18px rgba(0,0,0,0.5)" }}>
             {mode === "in" ? "Welcome back to the practice room." : "Your rank journey starts with one account."}
           </p>
-          <div className="mono mt-4 flex gap-2 text-[11px] font-bold text-white">
-            <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)" }}>120Q NIMCET</span>
-            <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)" }}>75Q CUET</span>
-          </div>
+          <p className="serif-it mt-2 max-w-xs text-[17px] leading-7 text-white/85" style={{ textShadow: "0 2px 14px rgba(0,0,0,0.5)" }}>
+            {mode === "in"
+              ? "\u201cConsistency beats intensity \u2014 one mock at a time.\u201d"
+              : "\u201cEvery topper was once stuck on question one.\u201d"}
+          </p>
         </div>
         <div className="relative z-10 p-6 sm:p-9">
           <h1 className="text-2xl font-extrabold tracking-tight">
