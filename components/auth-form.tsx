@@ -214,60 +214,119 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   );
 
   return (
-    <>
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-        {BG.map(([cls, src, fallback]) => (
-          <img
-            key={cls}
-            src={src}
-            alt=""
-            loading="eager"
-            className={`authbg absolute inset-0 h-full w-full object-cover ${cls}`}
-            style={{ background: fallback, filter: "saturate(1.2)" }}
-          />
-        ))}
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 62%, transparent), color-mix(in srgb, var(--bg) 82%, transparent))", backdropFilter: "blur(3px)" }}
-        />
-      </div>
-      <main className="relative mx-auto w-full max-w-5xl px-4 pb-20 pt-28">
-        <div
-          className="relative grid overflow-hidden rounded-[26px] backdrop-blur-2xl md:grid-cols-2 md:min-h-[600px]"
-          style={{ background: "color-mix(in srgb, var(--nav-bg) 72%, transparent)", border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.5)" }}
-        >
-          <div className={mode === "in" ? "block" : "hidden md:block"}>
-            {form("in")}
-          </div>
-          <div className={mode === "up" ? "block" : "hidden md:block"}>
-            {form("up")}
-          </div>
-          <div
-            className="absolute inset-y-0 left-0 hidden w-1/2 md:block"
-            style={{
-              transform: mode === "in" ? "translateX(100%)" : "translateX(0%)",
-              clipPath: mode === "in" ? SLOPE_RIGHT : SLOPE_LEFT,
-              background: "linear-gradient(135deg, color-mix(in srgb, var(--accent) 62%, #141031), color-mix(in srgb, var(--accent) 30%, #0b1026))",
-              backdropFilter: "blur(6px) saturate(150%)",
-              boxShadow: mode === "in" ? "-24px 0 60px -20px rgba(0,0,0,0.5)" : "24px 0 60px -20px rgba(0,0,0,0.5)",
-              transition: "transform 0.7s cubic-bezier(0.22,1,0.36,1), clip-path 0.7s cubic-bezier(0.22,1,0.36,1), box-shadow 0.7s",
-              willChange: "transform",
-            }}
-          >
-            {panel(mode === "in" ? "up" : "in")}
+    <main className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-28">
+      <div className="grid overflow-hidden rounded-[26px] backdrop-blur-2xl md:grid-cols-2 md:min-h-[620px]"
+        style={{ background: "color-mix(in srgb, var(--nav-bg) 72%, transparent)", border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.5)" }}
+      >
+        <div className="relative hidden min-h-[420px] overflow-hidden md:block">
+          {BG.map(([cls, src, fallback]) => (
+            <img
+              key={cls}
+              src={src}
+              alt=""
+              loading="eager"
+              className={`authbg absolute inset-0 h-full w-full object-cover ${cls}`}
+              style={{ background: fallback }}
+            />
+          ))}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(200deg, rgba(0,0,0,0.15), rgba(0,0,0,0.62))" }} />
+          <div className="absolute inset-x-0 bottom-0 p-8">
+            <p className="logo-script text-4xl text-white" style={{ transform: "rotate(-2deg)" }}>NimCuet</p>
+            <p className="mt-3 max-w-xs text-xl font-extrabold leading-snug text-white">
+              {mode === "in" ? "Welcome back to the practice room." : "Your rank journey starts with one account."}
+            </p>
+            <div className="mono mt-4 flex gap-2 text-[11px] font-bold text-white">
+              <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.16)" }}>120Q NIMCET</span>
+              <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.16)" }}>75Q CUET</span>
+            </div>
           </div>
         </div>
-        <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-semibold md:hidden" style={{ color: "var(--muted)" }}>
-          <button type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setMsg(""); }} className="font-bold" style={{ color: "var(--accent)" }}>
-            {mode === "in" ? "New here? Create account →" : "Have an account? Log in →"}
+        <div className="p-6 sm:p-9">
+          <h1 className="text-2xl font-extrabold tracking-tight">
+            {mode === "in" ? "Welcome back" : "Join NimCuet"}
+          </h1>
+          <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
+            {mode === "in" ? "Log in to continue to your dashboard." : "One account for mocks, reports and streaks."}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button" onClick={() => oauth("google")}
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+              style={{ border: "1.5px solid var(--border)", background: "var(--pill)" }}
+            >
+              <GoogleIcon /> Google
+            </button>
+            <button
+              type="button" onClick={() => oauth("github")}
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+              style={{ border: "1.5px solid var(--border)", background: "var(--pill)" }}
+            >
+              <GithubIcon /> GitHub
+            </button>
+          </div>
+          <div className="my-4 flex items-center gap-3 text-[11px] font-bold" style={{ color: "var(--muted)" }}>
+            <span className="h-px flex-1" style={{ background: "var(--border)" }} /> OR <span className="h-px flex-1" style={{ background: "var(--border)" }} />
+          </div>
+          <form onSubmit={submit}>
+            <label className="mb-1.5 block text-[13px] font-bold">Email</label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px]" style={{ color: "var(--muted)" }}>✉</span>
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" className={inputCls}
+                style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
+            </div>
+            <div className="mb-1.5 mt-4 flex items-center justify-between">
+              <label className="text-[13px] font-bold">Password</label>
+              {mode === "in" && (
+                <button type="button" onClick={forgot} className="cursor-pointer text-xs font-bold" style={{ color: "var(--accent)" }}>
+                  Forgot password?
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="10" width="16" height="10" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+              </span>
+              <input type={show ? "text" : "password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === "in" ? "Enter your password" : "Min. 6 characters"} className={inputCls}
+                style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
+              <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Hide password" : "Show password"} className="absolute right-3.5 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "var(--muted)" }}>
+                <EyeIcon off={!show} />
+              </button>
+            </div>
+            {mode === "up" && (
+              <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs leading-5" style={{ color: "var(--muted)" }}>
+                <input type="checkbox" required className="mt-1 h-4 w-4 shrink-0 accent-current" />
+                <span>I agree to the <a href="/terms" className="font-bold" style={{ color: "var(--accent)" }}>Terms</a> and <a href="/privacy" className="font-bold" style={{ color: "var(--accent)" }}>Privacy Policy</a></span>
+              </label>
+            )}
+            {mode === "in" && (
+              <label className="mt-3 flex cursor-pointer items-center gap-2 text-[13px]" style={{ color: "var(--muted)" }}>
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4 accent-current" />
+                Remember me
+              </label>
+            )}
+            {msg && (
+              <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
+            )}
+            <button
+              type="submit" disabled={busy}
+              className="mt-4 w-full cursor-pointer rounded-xl py-3.5 text-sm font-extrabold text-white transition-all hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
+              style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", boxShadow: "0 14px 30px -12px color-mix(in srgb, var(--accent) 60%, transparent)" }}
+            >
+              {busy ? "Please wait…" : mode === "in" ? "Log in →" : "Create account →"}
+            </button>
+          </form>
+          <button type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setMsg(""); }} className="mt-5 w-full cursor-pointer text-center text-sm" style={{ color: "var(--muted)" }}>
+            {mode === "in" ? "Don't have an account? " : "Have an account? "}
+            <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
           </button>
+          <p className="mt-3 text-center text-[11px]" style={{ color: "var(--muted)" }}>● Secure & encrypted</p>
         </div>
-        <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-semibold" style={{ color: "var(--muted)" }}>
-          <span>✓ Free tier forever</span>
-          <span>✓ No card required</span>
-          <span>✓ Cancel anytime</span>
-        </div>
-      </main>
-    </>
+      </div>
+      <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-semibold" style={{ color: "var(--muted)" }}>
+        <span>✓ Free tier forever</span>
+        <span>✓ No card required</span>
+        <span>✓ Cancel anytime</span>
+      </div>
+    </main>
   );
 }
