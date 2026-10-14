@@ -9,7 +9,7 @@ function XIcon() {
 
 function InstagramIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5" /><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" /><circle cx="17.2" cy="6.8" r="1.4" fill="currentColor" stroke="none" /></svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.3" cy="6.7" r="1.5" fill="currentColor" stroke="none" /></svg>
   );
 }
 
@@ -38,7 +38,9 @@ function GithubIcon() {
 
 function TelegramIcon() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M21.9 4.6 2.7 12.1c-.7.3-.7 1.1.1 1.3l4.8 1.5 1.8 5.6c.2.7 1 .9 1.5.4l2.6-2.5 4.9 3.6c.5.4 1.3.1 1.5-.5l3.1-14c.2-.9-.5-1.6-1.1-1.4zM8.5 13.4l8.4-6.6c.2-.2.5 0 .3.2l-7 6.4-.3 2.8-1.4-2.8z" /></svg>
+    <svg width="36" height="36" viewBox="0 0 24 24" aria-hidden>
+      <path fill="#229ED9" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+    </svg>
   );
 }
 
@@ -66,7 +68,7 @@ export default function Footer() {
                 ["Instagram", <InstagramIcon key="ig" />, "https://www.instagram.com/abh_.a.y/", "linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7)", "#fff"],
                 ["LinkedIn", <LinkedinIcon key="li" />, "https://www.linkedin.com/in/abhay-singh-gurjar-incodingworld", "transparent", "var(--text)"],
                 ["GitHub", <GithubIcon key="gh" />, "https://github.com/ABHAY-SG", "#fff", "#000"],
-                ["Telegram", <TelegramIcon key="tg" />, "https://t.me/ABHAYSG", "#229ed9", "#fff"],
+                ["Telegram", <TelegramIcon key="tg" />, "https://t.me/ABHAYSG", "transparent", "var(--text)"],
               ].map(([label, icon, href, bg, fg]) => (
                 <a
                   key={label as string}
