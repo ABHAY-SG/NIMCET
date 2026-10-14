@@ -47,14 +47,23 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [mode, setMode] = useState<"in" | "up">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const pwLen = password.length >= 8;
+  const pwNum = /\d/.test(password);
+  const pwOk = pwLen && pwNum;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg("");
+    if (mode === "up") {
+      if (!pwOk) { setMsg("Password needs 8+ characters including a number."); return; }
+      if (password !== confirm) { setMsg("Passwords do not match — retype the confirmation."); return; }
+    }
     setBusy(true);
     try {
       const sb = getSupabase();
@@ -316,12 +325,38 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="10" width="16" height="10" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
               </span>
-              <input type={show ? "text" : "password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === "in" ? "Enter your password" : "Min. 6 characters"} className={inputCls}
+              <input type={show ? "text" : "password"} required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === "in" ? "Enter your password" : "Min. 8 characters + a number"} className={inputCls}
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
               <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Hide password" : "Show password"} className="absolute right-3.5 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "var(--muted)" }}>
                 <EyeIcon off={!show} />
               </button>
             </div>
+            {mode === "up" && (
+              <>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+                  <span style={{ color: pwLen ? "#16a34a" : "var(--muted)" }}>{pwLen ? "✓" : "○"} 8+ characters</span>
+                  <span style={{ color: pwNum ? "#16a34a" : "var(--muted)" }}>{pwNum ? "✓" : "○"} includes a number</span>
+                </div>
+                <label className="mb-1.5 mt-4 block text-[13px] font-bold">Confirm password</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="10" width="16" height="10" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+                  </span>
+                  <input
+                    type={show ? "text" : "password"} required value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                    placeholder="Retype your password" className={inputCls}
+                    style={{
+                      background: "var(--pill)",
+                      border: confirm && password !== confirm ? "1px solid #dc2626" : "1px solid var(--border)",
+                      color: "var(--text)",
+                    }}
+                  />
+                </div>
+                {confirm && password !== confirm && (
+                  <p className="mt-1.5 text-xs font-semibold" style={{ color: "#dc2626" }}>Passwords do not match yet.</p>
+                )}
+              </>
+            )}
             {mode === "up" && (
               <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs leading-5" style={{ color: "var(--muted)" }}>
                 <input type="checkbox" required className="mt-1 h-4 w-4 shrink-0 accent-current" />

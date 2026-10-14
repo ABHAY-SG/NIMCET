@@ -1,11 +1,11 @@
 import { createBrowserClient } from "@supabase/ssr";
 
 export function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) {
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+  const key = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "").trim();
+  if (!url || !key || url.includes("xyzcompany")) {
     throw new Error(
-      "Supabase is not configured. Copy .env.example to .env.local and fill in your project URL + anon key."
+      "Supabase is not configured. Copy .env.example to .env.local and fill in your real project URL + key, then restart the dev server."
     );
   }
   return createBrowserClient(url, key);
