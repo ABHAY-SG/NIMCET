@@ -9,7 +9,7 @@ function XIcon() {
 
 function InstagramIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.5" /><circle cx="12" cy="12" r="4.4" /><circle cx="17.4" cy="6.6" r="1.6" fill="currentColor" stroke="none" /></svg>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.5" /><circle cx="12" cy="12" r="4.4" /><circle cx="17.4" cy="6.6" r="1.6" fill="currentColor" stroke="none" /></svg>
   );
 }
 
@@ -23,7 +23,11 @@ function LinkedinIcon() {
   return (
     <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden>
       <circle cx="12" cy="12" r="11" fill="#fff" />
-      <text x="12" y="16.6" textAnchor="middle" fontSize="11.5" fontWeight="bold" fill="#0A66C2" fontFamily="Arial, sans-serif">in</text>
+      <g fill="#0A66C2">
+        <circle cx="8" cy="7.8" r="2" />
+        <rect x="6.5" y="10.8" width="3" height="7" rx="1" />
+        <path d="M12.3 17.8v-7h2.9v1.1c.5-.8 1.4-1.3 2.7-1.3 2 0 3.4 1.3 3.4 3.7v3.5h-3v-3.2c0-1-.5-1.7-1.5-1.7-1 0-1.6.7-1.6 1.7v3.2h-2.9z" />
+      </g>
     </svg>
   );
 }
