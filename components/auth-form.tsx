@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Reveal from "@/components/reveal";
 import { getSupabase } from "@/lib/supabase";
 
 function EyeIcon({ off = false }: { off?: boolean }) {
@@ -30,6 +29,17 @@ function GithubIcon() {
     </svg>
   );
 }
+
+const BG: Array<[string, string, string]> = [
+  ["authbg-light", "/auth/bg-light.jpg", "var(--bg)"],
+  ["authbg-midnight", "/auth/bg-midnight.jpg", "#070b18"],
+  ["authbg-ocean", "/auth/bg-ocean.jpg", "#0c2a3f"],
+  ["authbg-forest", "/auth/bg-forest.jpg", "#0b1512"],
+  ["authbg-sunset", "/auth/bg-sunset.jpg", "#431407"],
+];
+
+const SLOPE_RIGHT = "polygon(10% 0, 100% 0, 100% 100%, 0% 100%)";
+const SLOPE_LEFT = "polygon(0 0, 100% 0, 90% 100%, 0% 100%)";
 
 export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) {
   const router = useRouter();
@@ -96,13 +106,107 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
 
   const inputCls = "w-full rounded-xl py-3 pl-11 pr-11 text-sm outline-none transition-shadow focus:ring-2";
 
-  const BG: Array<[string, string, string]> = [
-    ["authbg-light", "/auth/bg-light.jpg", "var(--bg)"],
-    ["authbg-midnight", "/auth/bg-midnight.jpg", "#070b18"],
-    ["authbg-ocean", "/auth/bg-ocean.jpg", "#0c2a3f"],
-    ["authbg-forest", "/auth/bg-forest.jpg", "#0b1512"],
-    ["authbg-sunset", "/auth/bg-sunset.jpg", "#431407"],
-  ];
+  const form = (which: "in" | "up") => (
+    <div className="flex h-full flex-col justify-center p-6 sm:p-8">
+      <h1 className="text-2xl font-extrabold tracking-tight sm:text-[26px]">
+        {which === "in" ? "Welcome back" : "Join NimCuet"}
+      </h1>
+      <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
+        {which === "in" ? "Log in to continue to your dashboard." : "One account for mocks, reports and streaks."}
+      </p>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button" onClick={() => oauth("google")}
+          className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-transform hover:-translate-y-px"
+          style={{ border: "1px solid var(--border)", background: "var(--pill)" }}
+        >
+          <GoogleIcon /> Google
+        </button>
+        <button
+          type="button" onClick={() => oauth("github")}
+          className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-transform hover:-translate-y-px"
+          style={{ border: "1px solid var(--border)", background: "var(--pill)" }}
+        >
+          <GithubIcon /> GitHub
+        </button>
+      </div>
+      <div className="my-3.5 flex items-center gap-3 text-[10px] font-bold" style={{ color: "var(--muted)" }}>
+        <span className="h-px flex-1" style={{ background: "var(--border)" }} /> OR <span className="h-px flex-1" style={{ background: "var(--border)" }} />
+      </div>
+      <form onSubmit={submit}>
+        <label className="mb-1.5 block text-[13px] font-bold">Email</label>
+        <div className="relative">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px]" style={{ color: "var(--muted)" }}>✉</span>
+          <input type="email" required value={which === mode ? email : ""} onChange={(e) => setEmail(e.target.value)} onFocus={() => which !== mode && setMode(which)} placeholder="Enter your email" className={inputCls}
+            style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
+        </div>
+        <div className="mb-1.5 mt-3.5 flex items-center justify-between">
+          <label className="text-[13px] font-bold">Password</label>
+          {which === "in" && (
+            <button type="button" onClick={forgot} className="text-xs font-bold" style={{ color: "var(--accent)" }}>
+              Forgot password?
+            </button>
+          )}
+        </div>
+        <div className="relative">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="10" width="16" height="10" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+          </span>
+          <input type={show ? "text" : "password"} required minLength={6} value={which === mode ? password : ""} onChange={(e) => setPassword(e.target.value)} onFocus={() => which !== mode && setMode(which)} placeholder={which === "in" ? "Enter your password" : "Min. 6 characters"} className={inputCls}
+            style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
+          <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Hide password" : "Show password"} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
+            <EyeIcon off={!show} />
+          </button>
+        </div>
+        {which === "up" && (
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs leading-5" style={{ color: "var(--muted)" }}>
+            <input type="checkbox" required className="mt-1 h-4 w-4 shrink-0 accent-current" />
+            <span>I agree to the <a href="/terms" className="font-bold" style={{ color: "var(--accent)" }}>Terms</a> and <a href="/privacy" className="font-bold" style={{ color: "var(--accent)" }}>Privacy Policy</a></span>
+          </label>
+        )}
+        {which === mode && msg && (
+          <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
+        )}
+        <button
+          type="submit" disabled={busy}
+          onClick={() => setMode(which)}
+          className="cta-glow mt-4 w-full rounded-xl py-3.5 text-sm font-extrabold text-white disabled:opacity-50"
+          style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+        >
+          {busy && which === mode ? "Please wait…" : which === "in" ? "Log in →" : "Create account →"}
+        </button>
+      </form>
+    </div>
+  );
+
+  const panel = (which: "in" | "up") => (
+    <div className="flex h-full flex-col justify-center p-8 text-white sm:p-10" key={which}>
+      <span className="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold" style={{ background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.2)" }}>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
+        {which === "in" ? "Welcome back" : "New here?"}
+      </span>
+      <h2 className="mt-4 text-4xl font-extrabold leading-tight">
+        {which === "in" ? (<>Welcome<br />back.</>) : (<>Join<br />NimCuet.</>)}
+      </h2>
+      <p className="mt-3 max-w-xs text-sm leading-6 text-white/70">
+        {which === "in"
+          ? "Your mocks, reports and streaks are exactly where you left them. Log in to continue."
+          : "One account for every mock, every report and every streak. Free tier included."}
+      </p>
+      <div className="mt-6 rounded-2xl p-4 text-[13px] leading-6 text-white/75" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)" }}>
+        {which === "in" ? "Saved attempts sync to your dashboard automatically." : "No card needed. Cancel anytime."}
+        <div className="mt-2 text-white/60">• NIMCUET + CUET PG mocks</div>
+      </div>
+      <button
+        type="button"
+        onClick={() => { setMode(which === "in" ? "up" : "in"); setMsg(""); }}
+        className="mt-6 w-fit rounded-full px-6 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-px"
+        style={{ border: "1.5px solid rgba(255,255,255,0.5)" }}
+      >
+        {which === "in" ? "New here? Create account →" : "Have an account? Log in →"}
+      </button>
+    </div>
+  );
 
   return (
     <>
@@ -123,119 +227,40 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         />
       </div>
       <main className="relative mx-auto w-full max-w-5xl px-4 pb-20 pt-28">
-      <div className="grid items-center gap-8 md:grid-cols-2">
-      <div className="hidden md:block">
-        <p className="mono text-[12px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.24em" }}>
-          {mode === "in" ? "WELCOME BACK" : "START FREE FOREVER"}
-        </p>
-        <h2 className="mt-3 text-4xl font-extrabold leading-[1.05] tracking-tight lg:text-5xl">
-          {mode === "in" ? <>Pick up exactly<br />where you left.</> : <>Your rank journey<br />starts here.</>}
-        </h2>
-        <p className="mt-4 max-w-sm text-sm leading-7" style={{ color: "var(--muted)" }}>
-          {mode === "in"
-            ? "All your mocks, reports and streaks are waiting. One login brings back the full dashboard."
-            : "One account unlocks every mock, every report and every streak — free tier included, no card needed."}
-        </p>
-        <ul className="mt-6 space-y-3 text-sm">
-          {[
-            "Real NIMCET + CUET PG pattern",
-            "Negative marking done right",
-            "Reports that show the leak",
-          ].map((t) => (
-            <li key={t} className="flex items-center gap-3 font-semibold">
-              <span className="mono flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>✓</span>
-              {t}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div
-        className="rounded-[22px] p-6 backdrop-blur-2xl sm:p-7"
-        style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}
-      >
-      <div className="text-center">
-        <img src="/logo.png" alt="NimCuet" className="site-logo mx-auto block h-10 w-auto" />
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight">
-          {mode === "in" ? "Welcome back" : "Join NimCuet"}
-        </h1>
-        <p className="mt-1.5 text-sm" style={{ color: "var(--muted)" }}>
-          {mode === "in" ? "Log in to continue to your dashboard." : "One account for mocks, reports and streaks."}
-        </p>
-      </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button" onClick={() => oauth("google")}
-            className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-transform hover:-translate-y-px"
-            style={{ border: "1px solid var(--border)", background: "var(--pill)" }}
+        <div
+          className="relative grid overflow-hidden rounded-[26px] backdrop-blur-2xl md:grid-cols-2 md:min-h-[600px]"
+          style={{ background: "color-mix(in srgb, var(--nav-bg) 72%, transparent)", border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.5)" }}
+        >
+          <div className={mode === "in" ? "block" : "hidden md:block"}>
+            {form("in")}
+          </div>
+          <div className={mode === "up" ? "block" : "hidden md:block"}>
+            {form("up")}
+          </div>
+          <div
+            aria-hidden={false}
+            className="absolute inset-y-0 hidden w-1/2 md:block"
+            style={{
+              left: mode === "in" ? "50%" : "0%",
+              clipPath: mode === "in" ? SLOPE_RIGHT : SLOPE_LEFT,
+              background: "linear-gradient(135deg, color-mix(in srgb, var(--accent) 62%, #141031), color-mix(in srgb, var(--accent) 30%, #0b1026))",
+              transition: "left 0.65s cubic-bezier(0.22,1,0.36,1), clip-path 0.65s cubic-bezier(0.22,1,0.36,1)",
+            }}
           >
-            <GoogleIcon /> Google
-          </button>
-          <button
-            type="button" onClick={() => oauth("github")}
-            className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-transform hover:-translate-y-px"
-            style={{ border: "1px solid var(--border)", background: "var(--pill)" }}
-          >
-            <GithubIcon /> GitHub
+            {panel(mode === "in" ? "up" : "in")}
+          </div>
+        </div>
+        <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-semibold md:hidden" style={{ color: "var(--muted)" }}>
+          <button type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setMsg(""); }} className="font-bold" style={{ color: "var(--accent)" }}>
+            {mode === "in" ? "New here? Create account →" : "Have an account? Log in →"}
           </button>
         </div>
-        <div className="my-4 flex items-center gap-3 text-[11px] font-bold" style={{ color: "var(--muted)" }}>
-          <span className="h-px flex-1" style={{ background: "var(--border)" }} /> OR <span className="h-px flex-1" style={{ background: "var(--border)" }} />
+        <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-semibold" style={{ color: "var(--muted)" }}>
+          <span>✓ Free tier forever</span>
+          <span>✓ No card required</span>
+          <span>✓ Cancel anytime</span>
         </div>
-        <form onSubmit={submit}>
-          <label className="mb-1.5 block text-[13px] font-bold">Email</label>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px]" style={{ color: "var(--muted)" }}>✉</span>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" className={inputCls}
-              style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
-          </div>
-          <div className="mb-1.5 mt-4 flex items-center justify-between">
-            <label className="text-[13px] font-bold">Password</label>
-            {mode === "in" && (
-              <button type="button" onClick={forgot} className="text-xs font-bold" style={{ color: "var(--accent)" }}>
-                Forgot password?
-              </button>
-            )}
-          </div>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="10" width="16" height="10" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
-            </span>
-            <input type={show ? "text" : "password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className={inputCls}
-              style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
-            <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Hide password" : "Show password"} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
-              <EyeIcon off={!show} />
-            </button>
-          </div>
-          {mode === "up" && (
-            <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs leading-5" style={{ color: "var(--muted)" }}>
-              <input type="checkbox" required className="mt-1 h-4 w-4 shrink-0 accent-current" />
-              <span>I agree to the <a href="/terms" className="font-bold" style={{ color: "var(--accent)" }}>Terms</a> and <a href="/privacy" className="font-bold" style={{ color: "var(--accent)" }}>Privacy Policy</a></span>
-            </label>
-          )}
-          {msg && (
-            <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
-          )}
-          <button
-            type="submit" disabled={busy}
-            className="cta-glow mt-4 w-full rounded-xl py-3.5 text-sm font-extrabold text-white disabled:opacity-50"
-            style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
-          >
-            {busy ? "Please wait…" : mode === "in" ? "Log in →" : "Create account →"}
-          </button>
-        </form>
-        <a href={mode === "in" ? "/signup" : "/login"} className="mt-5 block w-full text-center text-sm" style={{ color: "var(--muted)" }}>
-          {mode === "in" ? "Don't have an account? " : "Have an account? "}
-          <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
-        </a>
-        <p className="mt-4 text-center text-[11px]" style={{ color: "var(--muted)" }}>● Secure & encrypted</p>
-      </div>
-      <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-semibold md:col-span-2" style={{ color: "var(--muted)" }}>
-        <span>✓ Free tier forever</span>
-        <span>✓ No card required</span>
-        <span>✓ Cancel anytime</span>
-      </div>
-      </div>
-    </main>
+      </main>
     </>
   );
 }
