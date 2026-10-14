@@ -1,15 +1,58 @@
 "use client";
 import Reveal from "@/components/reveal";
 
-function XIcon() {
+function XBadge() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-6.8 7.8L23.3 22h-6.3l-4.9-6.4L6.5 22H3.4l7.3-8.3L1 2h6.5l4.4 5.9L18.9 2zm-1.1 18h1.7L7.4 3.9H5.6L17.8 20z" /></svg>
+    <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden>
+      <circle cx="18" cy="18" r="18" fill="#000" />
+      <g transform="translate(9.5,9.5) scale(0.73)" fill="#fff">
+        <path d="M18.9 2H22l-6.8 7.8L23.3 22h-6.3l-4.9-6.4L6.5 22H3.4l7.3-8.3L1 2h6.5l4.4 5.9L18.9 2zm-1.1 18h1.7L7.4 3.9H5.6L17.8 20z" />
+      </g>
+    </svg>
   );
 }
 
-function InstagramIcon() {
+function IGBadge() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="5" /><circle cx="12" cy="12" r="3.8" /><circle cx="16.9" cy="7.1" r="1.5" fill="currentColor" stroke="none" /></svg>
+    <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden>
+      <defs>
+        <linearGradient id="igbg" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stopColor="#f9ce34" />
+          <stop offset="0.5" stopColor="#ee2a7b" />
+          <stop offset="1" stopColor="#6228d7" />
+        </linearGradient>
+      </defs>
+      <circle cx="18" cy="18" r="18" fill="url(#igbg)" />
+      <g transform="translate(6,6)" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="4" width="16" height="16" rx="5" />
+        <circle cx="12" cy="12" r="3.8" />
+        <circle cx="16.9" cy="7.1" r="1.5" fill="#fff" stroke="none" />
+      </g>
+    </svg>
+  );
+}
+
+function LIBadge() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden>
+      <circle cx="18" cy="18" r="18" fill="#fff" />
+      <g transform="translate(6,6)" fill="#0A66C2">
+        <circle cx="8" cy="7.8" r="2" />
+        <rect x="6.5" y="10.8" width="3" height="7" rx="1" />
+        <path d="M12.3 17.8v-7h2.9v1.1c.5-.8 1.4-1.3 2.7-1.3 2 0 3.4 1.3 3.4 3.7v3.5h-3v-3.2c0-1-.5-1.7-1.5-1.7-1 0-1.6.7-1.6 1.7v3.2h-2.9z" />
+      </g>
+    </svg>
+  );
+}
+
+function GHBadge() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden>
+      <circle cx="18" cy="18" r="18" fill="#fff" />
+      <g transform="translate(7,7) scale(0.833)" fill="#000">
+        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+      </g>
+    </svg>
   );
 }
 
@@ -42,8 +85,10 @@ function GithubIcon() {
 
 function TelegramIcon() {
   return (
-    <svg width="36" height="36" viewBox="0 0 24 24" aria-hidden>
-      <path fill="#229ED9" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+    <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden>
+      <g transform="scale(1.5)">
+        <path fill="#229ED9" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+      </g>
     </svg>
   );
 }
@@ -68,12 +113,12 @@ export default function Footer() {
             </div>
             <div className="flex gap-2">
               {[
-                ["X", <XIcon key="x" />, "https://x.com/ABHAY_ICW", "#000", "#fff"],
-                ["Instagram", <InstagramIcon key="ig" />, "https://www.instagram.com/abh_.a.y/", "linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7)", "#fff"],
-                ["LinkedIn", <LinkedinIcon key="li" />, "https://www.linkedin.com/in/abhay-singh-gurjar-incodingworld", "transparent", "var(--text)"],
-                ["GitHub", <GithubIcon key="gh" />, "https://github.com/ABHAY-SG", "#fff", "#000"],
-                ["Telegram", <TelegramIcon key="tg" />, "https://t.me/ABHAYSG", "transparent", "var(--text)"],
-              ].map(([label, icon, href, bg, fg]) => (
+                ["X", <XBadge key="x" />, "https://x.com/ABHAY_ICW"],
+                ["Instagram", <IGBadge key="ig" />, "https://www.instagram.com/abh_.a.y/"],
+                ["LinkedIn", <LIBadge key="li" />, "https://www.linkedin.com/in/abhay-singh-gurjar-incodingworld"],
+                ["GitHub", <GHBadge key="gh" />, "https://github.com/ABHAY-SG"],
+                ["Telegram", <TelegramIcon key="tg" />, "https://t.me/ABHAYSG"],
+              ].map(([label, icon, href]) => (
                 <a
                   key={label as string}
                   href={href as string}
@@ -81,8 +126,7 @@ export default function Footer() {
                   rel="noreferrer"
                   aria-label={label as string}
                   title={label as string}
-                  className="soc flex h-9 w-9 items-center justify-center rounded-full"
-                  style={{ background: bg as string, color: fg as string, border: "1px solid var(--border)" }}
+                  className="soc block h-9 w-9"
                 >
                   {icon}
                 </a>
