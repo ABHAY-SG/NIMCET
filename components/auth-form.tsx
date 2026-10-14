@@ -123,6 +123,10 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         />
       </div>
       <main className="relative mx-auto w-full max-w-md px-4 pb-20 pt-28">
+      <div
+        className="rounded-[22px] p-6 backdrop-blur-2xl sm:p-7"
+        style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}
+      >
       <div className="text-center">
         <img src="/logo.png" alt="NimCuet" className="site-logo mx-auto block h-10 w-auto" />
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight">
@@ -132,10 +136,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           {mode === "in" ? "Log in to continue to your dashboard." : "One account for mocks, reports and streaks."}
         </p>
       </div>
-      <div
-        className="mt-6 rounded-[22px] p-6 backdrop-blur-2xl sm:p-7"
-        style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}
-      >
         <div className="grid grid-cols-2 gap-2.5">
           <button
             type="button" onClick={() => oauth("google")}
