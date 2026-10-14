@@ -97,11 +97,11 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const inputCls = "w-full rounded-xl py-3 pl-11 pr-11 text-sm outline-none transition-shadow focus:ring-2";
 
   const BG: Array<[string, string, string]> = [
-    ["authbg-light", "https://picsum.photos/seed/nimcuet-light/1600/1000", "var(--bg)"],
-    ["authbg-midnight", "https://picsum.photos/seed/nimcuet-night/1600/1000", "#070b18"],
-    ["authbg-ocean", "https://picsum.photos/seed/nimcuet-ocean/1600/1000", "#0c2a3f"],
-    ["authbg-forest", "https://picsum.photos/seed/nimcuet-forest/1600/1000", "#0b1512"],
-    ["authbg-sunset", "https://picsum.photos/seed/nimcuet-sunset/1600/1000", "#431407"],
+    ["authbg-light", "/auth/bg-light.jpg", "var(--bg)"],
+    ["authbg-midnight", "/auth/bg-midnight.jpg", "#070b18"],
+    ["authbg-ocean", "/auth/bg-ocean.jpg", "#0c2a3f"],
+    ["authbg-forest", "/auth/bg-forest.jpg", "#0b1512"],
+    ["authbg-sunset", "/auth/bg-sunset.jpg", "#431407"],
   ];
 
   return (
@@ -206,6 +206,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               <EyeIcon off={!show} />
             </button>
           </div>
+          {mode === "up" && (
+            <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs leading-5" style={{ color: "var(--muted)" }}>
+              <input type="checkbox" required className="mt-1 h-4 w-4 shrink-0 accent-current" />
+              <span>I agree to the <a href="/terms" className="font-bold" style={{ color: "var(--accent)" }}>Terms</a> and <a href="/privacy" className="font-bold" style={{ color: "var(--accent)" }}>Privacy Policy</a></span>
+            </label>
+          )}
           {msg && (
             <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
           )}
@@ -222,6 +228,11 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
         </a>
         <p className="mt-4 text-center text-[11px]" style={{ color: "var(--muted)" }}>● Secure & encrypted</p>
+      </div>
+      <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-semibold md:col-span-2" style={{ color: "var(--muted)" }}>
+        <span>✓ Free tier forever</span>
+        <span>✓ No card required</span>
+        <span>✓ Cancel anytime</span>
       </div>
       </div>
     </main>
