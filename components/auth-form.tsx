@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
+import ThemeFab from "@/components/theme-fab";
 
 function EyeIcon({ off = false }: { off?: boolean }) {
   return off ? (
@@ -233,6 +234,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         />
       </div>
       <main className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-8">
+      <ThemeFab />
+      <a href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
       <a href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
         <span aria-hidden>←</span> Back to home
       </a>
