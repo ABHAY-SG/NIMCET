@@ -9,7 +9,7 @@ function XIcon() {
 
 function InstagramIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="1.2" fill="currentColor" stroke="none" /></svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5" /><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" /><circle cx="17.2" cy="6.8" r="1.4" fill="currentColor" stroke="none" /></svg>
   );
 }
 
@@ -21,9 +21,9 @@ function YoutubeIcon() {
 
 function LinkedinIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
-      <rect x="2" y="2" width="20" height="20" rx="5" fill="#0A66C2" />
-      <text x="12" y="16.8" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#fff" fontFamily="Arial, sans-serif">in</text>
+    <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="11" fill="#fff" />
+      <text x="12" y="16.6" textAnchor="middle" fontSize="11.5" fontWeight="bold" fill="#0A66C2" fontFamily="Arial, sans-serif">in</text>
     </svg>
   );
 }
@@ -38,7 +38,7 @@ function GithubIcon() {
 
 function TelegramIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 4 3 11.2l6.3 2.4L11.5 20l3.9-4.9 5.6 2.1z" /><path d="M9.3 13.6 21 4" /></svg>
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M21.9 4.6 2.7 12.1c-.7.3-.7 1.1.1 1.3l4.8 1.5 1.8 5.6c.2.7 1 .9 1.5.4l2.6-2.5 4.9 3.6c.5.4 1.3.1 1.5-.5l3.1-14c.2-.9-.5-1.6-1.1-1.4zM8.5 13.4l8.4-6.6c.2-.2.5 0 .3.2l-7 6.4-.3 2.8-1.4-2.8z" /></svg>
   );
 }
 
