@@ -9,7 +9,7 @@ function XIcon() {
 
 function InstagramIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.5" /><circle cx="12" cy="12" r="4.4" /><circle cx="17.4" cy="6.6" r="1.6" fill="currentColor" stroke="none" /></svg>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="5" /><circle cx="12" cy="12" r="3.8" /><circle cx="16.9" cy="7.1" r="1.5" fill="currentColor" stroke="none" /></svg>
   );
 }
 
