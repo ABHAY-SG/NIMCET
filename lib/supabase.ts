@@ -1,0 +1,37 @@
+import { createBrowserClient } from "@supabase/ssr";
+
+export function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error(
+      "Supabase is not configured. Copy .env.example to .env.local and fill in your project URL + anon key."
+    );
+  }
+  return createBrowserClient(url, key);
+}
+
+export async function saveAttempt(input: {
+  test: string;
+  score: number;
+  correct: number;
+  wrong: number;
+  skipped: number;
+}) {
+  try {
+    const sb = getSupabase();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return false;
+    const { error } = await sb.from("attempts").insert({
+      user_id: user.id,
+      test: input.test,
+      score: input.score,
+      correct: input.correct,
+      wrong: input.wrong,
+      skipped: input.skipped,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
