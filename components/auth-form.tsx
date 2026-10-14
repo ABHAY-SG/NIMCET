@@ -180,28 +180,33 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   );
 
   const panel = (which: "in" | "up") => (
-    <div className="flex h-full flex-col justify-center p-8 text-white sm:p-10" key={which}>
-      <span className="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold" style={{ background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.2)" }}>
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
+    <div key={which} className="panel-in flex h-full flex-col justify-center p-8 text-white sm:p-10">
+      <span className="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold" style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.24)", backdropFilter: "blur(8px)" }}>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#fff" }} />
         {which === "in" ? "Welcome back" : "New here?"}
       </span>
-      <h2 className="mt-4 text-4xl font-extrabold leading-tight">
+      <h2 className="mt-4 text-4xl font-extrabold leading-[1.05] drop-shadow-lg sm:text-[2.6rem]">
         {which === "in" ? (<>Welcome<br />back.</>) : (<>Join<br />NimCuet.</>)}
       </h2>
-      <p className="mt-3 max-w-xs text-sm leading-6 text-white/70">
+      <div className="mt-3 h-1 w-12 rounded-full" style={{ background: "rgba(255,255,255,0.7)" }} />
+      <p className="mt-3 max-w-xs text-sm leading-6 text-white/80">
         {which === "in"
           ? "Your mocks, reports and streaks are exactly where you left them. Log in to continue."
           : "One account for every mock, every report and every streak. Free tier included."}
       </p>
-      <div className="mt-6 rounded-2xl p-4 text-[13px] leading-6 text-white/75" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)" }}>
+      <div className="mono mt-4 flex gap-2 text-[11px] font-bold">
+        <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)" }}>120Q NIMCET</span>
+        <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)" }}>75Q CUET</span>
+      </div>
+      <div className="mt-5 rounded-2xl p-4 text-[13px] leading-6 text-white/80" style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.16)", backdropFilter: "blur(10px)" }}>
         {which === "in" ? "Saved attempts sync to your dashboard automatically." : "No card needed. Cancel anytime."}
         <div className="mt-2 text-white/60">• NIMCUET + CUET PG mocks</div>
       </div>
       <button
         type="button"
         onClick={() => { setMode(which === "in" ? "up" : "in"); setMsg(""); }}
-        className="mt-6 w-fit rounded-full px-6 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-px"
-        style={{ border: "1.5px solid rgba(255,255,255,0.5)" }}
+        className="mt-6 w-fit rounded-full px-6 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-px hover:scale-[1.03]"
+        style={{ border: "1.5px solid rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)" }}
       >
         {which === "in" ? "New here? Create account →" : "Have an account? Log in →"}
       </button>
@@ -238,13 +243,15 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             {form("up")}
           </div>
           <div
-            aria-hidden={false}
-            className="absolute inset-y-0 hidden w-1/2 md:block"
+            className="absolute inset-y-0 left-0 hidden w-1/2 md:block"
             style={{
-              left: mode === "in" ? "50%" : "0%",
+              transform: mode === "in" ? "translateX(100%)" : "translateX(0%)",
               clipPath: mode === "in" ? SLOPE_RIGHT : SLOPE_LEFT,
               background: "linear-gradient(135deg, color-mix(in srgb, var(--accent) 62%, #141031), color-mix(in srgb, var(--accent) 30%, #0b1026))",
-              transition: "left 0.65s cubic-bezier(0.22,1,0.36,1), clip-path 0.65s cubic-bezier(0.22,1,0.36,1)",
+              backdropFilter: "blur(6px) saturate(150%)",
+              boxShadow: mode === "in" ? "-24px 0 60px -20px rgba(0,0,0,0.5)" : "24px 0 60px -20px rgba(0,0,0,0.5)",
+              transition: "transform 0.7s cubic-bezier(0.22,1,0.36,1), clip-path 0.7s cubic-bezier(0.22,1,0.36,1), box-shadow 0.7s",
+              willChange: "transform",
             }}
           >
             {panel(mode === "in" ? "up" : "in")}

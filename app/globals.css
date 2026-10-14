@@ -157,6 +157,7 @@ footer .nlink::after { display: none; }
   .nlink { transition: none; }
   .nlink::after { display: none; }
   .floaty, .floaty-slow, .scroll-cue { animation: none; }
+  .panel-in { animation: none; }
   .grow { animation: none; }
   .shine { animation: none; }
   .hov { transition: none; }
@@ -192,6 +193,13 @@ footer .nlink::after { display: none; }
 .cta-glow:hover .carr { transform: translateX(4px); }
 .cta-line { transition: background 0.25s, color 0.25s, transform 0.25s, filter 0.25s; }
 .cta-line:hover { background: var(--btn-bg) !important; color: var(--btn-text) !important; }
+
+/* sliding auth panel content */
+@keyframes panel-in {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+.panel-in { animation: panel-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both; }
 
 /* social buttons: always original brand colors, lift on hover */
 .soc { transition: transform 0.25s, filter 0.25s; }
