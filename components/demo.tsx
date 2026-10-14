@@ -30,7 +30,7 @@ export default function Demo() {
             <MockDemo />
           </Reveal>
           <p className="mt-3 text-center text-[11px] md:text-right" style={{ color: "var(--muted)" }}>
-            3 sample questions · real marking · full papers unlock more
+            12 questions · 12 minutes · real marking · solutions included
           </p>
         </div>
       </div>

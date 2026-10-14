@@ -3,7 +3,7 @@ import Reveal from "@/components/reveal";
 const PLANS = [
   {
     name: "Free", price: "₹0", per: "forever",
-    lines: ["5 mocks / month", "Demo explanations", "Basic score report", "No card required"],
+    lines: ["Free 12Q sample mock", "Solutions + scorecard", "No card • no login needed"],
     cta: "Start free", hot: false, href: "/signup",
   },
   {
@@ -100,6 +100,10 @@ export default function Pricing() {
           </Reveal>
         ))}
       </div>
+      <p className="mt-5 text-center text-xs" style={{ color: "var(--muted)" }}>
+        Refunds: Monthly within 48h, Annual within 7 days (under 2 mocks attempted) — full policy in{" "}
+        <a href="/terms" className="font-bold" style={{ color: "var(--accent)" }}>Terms</a>.
+      </p>
     </section>
   );
 }

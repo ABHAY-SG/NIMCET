@@ -14,12 +14,44 @@ type Attempt = {
   created_at: string;
 };
 
+function AttemptRow({ a, cloud = false }: { a: Attempt; cloud?: boolean }) {
+  return (
+    <div
+      className="flex flex-wrap items-center justify-between gap-2 rounded-2xl px-5 py-3.5 backdrop-blur-xl"
+      style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
+    >
+      <div>
+        <div className="text-sm font-bold">
+          {a.test}{" "}
+          {!cloud && (
+            <span className="mono rounded px-1.5 py-0.5 text-[10px]" style={{ background: "var(--pill)", color: "var(--muted)" }}>
+              THIS DEVICE
+            </span>
+          )}
+        </div>
+        <div className="mono text-[11px]" style={{ color: "var(--muted)" }}>
+          {new Date(a.created_at).toLocaleString("en-IN")} • {a.correct}✔ {a.wrong}✘ {a.skipped}○
+        </div>
+      </div>
+      <div className="mono text-xl font-extrabold" style={{ color: "var(--accent)" }}>{a.score}</div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [localAttempts, setLocalAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("nimcuet-attempts");
+      if (raw) setLocalAttempts(JSON.parse(raw));
+    } catch {}
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -75,34 +107,33 @@ export default function DashboardPage() {
         <p className="mt-4 rounded-xl px-4 py-3 text-[13px]" style={{ background: "var(--pill)" }}>{note}</p>
       )}
       <Reveal>
-        <h2 className="mt-8 text-lg font-extrabold tracking-tight">Recent attempts</h2>
+        <h2 className="mt-8 text-lg font-extrabold tracking-tight">Saved attempts</h2>
         {attempts.length === 0 && !loading ? (
           <div
             className="mt-3 rounded-2xl p-6 text-center text-sm backdrop-blur-xl"
             style={{ border: "1px dashed var(--border)", color: "var(--muted)" }}
           >
-            No saved attempts yet. Finish the demo mock on the homepage — it saves here when you are logged in.
+            No cloud attempts yet. Finish the demo mock on the homepage — it saves here when you are logged in.
           </div>
         ) : (
           <div className="mt-3 grid gap-2.5">
             {attempts.map((a) => (
-              <div
-                key={a.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-2xl px-5 py-3.5 backdrop-blur-xl"
-                style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
-              >
-                <div>
-                  <div className="text-sm font-bold">{a.test}</div>
-                  <div className="mono text-[11px]" style={{ color: "var(--muted)" }}>
-                    {new Date(a.created_at).toLocaleString("en-IN")} • {a.correct}✔ {a.wrong}✘ {a.skipped}○
-                  </div>
-                </div>
-                <div className="mono text-xl font-extrabold" style={{ color: "var(--accent)" }}>{a.score}</div>
-              </div>
+              <AttemptRow key={a.id} a={a} cloud />
             ))}
           </div>
         )}
       </Reveal>
+      {localAttempts.length > 0 && (
+        <Reveal>
+          <h2 className="mt-8 text-lg font-extrabold tracking-tight">On this device</h2>
+          <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Saved locally — log in to keep them across devices.</p>
+          <div className="mt-3 grid gap-2.5">
+            {localAttempts.map((a) => (
+              <AttemptRow key={a.id} a={a} />
+            ))}
+          </div>
+        </Reveal>
+      )}
     </main>
   );
 }
