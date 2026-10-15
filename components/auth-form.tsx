@@ -59,6 +59,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [showResend, setShowResend] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
   const [resendBusy, setResendBusy] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+
+  // Supabase throttles OTP email + verification attempts. Surface those as
+  // a calm cooldown message instead of raw API text. Never auto-retries.
+  const rateLimitHit = (m: string) =>
+    /rate.?limit|too many|after \d+ second|wait a moment|slow down|throttl/i.test(m);
   // OTP step (signup only)
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
@@ -270,6 +276,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       setMsg("Enter a valid email first.");
       return;
     }
+    if (sendingCode) return;
+    setSendingCode(true);
     try {
       const sb = getSupabase();
       const { error } = await sb.auth.resend({
@@ -283,7 +291,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       setMsg("Fresh code sent — check your inbox (and spam).");
       setTimeout(() => boxRefs.current[0]?.focus(), 60);
     } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : "Could not resend. Please try again.");
+      const m = err instanceof Error ? err.message : "Could not resend. Please try again.";
+      setMsg(rateLimitHit(m)
+        ? "Too many code requests — wait a couple of minutes, then tap resend once."
+        : m);
+    } finally {
+      setSendingCode(false);
     }
   };
 
@@ -304,7 +317,10 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       if (error) throw error;
       enterOtp(target, "Fresh 6-digit code sent — enter it below.");
     } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : "Could not resend. Please try again.");
+      const raw = err instanceof Error ? err.message : "Could not resend. Please try again.";
+      setMsg(rateLimitHit(raw)
+        ? "Too many code requests — wait a couple of minutes, then tap resend once."
+        : raw);
     } finally {
       setResendBusy(false);
     }
@@ -354,7 +370,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       router.replace("/dashboard");
     } catch (err: unknown) {
       const m = err instanceof Error ? err.message : "";
-      if (/expir/i.test(m)) {
+      if (rateLimitHit(m)) {
+        setMsg("Too many attempts — wait a couple of minutes, then try again. Do not resend repeatedly.");
+      } else if (/expir/i.test(m)) {
         setMsg("That code expired — tap resend below for a fresh one.");
       } else if (/invalid|incorrect|token/i.test(m)) {
         setMsg("That code is incorrect — check the email and try again.");
@@ -595,8 +613,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
                 {resendIn > 0 ? (
                   <>Resend code in <strong className="mono">0:{String(resendIn).padStart(2, "0")}</strong></>
                 ) : (
-                  <button type="button" onClick={() => resendOtpCode()} className="cursor-pointer font-bold" style={{ color: "var(--accent)" }}>
-                    Resend code
+                  <button type="button" onClick={() => resendOtpCode()} disabled={sendingCode} className="cursor-pointer font-bold disabled:opacity-50" style={{ color: "var(--accent)" }}>
+                    {sendingCode ? "Sending…" : "Resend code"}
                   </button>
                 )}
               </div>
