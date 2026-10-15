@@ -106,11 +106,60 @@ export async function GET(req: Request) {
       return NextResponse.redirect(new URL("/auth/verified", origin));
     }
 
-    // OAuth (Google/GitHub) returns a PKCE code. Keep login and registration distinct.
+    // OAuth (Google/GitHub) returns a PKCE code. Email confirmation links
+    // also land here with ONLY a code (Supabase consumes the token server
+    // side): our signup links always carry ?challenge=, OAuth links carry
+    // ?mode= — that tells the two flows apart.
     const code = searchParams.get("code");
     if (code) {
+      const isEmailFlow = searchParams.has("challenge");
       const { error } = await sb.auth.exchangeCodeForSession(code);
-      if (error) return fail("exchange");
+      if (error) {
+        console.error(`[auth] code exchange failed flow=${isEmailFlow ? "email" : "oauth"}`);
+        if (isEmailFlow && /verifier/i.test(error.message)) {
+          // The email WAS confirmed server-side (Supabase only mints this
+          // code post-verify); only the signup browser holds the PKCE
+          // verifier, so no session can be minted here (e.g. confirmed on
+          // another device). Mark the challenge best-effort so the original
+          // tab can auto-sign-in, then send them to log in — the email is
+          // confirmed.
+          try {
+            const cid = searchParams.get("challenge");
+            if (cid) {
+              await sb.from("signup_verification_sessions")
+                .update({ verified_at: new Date().toISOString() })
+                .eq("challenge_id", cid)
+                .is("verified_at", null)
+                .gt("expires_at", new Date().toISOString());
+            }
+          } catch {}
+          return NextResponse.redirect(new URL("/login?verified=1", origin));
+        }
+        return fail("exchange");
+      }
+
+      if (isEmailFlow) {
+        // Same browser that signed up: session established, email verified.
+        // Best-effort bookkeeping only — never fail the confirmation itself.
+        try {
+          const { data: { user: confirmedUser } } = await sb.auth.getUser();
+          if (confirmedUser) {
+            await sb.from("oauth_account_registry").insert({
+              user_id: confirmedUser.id,
+              email: confirmedUser.email ?? null,
+            });
+            const cid = searchParams.get("challenge");
+            if (cid) {
+              await sb.from("signup_verification_sessions")
+                .update({ verified_at: new Date().toISOString() })
+                .eq("challenge_id", cid)
+                .eq("user_id", confirmedUser.id)
+                .is("verified_at", null);
+            }
+          }
+        } catch {}
+        return NextResponse.redirect(new URL("/dashboard", origin));
+      }
 
       const mode = searchParams.get("mode") === "up" ? "up" : "in";
       if (mode === "up") {
