@@ -266,7 +266,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     }
   };
 
-  const inputCls = "w-full rounded-xl py-3 pl-11 pr-11 text-sm outline-none transition-shadow focus:ring-2";
+  const inputCls = "w-full rounded-xl py-2.5 pl-11 pr-11 text-sm outline-none transition-shadow focus:ring-2";
 
   const form = (which: "in" | "up") => (
     <div className="flex h-full flex-col justify-center p-6 sm:p-8">
@@ -332,7 +332,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         <button
           type="submit" disabled={busy}
           onClick={() => setMode(which)}
-          className="cta-glow mt-4 w-full rounded-xl py-3.5 text-sm font-extrabold text-white disabled:opacity-50"
+          className="cta-glow mt-3 w-full rounded-xl py-3 text-sm font-extrabold text-white disabled:opacity-50"
           style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
         >
           {busy && which === mode ? "Please wait…" : which === "in" ? "Log in →" : "Create account →"}
@@ -393,13 +393,14 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 58%, transparent), color-mix(in srgb, var(--bg) 80%, transparent))", backdropFilter: "blur(3px)" }}
         />
       </div>
-      <main className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-8">
+      <main className="relative mx-auto flex w-full max-w-6xl flex-col justify-center px-4 py-4" style={{ minHeight: "100svh" }}>
       <ThemeFab />
-      <a href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
+      <ThemeFab />
+      <a href="/" className="mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
         <span aria-hidden>←</span> Back to home
       </a>
       <div
-        className="relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[620px]"
+        className="relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[560px]"
         style={{ border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.22)" }}
       >
         {BG.map(([cls, src, fallback]) => (
@@ -431,8 +432,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               : "\u201cEvery topper was once stuck on question one.\u201d"}
           </p>
         </div>
-        <div className="relative z-10 p-6 sm:p-9">
-          <h1 className="text-2xl font-extrabold tracking-tight">
+        <div className="relative z-10 p-5 sm:p-6">
+          <h1 className="text-xl font-extrabold tracking-tight">
             {mode === "in" ? "Welcome back" : "Join NimCuet"}
           </h1>
           <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
@@ -441,20 +442,20 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button
               type="button" onClick={() => oauth("google")}
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
               style={{ border: "1.5px solid var(--border)", background: "var(--pill)" }}
             >
               <GoogleIcon /> Google
             </button>
             <button
               type="button" onClick={() => oauth("github")}
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
               style={{ border: "1.5px solid var(--border)", background: "var(--pill)" }}
             >
               <GithubIcon /> GitHub
             </button>
           </div>
-          <div className="my-4 flex items-center gap-3 text-[11px] font-bold" style={{ color: "var(--muted)" }}>
+          <div className="my-3 flex items-center gap-3 text-[11px] font-bold" style={{ color: "var(--muted)" }}>
             <span className="h-px flex-1" style={{ background: "var(--border)" }} /> OR <span className="h-px flex-1" style={{ background: "var(--border)" }} />
           </div>
           <form onSubmit={submit} noValidate={false}>
@@ -462,12 +463,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               <div className="mb-4 grid grid-cols-2 gap-2.5">
                 <div>
                   <label htmlFor="auth-first" className="mb-1.5 block text-[13px] font-bold">First name</label>
-                  <input id="auth-first" type="text" required autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Aarav" className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-shadow focus:ring-2"
+                  <input id="auth-first" type="text" required autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Abhay" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
                     style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
                 <div>
                   <label htmlFor="auth-last" className="mb-1.5 block text-[13px] font-bold">Last name</label>
-                  <input id="auth-last" type="text" required autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Sharma" className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-shadow focus:ring-2"
+                  <input id="auth-last" type="text" required autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Singh" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
                     style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
               </div>
@@ -555,13 +556,13 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             )}
             <button
               type="submit" disabled={busy}
-              className="mt-4 w-full cursor-pointer rounded-xl py-3.5 text-sm font-extrabold text-white transition-all hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
+              className="mt-4 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold text-white transition-all hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
               style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", boxShadow: "0 14px 30px -12px color-mix(in srgb, var(--accent) 60%, transparent)" }}
             >
               {busy ? "Please wait…" : mode === "in" ? "Log in →" : "Create account →"}
             </button>
           </form>
-          <button type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setMsg(""); }} className="mt-5 w-full cursor-pointer text-center text-sm" style={{ color: "var(--muted)" }}>
+          <button type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setMsg(""); }} className="mt-4 w-full cursor-pointer text-center text-sm" style={{ color: "var(--muted)" }}>
             {mode === "in" ? "Don't have an account? " : "Have an account? "}
             <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
           </button>
