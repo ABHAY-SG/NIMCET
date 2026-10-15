@@ -16,12 +16,73 @@ async function addAccountRegistry(sb: SupabaseServerClient) {
   return !error || error.code === "23505";
 }
 
+function isExpiredOrUsedUp(message: string): boolean {
+  return /expir|invalid|consumed|not found|already used/i.test(message);
+}
+
 export async function GET(req: Request) {
   const { searchParams, origin } = new URL(req.url);
   const fail = (reason: string) => NextResponse.redirect(new URL(`/login?error=${reason}`, origin));
 
   try {
     const sb = await getSupabaseServer();
+
+    // Email confirmation + password recovery links carry token_hash + type.
+    // Handled FIRST: unlike the PKCE code exchange below, token verification
+    // needs no browser-side verifier, so it also works when the email is
+    // opened on a different device than the one used for signup.
+    const tokenHash = searchParams.get("token_hash");
+    const type = searchParams.get("type");
+    if (tokenHash && type) {
+      const { error } = await sb.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: type as "signup" | "recovery" | "email_change" | "magiclink",
+      });
+      if (error) {
+        return fail(isExpiredOrUsedUp(error.message) ? "link-bad" : "verify");
+      }
+
+      if (type === "signup") {
+        if (!(await addAccountRegistry(sb))) {
+          await sb.auth.signOut();
+          return fail("registry");
+        }
+
+        // The email link may be opened on a different device. Mark only the
+        // matching user's high-entropy challenge as verified, then remove the
+        // session from the device that opened the email link.
+        const { data: { user: verifiedUser } } = await sb.auth.getUser();
+        const metadataChallenge = verifiedUser?.user_metadata?.signup_challenge;
+        const challengeId =
+          searchParams.get("challenge") ??
+          (typeof metadataChallenge === "string" ? metadataChallenge : null);
+
+        if (challengeId) {
+          const { data: challenge, error: challengeError } = await sb
+            .from("signup_verification_sessions")
+            .update({ verified_at: new Date().toISOString() })
+            .eq("challenge_id", challengeId)
+            .eq("user_id", verifiedUser?.id ?? "")
+            .is("verified_at", null)
+            .gt("expires_at", new Date().toISOString())
+            .select("challenge_id")
+            .maybeSingle();
+
+          if (challengeError || !challenge) {
+            await sb.auth.signOut();
+            return NextResponse.redirect(new URL("/auth/verified?error=challenge", origin));
+          }
+        }
+
+        await sb.auth.signOut();
+        return NextResponse.redirect(new URL("/auth/verified", origin));
+      }
+
+      if (type === "recovery") {
+        return NextResponse.redirect(new URL("/reset-password", origin));
+      }
+      return NextResponse.redirect(new URL("/auth/verified", origin));
+    }
 
     // OAuth (Google/GitHub) returns a PKCE code. Keep login and registration distinct.
     const code = searchParams.get("code");
@@ -82,58 +143,6 @@ export async function GET(req: Request) {
       }
 
       return NextResponse.redirect(new URL("/dashboard", origin));
-    }
-
-    // Email confirmation + password recovery links carry token_hash + type.
-    const tokenHash = searchParams.get("token_hash");
-    const type = searchParams.get("type");
-    if (tokenHash && type) {
-      const { error } = await sb.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: type as "signup" | "recovery" | "email_change" | "magiclink",
-      });
-      if (error) return fail("verify");
-
-      if (type === "signup") {
-        if (!(await addAccountRegistry(sb))) {
-          await sb.auth.signOut();
-          return fail("registry");
-        }
-
-        // The email link may be opened on a different device. Mark only the
-        // matching user's high-entropy challenge as verified, then remove the
-        // session from the device that opened the email link.
-        const { data: { user: verifiedUser } } = await sb.auth.getUser();
-        const metadataChallenge = verifiedUser?.user_metadata?.signup_challenge;
-        const challengeId =
-          searchParams.get("challenge") ??
-          (typeof metadataChallenge === "string" ? metadataChallenge : null);
-
-        if (challengeId) {
-          const { data: challenge, error: challengeError } = await sb
-            .from("signup_verification_sessions")
-            .update({ verified_at: new Date().toISOString() })
-            .eq("challenge_id", challengeId)
-            .eq("user_id", verifiedUser?.id ?? "")
-            .is("verified_at", null)
-            .gt("expires_at", new Date().toISOString())
-            .select("challenge_id")
-            .maybeSingle();
-
-          if (challengeError || !challenge) {
-            await sb.auth.signOut();
-            return NextResponse.redirect(new URL("/auth/verified?error=challenge", origin));
-          }
-        }
-
-        await sb.auth.signOut();
-        return NextResponse.redirect(new URL("/auth/verified", origin));
-      }
-
-      if (type === "recovery") {
-        return NextResponse.redirect(new URL("/reset-password", origin));
-      }
-      return NextResponse.redirect(new URL("/auth/verified", origin));
     }
 
     return fail("no-code");

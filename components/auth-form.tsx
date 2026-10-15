@@ -60,6 +60,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     password: string;
   } | null>(null);
   const [touchedEmail, setTouchedEmail] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendBusy, setResendBusy] = useState(false);
 
   useEffect(() => {
     const savedPreference = window.localStorage.getItem("nimcuet-remember-me");
@@ -79,6 +82,14 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     } else if (params.get("error") === "no-account") {
       setMode("in");
       setMsg("No account exists for this Google/GitHub login. Switch to Create account to register first.");
+    } else if (params.get("error") === "link-bad") {
+      setMode("in");
+      setMsg("That confirmation link expired or was already used. Request a fresh one below.");
+      setShowResend(true);
+      try {
+        const saved = window.localStorage.getItem("nimcuet-pending-email");
+        if (saved) setResendEmail(saved);
+      } catch {}
     } else if (params.has("error")) {
       setMode("in");
       setMsg("We couldn’t complete authentication. Please try again.");
@@ -197,6 +208,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           return;
         }
         setPendingVerification({ challengeId, email: cleanEmail, password });
+        try { window.localStorage.setItem("nimcuet-pending-email", cleanEmail); } catch {}
         setMsg("Verification email sent. Keep this tab open; once you confirm from any device, this device will sign you in automatically.");
       } else {
         const { data, error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
@@ -263,6 +275,30 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       setMsg("Reset link sent — check your inbox.");
     } catch (err: unknown) {
       setMsg(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  };
+
+  const resend = async () => {
+    const target = resendEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
+      setMsg("Enter the email you registered with, then tap resend.");
+      return;
+    }
+    setResendBusy(true);
+    try {
+      const sb = getSupabase();
+      const { error } = await sb.auth.resend({
+        type: "signup",
+        email: target,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) throw error;
+      setShowResend(false);
+      setMsg("Fresh confirmation email sent — check your inbox (and spam).");
+    } catch (err: unknown) {
+      setMsg(err instanceof Error ? err.message : "Could not resend. Please try again.");
+    } finally {
+      setResendBusy(false);
     }
   };
 
@@ -553,6 +589,25 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             )}
             {msg && (
               <p role="status" aria-live="polite" className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
+            )}
+            {showResend && (
+              <div className="mt-3 rounded-xl p-4" style={{ border: "1px dashed var(--border)" }}>
+                <label htmlFor="auth-resend" className="block text-[13px] font-bold">Get a fresh confirmation link</label>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    id="auth-resend" type="email" value={resendEmail} onChange={(e) => setResendEmail(e.target.value)}
+                    placeholder="you@example.com" className="min-w-0 flex-1 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
+                  />
+                  <button
+                    type="button" onClick={resend} disabled={resendBusy}
+                    className="shrink-0 cursor-pointer rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-50"
+                    style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+                  >
+                    {resendBusy ? "…" : "Resend"}
+                  </button>
+                </div>
+              </div>
             )}
             <button
               type="submit" disabled={busy}
