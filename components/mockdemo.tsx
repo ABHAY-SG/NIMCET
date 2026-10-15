@@ -36,14 +36,15 @@ export default function MockDemo() {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [left, setLeft] = useState(MINUTES * 60);
   const [done, setDone] = useState(false);
+  const [started, setStarted] = useState(false);
   const savedRef = useRef(false);
 
   useEffect(() => {
-    if (done) return;
+    if (!started || done) return;
     if (left <= 0) { setDone(true); return; }
     const t = setTimeout(() => setLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [left, done]);
+  }, [left, done, started]);
 
   useEffect(() => {
     if (!done || savedRef.current) return;
@@ -82,6 +83,31 @@ export default function MockDemo() {
     setLeft(MINUTES * 60);
     setDone(false);
   };
+
+  if (!started) {
+    return (
+      <div className="overflow-hidden rounded-2xl p-6 text-center backdrop-blur-xl sm:p-8" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
+        <p className="mono text-[11px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.16em" }}>
+          FREE SAMPLE MOCK • {QS.length} QUESTIONS • {MINUTES} MINUTES
+        </p>
+        <h3 className="mx-auto mt-2 max-w-sm text-xl font-extrabold tracking-tight">
+          5 Maths • 3 Reasoning • 2 Computers • 2 English
+        </h3>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-6" style={{ color: "var(--muted)" }}>
+          Real per-section marking, live timer, palette and full solutions at
+          the end. The clock starts only when you press start.
+        </p>
+        <button
+          type="button"
+          onClick={() => setStarted(true)}
+          className="cta-glow mt-5 rounded-full px-8 py-3 text-sm font-bold"
+          style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+        >
+          Start sample mock →
+        </button>
+      </div>
+    );
+  }
 
   if (done) {
     const s = summarize();
