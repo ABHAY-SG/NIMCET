@@ -70,34 +70,9 @@ export async function GET(req: Request) {
           console.error(`[auth] signup registry step failed code=${code}`);
         }
 
-        // The email link may be opened on a different device. Mark only the
-        // matching user's high-entropy challenge as verified, then remove the
-        // session from the device that opened the email link.
-        const { data: { user: verifiedUser } } = await sb.auth.getUser();
-        const metadataChallenge = verifiedUser?.user_metadata?.signup_challenge;
-        const challengeId =
-          searchParams.get("challenge") ??
-          (typeof metadataChallenge === "string" ? metadataChallenge : null);
-
-        if (challengeId) {
-          const { data: challenge, error: challengeError } = await sb
-            .from("signup_verification_sessions")
-            .update({ verified_at: new Date().toISOString() })
-            .eq("challenge_id", challengeId)
-            .eq("user_id", verifiedUser?.id ?? "")
-            .is("verified_at", null)
-            .gt("expires_at", new Date().toISOString())
-            .select("challenge_id")
-            .maybeSingle();
-
-          if (challengeError || !challenge) {
-            await sb.auth.signOut();
-            return NextResponse.redirect(new URL("/auth/verified?error=challenge", origin));
-          }
-        }
-
-        await sb.auth.signOut();
-        return NextResponse.redirect(new URL("/auth/verified", origin));
+        // verifyOtp has established a session in the browser that opened the
+        // confirmation link. Keep that session and log the new user in there.
+        return NextResponse.redirect(new URL("/dashboard", origin));
       }
 
       if (type === "recovery") {
