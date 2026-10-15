@@ -162,7 +162,7 @@ export async function GET(req: Request) {
           await sb.auth.signOut();
           return fail("registry");
         }
-        return NextResponse.redirect(new URL("/dashboard", origin));
+        return NextResponse.redirect(new URL("/auth/verified?mode=oauth", origin));
       }
 
       const { data: { user }, error: userError } = await sb.auth.getUser();
@@ -188,7 +188,7 @@ export async function GET(req: Request) {
         return fail("no-account");
       }
 
-      return NextResponse.redirect(new URL("/dashboard", origin));
+      return NextResponse.redirect(new URL("/auth/verified?mode=oauth", origin));
     }
 
     return fail("no-code");
