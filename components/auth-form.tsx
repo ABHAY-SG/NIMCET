@@ -54,6 +54,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [remember, setRemember] = useState(true);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loginFailed, setLoginFailed] = useState(false);
   const [touchedEmail, setTouchedEmail] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
@@ -124,6 +125,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg("");
+    setLoginFailed(false);
     const cleanEmail = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) { setMsg("Enter a valid email address (e.g. you@example.com)."); return; }
     if (mode === "up") {
@@ -199,7 +201,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             throw new Error("Email not verified yet — check your inbox for the confirmation link.");
           }
           if (/invalid login credentials/i.test(error.message)) {
-            throw new Error("Invalid credentials. Please try again.");
+            setLoginFailed(true);
+            throw new Error("Unable to log in with these details. Check your email and password, or create an account.");
           }
           throw error;
         }
@@ -215,7 +218,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     } catch (err: unknown) {
       const m = err instanceof Error ? err.message : "Something went wrong.";
       if (/invalid login credentials/i.test(m)) {
-        setMsg("Invalid credentials. Please try again.");
+        setLoginFailed(true);
+        setMsg("Unable to log in with these details. Check your email and password, or create an account.");
       } else {
         setMsg(m);
       }
@@ -727,6 +731,26 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             {msg && (
               <p role="status" aria-live="polite" className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
             )}
+            {loginFailed && mode === "in" && (
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setMode("up"); setMsg(""); setLoginFailed(false); }}
+                  className="cursor-pointer rounded-xl py-2.5 text-[13px] font-bold transition-transform hover:-translate-y-px"
+                  style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+                >
+                  Create account →
+                </button>
+                <button
+                  type="button"
+                  onClick={forgot}
+                  className="cursor-pointer rounded-xl py-2.5 text-[13px] font-bold transition-transform hover:-translate-y-px"
+                  style={{ border: "1px solid var(--border)" }}
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
             {showResend && (
               <div className="mt-3 rounded-xl p-4" style={{ border: "1px dashed var(--border)" }}>
                 <label htmlFor="auth-resend" className="block text-[13px] font-bold">Get a fresh confirmation link</label>
@@ -754,7 +778,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               {busy ? "Please wait…" : mode === "in" ? "Log in →" : "Create account →"}
             </button>
           </form>
-          <button type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setMsg(""); }} className="mt-4 w-full cursor-pointer text-center text-sm" style={{ color: "var(--muted)" }}>
+          <button type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setMsg(""); setLoginFailed(false); }} className="mt-4 w-full cursor-pointer text-center text-sm" style={{ color: "var(--muted)" }}>
             {mode === "in" ? "Don't have an account? " : "Have an account? "}
             <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
           </button>
