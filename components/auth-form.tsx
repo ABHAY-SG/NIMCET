@@ -178,13 +178,10 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           if (/email not confirmed/i.test(probeError.message)) {
             persistPending(cleanEmail, challengeId);
             if (data.user?.id) await insertChallengeRow(challengeId, data.user.id);
-            try {
-              await sb.auth.resend({
-                type: "signup",
-                email: cleanEmail,
-                options: { emailRedirectTo: `${window.location.origin}/auth/callback?challenge=${challengeId}` },
-              });
-            } catch {}
+            // No auto-resend here: signUp above already triggered a
+            // confirmation email, and an immediate second send trips
+            // Supabase's "email rate limit exceeded". The waiting page
+            // offers a cooldown-guarded resend instead.
             router.push(`/auth/check-email?email=${encodeURIComponent(cleanEmail)}&challenge=${challengeId}`);
             return;
           }
@@ -400,7 +397,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 58%, transparent), color-mix(in srgb, var(--bg) 80%, transparent))", backdropFilter: "blur(3px)" }}
         />
       </div>
-      <main className={`relative mx-auto flex w-full max-w-6xl flex-col justify-center px-4 py-4${mode === "in" ? " auth-lock" : ""}`} style={{ minHeight: "100svh" }}>
+      <main className="auth-lock relative mx-auto flex w-full max-w-6xl flex-col justify-center px-4 py-4" style={{ minHeight: "100svh" }}>
       <ThemeFab />
       <a href="/" className="mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
         <span aria-hidden>←</span> Back to home
@@ -487,8 +484,10 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
                 placeholder="Enter your email" aria-invalid={touchedEmail && email !== "" && !emailValid} className={inputCls}
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
             </div>
-            {touchedEmail && email !== "" && !emailValid && (
-              <p className="mt-1.5 text-xs font-semibold" style={{ color: "#dc2626" }}>That email format looks off — check for typos.</p>
+            {touchedEmail && email !== "" && !emailValid ? (
+              <p className="mt-1.5 min-h-[16px] text-xs font-semibold" style={{ color: "#dc2626" }}>That email format looks off — check for typos.</p>
+            ) : (
+              <p aria-hidden className="mt-1.5 min-h-[16px] text-xs font-semibold">{"\u00A0"}</p>
             )}
             <div className="mb-1.5 mt-4 flex items-center justify-between">
               <label htmlFor="auth-pass" className="text-[13px] font-bold">Password</label>
@@ -531,8 +530,10 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
                     }}
                   />
                 </div>
-                {confirm && password !== confirm && (
-                  <p className="mt-1.5 text-xs font-semibold" style={{ color: "#dc2626" }}>Passwords do not match yet.</p>
+                {confirm && password !== confirm ? (
+                  <p className="mt-1.5 min-h-[16px] text-xs font-semibold" style={{ color: "#dc2626" }}>Passwords do not match yet.</p>
+                ) : (
+                  <p aria-hidden className="mt-1.5 min-h-[16px] text-xs font-semibold">{"\u00A0"}</p>
                 )}
               </>
             )}

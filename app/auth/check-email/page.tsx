@@ -63,6 +63,15 @@ function CheckEmailContent() {
       if (sAt && Date.now() - sAt > 24 * 60 * 60 * 1000) {
         setMsg("This waiting session is older than 24 hours — confirmation links expire. Request a fresh link below.");
       }
+      // Restore resend cooldown across reloads so a refresh can't bypass
+      // the guard and trip Supabase's "email rate limit exceeded".
+      try {
+        const lastResend = Number(window.localStorage.getItem("nimcuet-resend-at") ?? "0");
+        if (lastResend) {
+          const elapsed = Math.floor((Date.now() - lastResend) / 1000);
+          if (elapsed < RESEND_COOLDOWN_S) setCooldown(RESEND_COOLDOWN_S - elapsed);
+        }
+      } catch {}
     } catch {}
   }, [searchParams]);
 
@@ -213,10 +222,14 @@ function CheckEmailContent() {
         setMsg("This email looks already confirmed — try logging in with your password instead of resending.");
         return;
       }
-      setMsg(isRateLimit(raw)
-        ? `Too many requests — wait a couple of minutes, then tap resend once. (Supabase: ${raw})`
-        : raw);
-      if (isRateLimit(raw)) setCooldown(RESEND_COOLDOWN_S);
+      if (isRateLimit(raw)) {
+        // Supabase throttles confirmation mail strictly; hammering resend
+        // only extends the block. Back off longer — the first email stays valid.
+        setCooldown(180);
+        setMsg(`Email limit hit — wait a few minutes before resending. Your first email is still valid (check spam). (Supabase: ${raw})`);
+        return;
+      }
+      setMsg(raw);
     } finally {
       setResendBusy(false);
     }
