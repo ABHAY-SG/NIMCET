@@ -407,14 +407,13 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 58%, transparent), color-mix(in srgb, var(--bg) 80%, transparent))", backdropFilter: "blur(3px)" }}
         />
       </div>
-      <main className="relative mx-auto flex w-full max-w-6xl flex-col justify-center px-4 py-4" style={{ minHeight: "100svh" }}>
-      <ThemeFab />
+      <main className={`relative mx-auto flex w-full max-w-6xl flex-col justify-center px-4 py-4${mode === "in" ? " auth-lock" : ""}`} style={{ minHeight: "100svh" }}>
       <ThemeFab />
       <a href="/" className="mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
         <span aria-hidden>←</span> Back to home
       </a>
       <div
-        className="relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[560px]"
+        className="auth-card relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[560px]"
         style={{ border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.22)" }}
       >
         {BG.map(([cls, src, fallback]) => (
@@ -433,7 +432,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           className="pointer-events-none absolute inset-0"
           style={{ background: "linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.22) 36%, color-mix(in srgb, var(--nav-bg) 88%, transparent) 58%, color-mix(in srgb, var(--nav-bg) 96%, transparent) 100%)" }}
         />
-        <div className="relative z-10 hidden flex-col justify-end p-8 md:flex">
+        <div className="auth-photo relative z-10 hidden flex-col justify-end p-8 md:flex">
           <span className="inline-flex w-fit items-center rounded-2xl bg-white/95 px-4 py-2.5" style={{ boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)" }}>
             <img src="/logo.png" alt="NimCuet" className="block h-7 w-auto" />
           </span>

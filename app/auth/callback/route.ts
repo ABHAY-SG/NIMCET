@@ -121,10 +121,10 @@ export async function GET(req: Request) {
       }
 
       if (isEmailFlow) {
-        // Same browser that signed up: session established, email verified.
-        // Best-effort bookkeeping only — never fail the confirmation itself —
-        // then drop the session: entry always goes through the interstitial
-        // checkpoint, never straight into the dashboard.
+        // Same browser that signed up: the exchange above established a real
+        // session (PKCE verifier cookie was present), and the email is now
+        // verified. Keep that session and log the user straight in.
+        // Best-effort bookkeeping only — never fail the confirmation itself.
         try {
           const { data: { user: confirmedUser } } = await sb.auth.getUser();
           if (confirmedUser) {
@@ -142,8 +142,7 @@ export async function GET(req: Request) {
             }
           }
         } catch {}
-        await sb.auth.signOut().catch(() => {});
-        return NextResponse.redirect(new URL("/auth/verified", origin));
+        return NextResponse.redirect(new URL("/dashboard", origin));
       }
 
       // Password-recovery links carry ?flow=recovery. A working exchange
