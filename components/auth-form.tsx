@@ -58,9 +58,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     if (params.get("verified") === "1") {
       setMode("in");
       setMsg("Email confirmed successfully. Log in to continue.");
+    } else if (params.get("error") === "no-account") {
+      setMode("in");
+      setMsg("No account exists for this Google/GitHub login. Switch to Create account to register first.");
     } else if (params.has("error")) {
       setMode("in");
-      setMsg("We couldn’t complete email confirmation. Please try the link again or log in if your email is already verified.");
+      setMsg("We couldn’t complete authentication. Please try again.");
     }
   }, []);
 
@@ -79,15 +82,29 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     try {
       const sb = getSupabase();
       if (mode === "up") {
-        const { error } = await sb.auth.signUp({
+        const { data, error } = await sb.auth.signUp({
           email, password,
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw error;
+        if (data.user && data.session) {
+          const { error: registryError } = await sb.from("oauth_account_registry").insert({
+            user_id: data.user.id,
+            email: data.user.email ?? email,
+          });
+          if (registryError && registryError.code !== "23505") throw registryError;
+        }
         setMsg("Account created — check your email to confirm, then log in.");
       } else {
-        const { error } = await sb.auth.signInWithPassword({ email, password });
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (data.user) {
+          const { error: registryError } = await sb.from("oauth_account_registry").insert({
+            user_id: data.user.id,
+            email: data.user.email ?? email,
+          });
+          if (registryError && registryError.code !== "23505") throw registryError;
+        }
         router.push("/dashboard");
       }
     } catch (err: unknown) {
@@ -103,7 +120,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: `${window.location.origin}/auth/callback?mode=${mode}` },
       });
       if (error) throw error;
     } catch (err: unknown) {
