@@ -8,6 +8,9 @@ create table if not exists public.signup_verification_sessions (
   verified_at timestamptz
 );
 
+create index if not exists signup_verification_sessions_user_id_idx
+  on public.signup_verification_sessions (user_id);
+
 alter table public.signup_verification_sessions enable row level security;
 
 grant insert (challenge_id, user_id, expires_at)
