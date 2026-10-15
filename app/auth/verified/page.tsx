@@ -22,8 +22,34 @@ function VerifiedContent() {
         const { data: { session } } = await sb.auth.getSession();
         if (cancelled) return;
         // Session present (same-device confirm or fresh OAuth): head for the
-        // dashboard. Otherwise fall back to login — never strand the user.
-        setTarget(session ? "/dashboard" : "/login?verified=1");
+        // dashboard. Otherwise fall back to login — never strand the user,
+        // and never falsely claim logged-in.
+        const nextTarget = session ? "/dashboard" : "/login?verified=1";
+        setTarget(nextTarget);
+        // If this confirmation carried ?challenge=, mark the rendezvous row
+        // (authenticated, so RLS passes) and wake the original waiting tab
+        // via BroadcastChannel + storage event. Best-effort only.
+        if (session) {
+          try {
+            const cid = searchParams.get("challenge");
+            if (cid && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cid)) {
+              const { data: { user } } = await sb.auth.getUser();
+              if (user && !cancelled) {
+                await sb.from("signup_verification_sessions")
+                  .update({ verified_at: new Date().toISOString() })
+                  .eq("challenge_id", cid)
+                  .eq("user_id", user.id)
+                  .is("verified_at", null);
+              }
+            }
+          } catch {}
+          try {
+            new BroadcastChannel("nimcuet-verify").postMessage({ verified: true, at: Date.now() });
+          } catch {}
+          try {
+            window.localStorage.setItem("nimcuet-just-verified", String(Date.now()));
+          } catch {}
+        }
       } catch {
         if (!cancelled) setTarget(oauth ? "/dashboard" : "/login?verified=1");
       }

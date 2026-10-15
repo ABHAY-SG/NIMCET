@@ -70,11 +70,30 @@ export async function GET(req: Request) {
           console.error(`[auth] signup registry step failed code=${code}`);
         }
 
+        // Mark the rendezvous row so the original waiting tab (possibly on
+        // another device, polling as anon) can detect confirmation. Needs the
+        // session from verifyOtp above, so it only runs when authenticated.
+        const challenge = searchParams.get("challenge");
+        if (challenge) {
+          try {
+            const { data: { user: verifiedUser } } = await sb.auth.getUser();
+            if (verifiedUser) {
+              await sb.from("signup_verification_sessions")
+                .update({ verified_at: new Date().toISOString() })
+                .eq("challenge_id", challenge)
+                .eq("user_id", verifiedUser.id)
+                .is("verified_at", null);
+            }
+          } catch {}
+        }
+
         // verifyOtp has established a session in the browser that opened the
-        // confirmation link. Keep it and route through the interstitial
-        // checkpoint, which forwards to the dashboard once it sees the
-        // session — never straight into the app from here.
-        return NextResponse.redirect(new URL("/auth/verified", origin));
+        // confirmation link. Keep it (never signOut here) and route through
+        // the interstitial checkpoint, preserving ?challenge= so that page
+        // can also mark/broadcast the confirmation for the waiting tab.
+        // It forwards to the dashboard once it sees the session.
+        const next = challenge ? `/auth/verified?challenge=${encodeURIComponent(challenge)}` : "/auth/verified";
+        return NextResponse.redirect(new URL(next, origin));
       }
 
       if (type === "recovery") {
@@ -89,8 +108,10 @@ export async function GET(req: Request) {
     // ?mode= — that tells the two flows apart.
     const code = searchParams.get("code");
     if (code) {
-      const isEmailFlow = searchParams.has("challenge");
+      const challenge = searchParams.get("challenge");
+      const isEmailFlow = !!challenge;
       const isRecoveryFlow = searchParams.get("flow") === "recovery";
+      const hasMode = searchParams.has("mode");
       const { error } = await sb.auth.exchangeCodeForSession(code);
       if (error) {
         console.error(`[auth] code exchange failed flow=${isEmailFlow ? "email" : isRecoveryFlow ? "recovery" : "oauth"}`);
@@ -125,7 +146,7 @@ export async function GET(req: Request) {
       if (isEmailFlow) {
         // Same browser that signed up: the exchange above established a real
         // session (PKCE verifier cookie was present), and the email is now
-        // verified. Keep that session and log the user straight in.
+        // verified. Keep that session (never signOut) and checkpoint.
         // Best-effort bookkeeping only — never fail the confirmation itself.
         try {
           const { data: { user: confirmedUser } } = await sb.auth.getUser();
@@ -134,7 +155,7 @@ export async function GET(req: Request) {
               user_id: confirmedUser.id,
               email: confirmedUser.email ?? null,
             });
-            const cid = searchParams.get("challenge");
+            const cid = challenge;
             if (cid) {
               await sb.from("signup_verification_sessions")
                 .update({ verified_at: new Date().toISOString() })
@@ -144,7 +165,8 @@ export async function GET(req: Request) {
             }
           }
         } catch {}
-        return NextResponse.redirect(new URL("/auth/verified", origin));
+        const next = challenge ? `/auth/verified?challenge=${encodeURIComponent(challenge)}` : "/auth/verified";
+        return NextResponse.redirect(new URL(next, origin));
       }
 
       // Password-recovery links carry ?flow=recovery. A working exchange
@@ -152,6 +174,25 @@ export async function GET(req: Request) {
       // without any registry checks.
       if (isRecoveryFlow) {
         return NextResponse.redirect(new URL("/reset-password", origin));
+      }
+
+      // Legacy email links (sent before ?challenge= existed, e.g. via resend
+      // without a challenge) carry neither ?challenge= nor ?mode=. A
+      // successful exchange here means the email is confirmed and a session
+      // was minted — treat it as an email confirmation, NOT an OAuth failure.
+      if (!hasMode) {
+        try {
+          const { data: { user: legacyUser } } = await sb.auth.getUser();
+          if (legacyUser?.email_confirmed_at) {
+            try {
+              await sb.from("oauth_account_registry").insert({
+                user_id: legacyUser.id,
+                email: legacyUser.email ?? null,
+              });
+            } catch {}
+            return NextResponse.redirect(new URL("/auth/verified", origin));
+          }
+        } catch {}
       }
 
       const mode = searchParams.get("mode") === "up" ? "up" : "in";

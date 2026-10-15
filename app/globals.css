@@ -226,10 +226,17 @@ footer .nlink::after { display: none; }
   letter-spacing: 0;
 }
 
-/* login page: locked viewport, no page scroll (scoped to login mode only) */
+/* login page: locked viewport, no page scroll (scoped to login mode only).
+   The card itself scrolls internally so controls are never clipped on short
+   viewports. Signup stays page-scrollable because its form is taller. */
 .auth-lock {
   height: 100dvh;
   overflow: hidden;
+}
+.auth-lock .auth-card {
+  max-height: calc(100dvh - 84px);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 @media (max-height: 760px) {
   .auth-lock .auth-photo { display: none; }
