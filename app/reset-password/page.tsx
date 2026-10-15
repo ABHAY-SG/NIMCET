@@ -13,8 +13,8 @@ export default function ResetPasswordPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg("");
-    if (password.length < 8 || !/\d/.test(password)) {
-      setMsg("Password needs 8+ characters including a number.");
+    if (password.length < 8 || !/\d/.test(password) || !/[A-Z]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      setMsg("Password needs 8+ characters with an uppercase letter, a number and a special character.");
       return;
     }
     if (password !== confirm) {

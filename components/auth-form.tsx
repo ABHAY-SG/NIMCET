@@ -135,7 +135,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const pwLen = password.length >= 8;
   const pwNum = /\d/.test(password);
   const pwLetter = /[A-Za-z]/.test(password);
-  const pwOk = pwLen && pwNum && pwLetter;
+  const pwUpper = /[A-Z]/.test(password);
+  const pwSpecial = /[^A-Za-z0-9]/.test(password);
+  const pwOk = pwLen && pwNum && pwLetter && pwUpper && pwSpecial;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,7 +146,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) { setMsg("Enter a valid email address (e.g. you@example.com)."); return; }
     if (mode === "up") {
       if (!firstName.trim() || !lastName.trim()) { setMsg("Please enter your first and last name."); return; }
-      if (!pwOk) { setMsg("Password needs 8+ characters with letters and a number."); return; }
+      if (!pwOk) { setMsg("Password needs 8+ characters with a letter, a number and a special character."); return; }
       if (password !== confirm) { setMsg("Passwords do not match — retype the confirmation."); return; }
     }
     setBusy(true);
@@ -501,8 +503,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               <>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
                   <span style={{ color: pwLen ? "#16a34a" : "var(--muted)" }}>{pwLen ? "✓" : "○"} 8+ characters</span>
-                  <span style={{ color: pwNum ? "#16a34a" : "var(--muted)" }}>{pwNum ? "✓" : "○"} includes a number</span>
-                  <span style={{ color: pwLetter ? "#16a34a" : "var(--muted)" }}>{pwLetter ? "✓" : "○"} includes a letter</span>
+                  <span style={{ color: pwUpper ? "#16a34a" : "var(--muted)" }}>{pwUpper ? "✓" : "○"} uppercase letter</span>
+                  <span style={{ color: pwNum ? "#16a34a" : "var(--muted)" }}>{pwNum ? "✓" : "○"} a number</span>
+                  <span style={{ color: pwSpecial ? "#16a34a" : "var(--muted)" }}>{pwSpecial ? "✓" : "○"} special character</span>
                 </div>
                 <label htmlFor="auth-confirm" className="mb-1.5 mt-4 block text-[13px] font-bold">Confirm password</label>
                 <div className="relative">
