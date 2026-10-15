@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 import ThemeFab from "@/components/theme-fab";
@@ -52,6 +52,17 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [remember, setRemember] = useState(true);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("verified") === "1") {
+      setMode("in");
+      setMsg("Email confirmed successfully. Log in to continue.");
+    } else if (params.has("error")) {
+      setMode("in");
+      setMsg("We couldn’t complete email confirmation. Please try the link again or log in if your email is already verified.");
+    }
+  }, []);
 
   const pwLen = password.length >= 8;
   const pwNum = /\d/.test(password);
