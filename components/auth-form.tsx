@@ -120,7 +120,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback?mode=${mode}` },
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?mode=${mode}`,
+          // Ask Google to show the account chooser instead of silently reusing
+          // the browser's currently signed-in Google account.
+          ...(provider === "google" ? { queryParams: { prompt: "select_account" } } : {}),
+        },
       });
       if (error) throw error;
     } catch (err: unknown) {
