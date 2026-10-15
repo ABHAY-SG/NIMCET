@@ -61,6 +61,11 @@ export default function DashboardPage() {
         const sb = getSupabase();
         const { data: { user } } = await sb.auth.getUser();
         if (!user) { router.replace("/login"); return; }
+        if (!user.email_confirmed_at) {
+          try { await sb.auth.signOut(); } catch {}
+          router.replace("/login?verify-required=1");
+          return;
+        }
         setEmail(user.email ?? "");
         const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string; full_name?: string; name?: string };
         const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";

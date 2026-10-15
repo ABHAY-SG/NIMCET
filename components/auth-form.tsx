@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 import ThemeFab from "@/components/theme-fab";
@@ -54,15 +54,15 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [remember, setRemember] = useState(true);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const [pendingVerification, setPendingVerification] = useState<{
-    challengeId: string;
-    email: string;
-    password: string;
-  } | null>(null);
   const [touchedEmail, setTouchedEmail] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
   const [resendBusy, setResendBusy] = useState(false);
+  // OTP step (signup only)
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
     const savedPreference = window.localStorage.getItem("nimcuet-remember-me");
@@ -76,6 +76,11 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     if (params.get("verified") === "1") {
       setMode("in");
       setMsg("Email confirmed successfully. Log in to continue.");
+    } else if (params.get("otp") === "1") {
+      try {
+        const saved = window.localStorage.getItem("nimcuet-pending-email");
+        if (saved) enterOtp(saved);
+      } catch {}
     } else if (params.get("error") === "exists") {
       setMode("in");
       setMsg("An account with this Google account already exists. Please log in instead.");
@@ -90,60 +95,23 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         const saved = window.localStorage.getItem("nimcuet-pending-email");
         if (saved) setResendEmail(saved);
       } catch {}
+    } else if (params.get("verify-required") === "1") {
+      try {
+        const sb = getSupabase();
+        sb.auth.signOut().catch(() => {});
+      } catch {}
+      setMode("in");
+      setMsg("Please verify your email first — enter the 6-digit code we sent, or request a fresh one below.");
+      setShowResend(true);
+      try {
+        const saved = window.localStorage.getItem("nimcuet-pending-email");
+        if (saved) { setResendEmail(saved); setEmail(saved); }
+      } catch {}
     } else if (params.has("error")) {
       setMode("in");
       setMsg("We couldn’t complete authentication. Please try again.");
     }
   }, []);
-
-  useEffect(() => {
-    if (!pendingVerification) return;
-
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-
-    const checkVerification = async () => {
-      try {
-        const sb = getSupabase();
-        const { data, error } = await sb
-          .from("signup_verification_sessions")
-          .select("verified_at")
-          .eq("challenge_id", pendingVerification.challengeId)
-          .maybeSingle();
-
-        if (cancelled) return;
-        if (!error && data?.verified_at) {
-          setMsg("Email verified. Signing you in on this device…");
-          const { error: signInError } = await sb.auth.signInWithPassword({
-            email: pendingVerification.email,
-            password: pendingVerification.password,
-          });
-
-          if (cancelled) return;
-          if (signInError) {
-            setMsg("Email verified. Please log in here with your email and password.");
-            setPendingVerification(null);
-            return;
-          }
-
-          setPendingVerification(null);
-          router.replace("/dashboard");
-          return;
-        }
-      } catch {
-        // Keep waiting; temporary network failures should not cancel verification.
-      }
-
-      if (!cancelled) timer = setTimeout(checkVerification, 2500);
-    };
-
-    void checkVerification();
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
-  }, [pendingVerification, router]);
-
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const pwLen = password.length >= 8;
@@ -168,13 +136,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       const sb = getSupabase();
       try { window.localStorage.setItem("nimcuet-remember-me", String(remember)); } catch {}
       if (mode === "up") {
-        const challengeId = crypto.randomUUID();
         const { data, error } = await sb.auth.signUp({
           email: cleanEmail,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback?challenge=${challengeId}`,
-            data: { first_name: firstName.trim(), last_name: lastName.trim(), signup_challenge: challengeId },
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: { first_name: firstName.trim(), last_name: lastName.trim() },
           },
         });
         if (error) {
@@ -185,31 +152,20 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         }
         // Supabase may return a placeholder user for an existing email to prevent enumeration.
         if (data.user && data.user.identities?.length === 0) {
-          setMsg("If this email can be registered, a verification email will arrive shortly. Check your inbox or try logging in.");
+          setMsg("If this email can be registered, a verification code will arrive shortly. Check your inbox or try logging in.");
           return;
         }
         if (data.user && data.session) {
-          const { error: registryError } = await sb.from("oauth_account_registry").insert({
-            user_id: data.user.id,
-            email: data.user.email ?? cleanEmail,
-          });
-          if (registryError && registryError.code !== "23505") throw registryError;
+          // Email confirmation is off — already signed in.
           router.replace("/dashboard");
           return;
         }
         if (!data.user) throw new Error("We couldn’t start signup. Please try again.");
-        const { error: challengeError } = await sb.from("signup_verification_sessions").insert({
-          challenge_id: challengeId,
-          user_id: data.user.id,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        });
-        if (challengeError) {
-          setMsg("Account created — check your email to confirm, then log in.");
-          return;
-        }
-        setPendingVerification({ challengeId, email: cleanEmail, password });
         try { window.localStorage.setItem("nimcuet-pending-email", cleanEmail); } catch {}
-        setMsg("Verification email sent. Keep this tab open; once you confirm from any device, this device will sign you in automatically.");
+        setOtp(["", "", "", "", "", ""]);
+        setOtpSent(true);
+        setResendIn(60);
+        setMsg(`6-digit code sent to ${cleanEmail}. Enter it below.`);
       } else {
         const { data, error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
@@ -278,6 +234,29 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     }
   };
 
+  const resendOtpCode = async () => {
+    const target = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
+      setMsg("Enter a valid email first.");
+      return;
+    }
+    try {
+      const sb = getSupabase();
+      const { error } = await sb.auth.resend({
+        type: "signup",
+        email: target,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) throw error;
+      setOtp(["", "", "", "", "", ""]);
+      setResendIn(60);
+      setMsg("Fresh code sent — check your inbox (and spam).");
+      setTimeout(() => boxRefs.current[0]?.focus(), 60);
+    } catch (err: unknown) {
+      setMsg(err instanceof Error ? err.message : "Could not resend. Please try again.");
+    }
+  };
+
   const resend = async () => {
     const target = resendEmail.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
@@ -293,13 +272,88 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) throw error;
-      setShowResend(false);
-      setMsg("Fresh confirmation email sent — check your inbox (and spam).");
+      enterOtp(target, "Fresh 6-digit code sent — enter it below.");
     } catch (err: unknown) {
       setMsg(err instanceof Error ? err.message : "Could not resend. Please try again.");
     } finally {
       setResendBusy(false);
     }
+  };
+
+  const enterOtp = (address: string, note?: string) => {
+    setEmail(address);
+    try { window.localStorage.setItem("nimcuet-pending-email", address); } catch {}
+    setOtp(["", "", "", "", "", ""]);
+    setOtpSent(true);
+    setShowResend(false);
+    setResendIn(60);
+    if (note) setMsg(note);
+    setTimeout(() => boxRefs.current[0]?.focus(), 60);
+  };
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  const verifyOtpCode = async () => {
+    const code = otp.join("");
+    if (!/^\d{6}$/.test(code)) {
+      setMsg("Enter all 6 digits of the code.");
+      return;
+    }
+    setOtpBusy(true);
+    setMsg("");
+    try {
+      const sb = getSupabase();
+      const { data, error } = await sb.auth.verifyOtp({
+        email: email.trim(),
+        token: code,
+        type: "signup",
+      });
+      if (error) throw error;
+      if (data.user) {
+        try {
+          await sb.from("oauth_account_registry").insert({
+            user_id: data.user.id,
+            email: data.user.email ?? email.trim(),
+          });
+        } catch {}
+      }
+      router.replace("/dashboard");
+    } catch (err: unknown) {
+      const m = err instanceof Error ? err.message : "";
+      if (/expir/i.test(m)) {
+        setMsg("That code expired — tap resend below for a fresh one.");
+      } else if (/invalid|incorrect|token/i.test(m)) {
+        setMsg("That code is incorrect — check the email and try again.");
+      } else {
+        setMsg(m || "Verification failed. Please try again.");
+      }
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const boxRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const otpDigit = (i: number, v: string) => {
+    const d = v.replace(/\D/g, "").slice(-1);
+    setOtp((prev) => {
+      const next = [...prev];
+      next[i] = d;
+      return next;
+    });
+    if (d && i < 5) boxRefs.current[i + 1]?.focus();
+  };
+
+  const otpPaste = (e: React.ClipboardEvent) => {
+    const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!digits) return;
+    e.preventDefault();
+    setOtp(digits.padEnd(6, "").split(""));
+    boxRefs.current[Math.min(digits.length, 5)]?.focus();
   };
 
   const inputCls = "w-full rounded-xl py-2.5 pl-11 pr-11 text-sm outline-none transition-shadow focus:ring-2";
@@ -469,6 +523,63 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           </p>
         </div>
         <div className="relative z-10 p-5 sm:p-6">
+          {otpSent && (
+            <div className="absolute inset-0 z-20 flex flex-col justify-center rounded-[26px] p-6 sm:p-9" style={{ background: "color-mix(in srgb, var(--bg) 94%, transparent)", backdropFilter: "blur(18px)" }}>
+              <p className="mono text-[11px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.18em" }}>VERIFY EMAIL</p>
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight">Enter the 6-digit code</h2>
+              <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
+                Sent to <strong style={{ color: "var(--text)" }}>{email.trim() || "your email"}</strong>. It expires soon — check spam too.
+              </p>
+              <div className="mt-5 flex justify-center gap-2" onPaste={otpPaste}>
+                {otp.map((d, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => { boxRefs.current[i] = el; }}
+                    value={d}
+                    onChange={(e) => otpDigit(i, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Backspace" && !otp[i] && i > 0) boxRefs.current[i - 1]?.focus();
+                    }}
+                    inputMode="numeric"
+                    autoComplete={i === 0 ? "one-time-code" : "off"}
+                    aria-label={`Digit ${i + 1} of 6`}
+                    maxLength={1}
+                    className="mono h-12 w-11 rounded-xl text-center text-xl font-extrabold outline-none transition-shadow focus:ring-2 sm:h-13 sm:w-12"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
+                  />
+                ))}
+              </div>
+              {msg && (
+                <p role="status" aria-live="polite" className="mx-auto mt-4 max-w-sm rounded-xl px-4 py-2.5 text-center text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
+              )}
+              <button
+                type="button"
+                onClick={verifyOtpCode}
+                disabled={otpBusy || otp.join("").length !== 6}
+                className="cta-glow mx-auto mt-5 w-full max-w-xs cursor-pointer rounded-xl py-3.5 text-sm font-extrabold text-white disabled:opacity-50"
+                style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+              >
+                {otpBusy ? "Verifying…" : "Verify →"}
+              </button>
+              <div className="mt-3 text-center text-[13px]" style={{ color: "var(--muted)" }}>
+                {resendIn > 0 ? (
+                  <>Resend code in <strong className="mono">0:{String(resendIn).padStart(2, "0")}</strong></>
+                ) : (
+                  <button type="button" onClick={() => resendOtpCode()} className="cursor-pointer font-bold" style={{ color: "var(--accent)" }}>
+                    Resend code
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => { setOtpSent(false); setMsg(""); }}
+                className="mt-2 cursor-pointer text-center text-[13px] font-semibold"
+                style={{ color: "var(--muted)" }}
+              >
+                ← Wrong email? Start over
+              </button>
+            </div>
+          )}
           <h1 className="text-xl font-extrabold tracking-tight">
             {mode === "in" ? "Welcome back" : "Join NimCuet"}
           </h1>
