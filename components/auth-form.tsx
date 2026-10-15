@@ -209,11 +209,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback?mode=${mode}`,
-          // Always show the account chooser. Google also gets an explicit consent prompt
-          // during signup; GitHub ignores unsupported prompt values.
-          queryParams: {
-            prompt: provider === "google" && mode === "up" ? "select_account consent" : "select_account",
-          },
+          // Ask Google to show both the account chooser and the consent screen
+          // on login and signup. Google controls the exact wording and presentation.
+          // GitHub does not support Google's prompt parameter.
+          ...(provider === "google" ? { queryParams: { prompt: "select_account consent" } } : {
+            queryParams: { prompt: "select_account" },
+          }),
         },
       });
       if (error) throw error;
