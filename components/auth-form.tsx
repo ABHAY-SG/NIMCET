@@ -150,9 +150,34 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           }
           throw error;
         }
-        // Supabase may return a placeholder user for an existing email to prevent enumeration.
+        // Supabase returns a placeholder user (no identities) when the email
+        // is already registered. Since the user just typed this password,
+        // one silent sign-in attempt cleanly separates the three cases:
+        // confirmed (session) vs unconfirmed (email-not-confirmed) vs wrong
+        // password (invalid credentials) — without any extra user data.
         if (data.user && data.user.identities?.length === 0) {
-          setMsg("If this email can be registered, a verification code will arrive shortly. Check your inbox or try logging in.");
+          const { data: probe, error: probeError } = await sb.auth.signInWithPassword({
+            email: cleanEmail,
+            password,
+          });
+          if (!probeError && probe.session) {
+            router.replace("/dashboard");
+            return;
+          }
+          if (probeError && /email not confirmed/i.test(probeError.message)) {
+            enterOtp(cleanEmail);
+            try {
+              await sb.auth.resend({
+                type: "signup",
+                email: cleanEmail,
+                options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+              });
+            } catch {}
+            setMsg("This email is registered but not verified — a fresh 6-digit code was sent. Enter it below.");
+            return;
+          }
+          setMode("in");
+          setMsg("An account with this email already exists. Please log in instead.");
           return;
         }
         if (data.user && data.session) {
