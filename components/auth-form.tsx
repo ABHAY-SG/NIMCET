@@ -107,7 +107,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       });
       if (error) throw error;
     } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : `${provider} login is not enabled yet.`);
+      setMsg(err instanceof Error ? err.message : `${provider} login is not enabled yet — turn it on in Supabase → Authentication → Providers.`);
     }
   };
 
