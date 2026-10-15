@@ -48,6 +48,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
   const [msg, setMsg] = useState("");
@@ -57,6 +59,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     email: string;
     password: string;
   } | null>(null);
+  const [touchedEmail, setTouchedEmail] = useState(false);
 
   useEffect(() => {
     const savedPreference = window.localStorage.getItem("nimcuet-remember-me");
@@ -127,75 +130,96 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     };
   }, [pendingVerification, router]);
 
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const pwLen = password.length >= 8;
   const pwNum = /\d/.test(password);
-  const pwOk = pwLen && pwNum;
+  const pwLetter = /[A-Za-z]/.test(password);
+  const pwOk = pwLen && pwNum && pwLetter;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg("");
+    const cleanEmail = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) { setMsg("Enter a valid email address (e.g. you@example.com)."); return; }
     if (mode === "up") {
-      if (!pwOk) { setMsg("Password needs 8+ characters including a number."); return; }
+      if (!firstName.trim() || !lastName.trim()) { setMsg("Please enter your first and last name."); return; }
+      if (!pwOk) { setMsg("Password needs 8+ characters with letters and a number."); return; }
       if (password !== confirm) { setMsg("Passwords do not match — retype the confirmation."); return; }
     }
     setBusy(true);
     try {
       const sb = getSupabase();
+      try { window.localStorage.setItem("nimcuet-remember-me", String(remember)); } catch {}
       if (mode === "up") {
         const challengeId = crypto.randomUUID();
         const { data, error } = await sb.auth.signUp({
-          email,
+          email: cleanEmail,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback?challenge=${challengeId}`,
-            data: { signup_challenge: challengeId },
+            data: { first_name: firstName.trim(), last_name: lastName.trim(), signup_challenge: challengeId },
           },
         });
-        if (error) throw error;
-
+        if (error) {
+          if (/already registered|already exists|already been registered/i.test(error.message)) {
+            throw new Error("Account already exists. Please log in instead.");
+          }
+          throw error;
+        }
         // Supabase may return a placeholder user for an existing email to prevent enumeration.
         if (data.user && data.user.identities?.length === 0) {
           setMsg("If this email can be registered, a verification email will arrive shortly. Check your inbox or try logging in.");
           return;
         }
-
         if (data.user && data.session) {
           const { error: registryError } = await sb.from("oauth_account_registry").insert({
             user_id: data.user.id,
-            email: data.user.email ?? email,
+            email: data.user.email ?? cleanEmail,
           });
           if (registryError && registryError.code !== "23505") throw registryError;
           router.replace("/dashboard");
           return;
         }
-
         if (!data.user) throw new Error("We couldn’t start signup. Please try again.");
-
         const { error: challengeError } = await sb.from("signup_verification_sessions").insert({
           challenge_id: challengeId,
           user_id: data.user.id,
           expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         });
         if (challengeError) {
-          throw new Error("Signup started, but we couldn’t prepare automatic sign-in. Please try again or log in after confirming your email.");
+          setMsg("Account created — check your email to confirm, then log in.");
+          return;
         }
-
-        setPendingVerification({ challengeId, email, password });
+        setPendingVerification({ challengeId, email: cleanEmail, password });
         setMsg("Verification email sent. Keep this tab open; once you confirm from any device, this device will sign you in automatically.");
       } else {
-        const { data, error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const { data, error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
+        if (error) {
+          if (/email not confirmed/i.test(error.message)) {
+            throw new Error("Email not verified yet — check your inbox for the confirmation link.");
+          }
+          if (/invalid login credentials/i.test(error.message)) {
+            throw new Error("Invalid credentials. Please try again.");
+          }
+          throw error;
+        }
         if (data.user) {
           const { error: registryError } = await sb.from("oauth_account_registry").insert({
             user_id: data.user.id,
-            email: data.user.email ?? email,
+            email: data.user.email ?? cleanEmail,
           });
           if (registryError && registryError.code !== "23505") throw registryError;
         }
         router.push("/dashboard");
       }
     } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : "Something went wrong.");
+      const m = err instanceof Error ? err.message : "Something went wrong.";
+      if (/invalid login credentials/i.test(m)) {
+        setMsg("Invalid credentials. Please try again.");
+      } else {
+        setMsg(m);
+      }
     } finally {
       setBusy(false);
     }
@@ -429,15 +453,34 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           <div className="my-4 flex items-center gap-3 text-[11px] font-bold" style={{ color: "var(--muted)" }}>
             <span className="h-px flex-1" style={{ background: "var(--border)" }} /> OR <span className="h-px flex-1" style={{ background: "var(--border)" }} />
           </div>
-          <form onSubmit={submit}>
-            <label className="mb-1.5 block text-[13px] font-bold">Email</label>
+          <form onSubmit={submit} noValidate={false}>
+            {mode === "up" && (
+              <div className="mb-4 grid grid-cols-2 gap-2.5">
+                <div>
+                  <label htmlFor="auth-first" className="mb-1.5 block text-[13px] font-bold">First name</label>
+                  <input id="auth-first" type="text" required autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Aarav" className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-shadow focus:ring-2"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
+                </div>
+                <div>
+                  <label htmlFor="auth-last" className="mb-1.5 block text-[13px] font-bold">Last name</label>
+                  <input id="auth-last" type="text" required autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Sharma" className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-shadow focus:ring-2"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
+                </div>
+              </div>
+            )}
+            <label htmlFor="auth-email" className="mb-1.5 block text-[13px] font-bold">Email</label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px]" style={{ color: "var(--muted)" }}>✉</span>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" className={inputCls}
+              <span aria-hidden className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px]" style={{ color: "var(--muted)" }}>✉</span>
+              <input id="auth-email" type="email" required autoComplete="email" value={email}
+                onChange={(e) => { setEmail(e.target.value); setTouchedEmail(true); }}
+                placeholder="Enter your email" aria-invalid={touchedEmail && email !== "" && !emailValid} className={inputCls}
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
             </div>
+            {touchedEmail && email !== "" && !emailValid && (
+              <p className="mt-1.5 text-xs font-semibold" style={{ color: "#dc2626" }}>That email format looks off — check for typos.</p>
+            )}
             <div className="mb-1.5 mt-4 flex items-center justify-between">
-              <label className="text-[13px] font-bold">Password</label>
+              <label htmlFor="auth-pass" className="text-[13px] font-bold">Password</label>
               {mode === "in" && (
                 <button type="button" onClick={forgot} className="cursor-pointer text-xs font-bold" style={{ color: "var(--accent)" }}>
                   Forgot password?
@@ -448,7 +491,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="10" width="16" height="10" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
               </span>
-              <input type={show ? "text" : "password"} required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === "in" ? "Enter your password" : "Min. 8 characters + a number"} className={inputCls}
+              <input id="auth-pass" type={show ? "text" : "password"} required minLength={8} autoComplete={mode === "in" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === "in" ? "Enter your password" : "Min. 8 characters + a number"} className={inputCls}
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
               <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Hide password" : "Show password"} className="absolute right-3.5 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "var(--muted)" }}>
                 <EyeIcon off={!show} />
@@ -459,14 +502,15 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
                   <span style={{ color: pwLen ? "#16a34a" : "var(--muted)" }}>{pwLen ? "✓" : "○"} 8+ characters</span>
                   <span style={{ color: pwNum ? "#16a34a" : "var(--muted)" }}>{pwNum ? "✓" : "○"} includes a number</span>
+                  <span style={{ color: pwLetter ? "#16a34a" : "var(--muted)" }}>{pwLetter ? "✓" : "○"} includes a letter</span>
                 </div>
-                <label className="mb-1.5 mt-4 block text-[13px] font-bold">Confirm password</label>
+                <label htmlFor="auth-confirm" className="mb-1.5 mt-4 block text-[13px] font-bold">Confirm password</label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="10" width="16" height="10" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
                   </span>
                   <input
-                    type={show ? "text" : "password"} required value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                    id="auth-confirm" type={show ? "text" : "password"} required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
                     placeholder="Retype your password" className={inputCls}
                     style={{
                       background: "var(--pill)",
@@ -502,7 +546,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               </label>
             )}
             {msg && (
-              <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
+              <p role="status" aria-live="polite" className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
             )}
             <button
               type="submit" disabled={busy}

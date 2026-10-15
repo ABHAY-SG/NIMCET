@@ -41,6 +41,7 @@ function AttemptRow({ a, cloud = false }: { a: Attempt; cloud?: boolean }) {
 export default function DashboardPage() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [localAttempts, setLocalAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +61,9 @@ export default function DashboardPage() {
         const { data: { user } } = await sb.auth.getUser();
         if (!user) { router.replace("/login"); return; }
         setEmail(user.email ?? "");
+        const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string; full_name?: string; name?: string };
+        const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";
+        setDisplayName(full.trim() || (user.email ?? "").split("@")[0]);
         const { data, error } = await sb
           .from("attempts")
           .select("id,test,score,correct,wrong,skipped,created_at")
@@ -80,7 +84,7 @@ export default function DashboardPage() {
       const sb = getSupabase();
       await sb.auth.signOut();
     } catch {}
-    router.push("/");
+    router.push("/login");
   };
 
   return (
@@ -91,7 +95,7 @@ export default function DashboardPage() {
         </p>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-extrabold tracking-tight">
-            {loading ? "Loading…" : email ? `Hello, ${email.split("@")[0]}` : "Hello"}
+            {loading ? "Loading…" : displayName ? `Hello ${displayName.split(" ").slice(0, 2).join(" ")}` : "Hello"}
           </h1>
           <button
             type="button"
