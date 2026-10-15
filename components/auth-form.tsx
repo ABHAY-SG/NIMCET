@@ -174,7 +174,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         const { error: challengeError } = await sb.from("signup_verification_sessions").insert({
           challenge_id: challengeId,
           user_id: data.user.id,
-          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         });
         if (challengeError) {
           throw new Error("Signup started, but we couldn’t prepare automatic sign-in. Please try again or log in after confirming your email.");
