@@ -31,6 +31,26 @@ export async function GET(req: Request) {
 
       const mode = searchParams.get("mode") === "up" ? "up" : "in";
       if (mode === "up") {
+        const { data: { user: upUser }, error: upUserError } = await sb.auth.getUser();
+        if (upUserError || !upUser) {
+          await sb.auth.signOut();
+          return fail("user");
+        }
+        // If this identity already registered before, this is NOT a new
+        // signup — refuse it instead of silently logging in.
+        const { data: existing, error: lookupError } = await sb
+          .from("oauth_account_registry")
+          .select("user_id")
+          .eq("user_id", upUser.id)
+          .maybeSingle();
+        if (lookupError) {
+          await sb.auth.signOut();
+          return fail("registry");
+        }
+        if (existing) {
+          await sb.auth.signOut();
+          return fail("exists");
+        }
         if (!(await addAccountRegistry(sb))) {
           await sb.auth.signOut();
           return fail("registry");

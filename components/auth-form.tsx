@@ -73,6 +73,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     if (params.get("verified") === "1") {
       setMode("in");
       setMsg("Email confirmed successfully. Log in to continue.");
+    } else if (params.get("error") === "exists") {
+      setMode("in");
+      setMsg("An account with this Google account already exists. Please log in instead.");
     } else if (params.get("error") === "no-account") {
       setMode("in");
       setMsg("No account exists for this Google/GitHub login. Switch to Create account to register first.");
