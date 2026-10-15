@@ -39,6 +39,11 @@ export async function GET(req: Request) {
         type: type as "signup" | "recovery" | "email_change" | "magiclink",
       });
       if (error) {
+        const errCode =
+          typeof error === "object" && error !== null && "code" in error
+            ? String((error as { code: unknown }).code)
+            : "verify-failed";
+        console.error(`[auth] verifyOtp failed code=${errCode}`);
         return fail(isExpiredOrUsedUp(error.message) ? "link-bad" : "verify");
       }
 
@@ -46,19 +51,23 @@ export async function GET(req: Request) {
         // Email is confirmed at this point. Everything below is bookkeeping
         // and must never turn a confirmed email into a failure screen:
         // a verified user can always log in with their password.
+        // Diagnostics: error CODES only (no tokens, emails, or user data).
         const { error: registryError } = await (async () => {
           try {
             const ok = await addAccountRegistry(sb);
-            return { error: ok ? null : new Error("registry-insert-failed") };
+            return { error: ok ? null : new Error("registry-unavailable") };
           } catch (e) {
             return { error: e };
           }
         })();
         if (registryError) {
-          console.error(
-            "[auth] signup registry insert failed:",
-            registryError instanceof Error ? registryError.message : registryError
-          );
+          const code =
+            registryError instanceof Error
+              ? registryError.message
+              : typeof registryError === "object" && registryError !== null && "code" in registryError
+                ? String((registryError as { code: unknown }).code)
+                : "unknown";
+          console.error(`[auth] signup registry step failed code=${code}`);
         }
 
         // The email link may be opened on a different device. Mark only the
