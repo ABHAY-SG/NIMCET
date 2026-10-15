@@ -71,8 +71,10 @@ export async function GET(req: Request) {
         }
 
         // verifyOtp has established a session in the browser that opened the
-        // confirmation link. Keep that session and log the new user in there.
-        return NextResponse.redirect(new URL("/dashboard", origin));
+        // confirmation link. Keep it and route through the interstitial
+        // checkpoint, which forwards to the dashboard once it sees the
+        // session — never straight into the app from here.
+        return NextResponse.redirect(new URL("/auth/verified", origin));
       }
 
       if (type === "recovery") {
@@ -142,7 +144,7 @@ export async function GET(req: Request) {
             }
           }
         } catch {}
-        return NextResponse.redirect(new URL("/dashboard", origin));
+        return NextResponse.redirect(new URL("/auth/verified", origin));
       }
 
       // Password-recovery links carry ?flow=recovery. A working exchange

@@ -181,9 +181,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           return;
         }
         if (!data.user) throw new Error("We couldn’t start signup. Please try again.");
-        setResendEmail(cleanEmail);
-        setShowResend(true);
-        setMsg(`Account created — click the confirmation link we emailed to ${cleanEmail}, then log in. Links expire, so confirm soon.`);
+        try { window.localStorage.setItem("nimcuet-pending-email", cleanEmail); } catch {}
+        router.push("/auth/check-email");
       } else {
         const { data, error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
