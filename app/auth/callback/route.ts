@@ -43,9 +43,22 @@ export async function GET(req: Request) {
       }
 
       if (type === "signup") {
-        if (!(await addAccountRegistry(sb))) {
-          await sb.auth.signOut();
-          return fail("registry");
+        // Email is confirmed at this point. Everything below is bookkeeping
+        // and must never turn a confirmed email into a failure screen:
+        // a verified user can always log in with their password.
+        const { error: registryError } = await (async () => {
+          try {
+            const ok = await addAccountRegistry(sb);
+            return { error: ok ? null : new Error("registry-insert-failed") };
+          } catch (e) {
+            return { error: e };
+          }
+        })();
+        if (registryError) {
+          console.error(
+            "[auth] signup registry insert failed:",
+            registryError instanceof Error ? registryError.message : registryError
+          );
         }
 
         // The email link may be opened on a different device. Mark only the
