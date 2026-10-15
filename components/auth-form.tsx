@@ -117,7 +117,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     try {
       const sb = getSupabase();
       const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       });
       if (error) throw error;
       setMsg("Reset link sent — check your inbox.");
