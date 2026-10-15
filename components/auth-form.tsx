@@ -54,6 +54,13 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    const savedPreference = window.localStorage.getItem("nimcuet-remember-me");
+    if (savedPreference === "true" || savedPreference === "false") {
+      setRemember(savedPreference === "true");
+    }
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("verified") === "1") {
       setMode("in");
@@ -398,7 +405,16 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             )}
             {mode === "in" && (
               <label className="mt-3 flex cursor-pointer items-center gap-2 text-[13px]" style={{ color: "var(--muted)" }}>
-                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4 accent-current" />
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setRemember(checked);
+                    window.localStorage.setItem("nimcuet-remember-me", String(checked));
+                  }}
+                  className="h-4 w-4 accent-current"
+                />
                 Remember me
               </label>
             )}
