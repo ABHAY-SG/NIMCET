@@ -21,6 +21,8 @@ grant select (challenge_id, user_id, verified_at, expires_at)
   on public.signup_verification_sessions to authenticated;
 grant update (verified_at)
   on public.signup_verification_sessions to authenticated;
+grant update (verified_at)
+  on public.signup_verification_sessions to anon;
 
 drop policy if exists "Signup clients can create verification challenges"
   on public.signup_verification_sessions;
@@ -66,4 +68,25 @@ create policy "Verified users can complete their own signup challenge"
   with check (
     (select auth.uid()) = user_id
     and verified_at is not null
+  );
+
+-- Lets the /auth/callback server route mark a challenge verified when a real
+-- Supabase-minted confirmation code arrives without a PKCE verifier (email
+-- opened on a different device, so no session exists to satisfy the policy
+-- above). The challenge_id is an unguessable UUID from the confirmation link;
+-- marking only flips verified_at and never grants a session. The waiting tab
+-- still only offers "continue to log in", never auto-login.
+drop policy if exists "Callback can mark unexpired challenge verified"
+  on public.signup_verification_sessions;
+create policy "Callback can mark unexpired challenge verified"
+  on public.signup_verification_sessions
+  for update
+  to anon
+  using (
+    verified_at is null
+    and expires_at > now()
+  )
+  with check (
+    verified_at is not null
+    and expires_at > now()
   );

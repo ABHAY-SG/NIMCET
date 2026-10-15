@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
+import AuthBg from "@/components/auth-bg";
 
 const POLL_MS = 4000;
 const MAX_WAIT_MS = 30 * 60 * 1000;
@@ -205,9 +206,13 @@ function CheckEmailContent() {
         window.localStorage.setItem("nimcuet-resend-at", String(Date.now()));
       } catch {}
       setCooldown(RESEND_COOLDOWN_S);
-      setMsg("Fresh confirmation link sent — click the newest email (check spam too), then return here.");
+      setMsg("Request accepted — if this email is still unconfirmed, the newest email holds the fresh link (check spam). If already confirmed, no new email is sent — try logging in.");
     } catch (err: unknown) {
       const raw = err instanceof Error ? err.message : "Could not resend. Please try again.";
+      if (/already (registered|confirmed)|already exists/i.test(raw)) {
+        setMsg("This email looks already confirmed — try logging in with your password instead of resending.");
+        return;
+      }
       setMsg(isRateLimit(raw)
         ? `Too many requests — wait a couple of minutes, then tap resend once. (Supabase: ${raw})`
         : raw);
@@ -229,7 +234,8 @@ function CheckEmailContent() {
 
   if (phase === "verified-session" || phase === "verified-nosession") {
     return (
-      <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
+      <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
+        <AuthBg />
         <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <h1 className="text-2xl font-extrabold tracking-tight">Email Authentication</h1>
           <div className="mx-auto mt-5 flex h-14 w-14 items-center justify-center rounded-full text-2xl text-white" style={{ background: "#16a34a" }}>✓</div>
@@ -253,7 +259,8 @@ function CheckEmailContent() {
 
   if (phase === "timeout") {
     return (
-      <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
+      <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
+        <AuthBg />
         <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl sm:p-10" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-[26px]">Still waiting for confirmation</h1>
           <p className="mx-auto mt-4 max-w-sm text-[15px] leading-7" style={{ color: "var(--muted)" }}>
@@ -299,7 +306,8 @@ function CheckEmailContent() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
+    <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
+      <AuthBg />
       <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl sm:p-10" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
         <h1 className="text-2xl font-extrabold tracking-tight sm:text-[26px]">Security Challenge</h1>
         <p className="mx-auto mt-4 max-w-sm text-[15px] leading-7" style={{ color: "var(--muted)" }}>
@@ -356,6 +364,14 @@ function CheckEmailContent() {
           >
             Cancel
           </button>
+          <button
+            type="button"
+            onClick={() => router.push("/login")}
+            className="w-full cursor-pointer rounded-xl py-3 text-sm font-bold"
+            style={{ border: "1px solid var(--border)" }}
+          >
+            Go to log in
+          </button>
         </div>
       </section>
     </main>
@@ -366,7 +382,8 @@ export default function CheckEmailPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
+        <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
+          <AuthBg />
           <p className="text-sm" style={{ color: "var(--muted)" }}>Loading…</p>
         </main>
       }

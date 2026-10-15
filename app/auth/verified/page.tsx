@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
+import AuthBg from "@/components/auth-bg";
 
 function VerifiedContent() {
   const router = useRouter();
@@ -71,7 +72,8 @@ function VerifiedContent() {
 
   if (phase === "failed") {
     return (
-      <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
+      <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
+        <AuthBg />
         <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl" style={{ background: "var(--pill)", color: "#dc2626" }}>!</div>
           <h1 className="mt-5 text-2xl font-extrabold tracking-tight">Email confirmed</h1>
@@ -88,7 +90,8 @@ function VerifiedContent() {
 
   if (phase === "checking") {
     return (
-      <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
+      <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
+        <AuthBg />
         <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <div className="mx-auto h-14 w-14 animate-spin rounded-full" style={{ border: "3px solid var(--border)", borderTopColor: "var(--accent)" }} />
           <h1 className="mt-5 text-2xl font-extrabold tracking-tight">Security Challenge</h1>
@@ -101,7 +104,8 @@ function VerifiedContent() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
+    <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
+      <AuthBg />
       <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
         <h1 className="text-2xl font-extrabold tracking-tight">Email Authentication</h1>
         <div className="mx-auto mt-5 flex h-14 w-14 items-center justify-center rounded-full text-2xl text-white" style={{ background: "#16a34a" }}>✓</div>
@@ -125,7 +129,8 @@ export default function EmailVerifiedPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
+        <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
+          <AuthBg />
           <p className="text-sm" style={{ color: "var(--muted)" }}>Checking verification status…</p>
         </main>
       }
