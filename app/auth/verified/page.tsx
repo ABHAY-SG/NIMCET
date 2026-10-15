@@ -1,10 +1,11 @@
-export default async function EmailVerifiedPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const params = await searchParams;
-  const failed = params.error === "challenge";
+"use client";
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+
+function VerifiedContent() {
+  const searchParams = useSearchParams();
+  const failed = searchParams.get("error") === "challenge";
 
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
@@ -27,5 +28,19 @@ export default async function EmailVerifiedPage({
         )}
       </section>
     </main>
+  );
+}
+
+export default function EmailVerifiedPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center px-5 py-12" style={{ background: "var(--bg)", color: "var(--text)" }}>
+          <p className="text-sm" style={{ color: "var(--muted)" }}>Checking verification status…</p>
+        </main>
+      }
+    >
+      <VerifiedContent />
+    </Suspense>
   );
 }
