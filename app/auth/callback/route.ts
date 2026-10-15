@@ -83,13 +83,18 @@ export async function GET(req: Request) {
         // The email link may be opened on a different device. Mark only the
         // matching user's high-entropy challenge as verified, then remove the
         // session from the device that opened the email link.
-        const challengeId = searchParams.get("challenge");
+        const { data: { user: verifiedUser } } = await sb.auth.getUser();
+        const metadataChallenge = verifiedUser?.user_metadata?.signup_challenge;
+        const challengeId =
+          searchParams.get("challenge") ??
+          (typeof metadataChallenge === "string" ? metadataChallenge : null);
+
         if (challengeId) {
           const { data: challenge, error: challengeError } = await sb
             .from("signup_verification_sessions")
             .update({ verified_at: new Date().toISOString() })
             .eq("challenge_id", challengeId)
-            .eq("user_id", (await sb.auth.getUser()).data.user?.id ?? "")
+            .eq("user_id", verifiedUser?.id ?? "")
             .is("verified_at", null)
             .gt("expires_at", new Date().toISOString())
             .select("challenge_id")
