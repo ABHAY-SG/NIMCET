@@ -56,6 +56,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [busy, setBusy] = useState(false);
   const [loginFailed, setLoginFailed] = useState(false);
   const [touchedEmail, setTouchedEmail] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendBusy, setResendBusy] = useState(false);
 
   useEffect(() => {
     const savedPreference = window.localStorage.getItem("nimcuet-remember-me");
@@ -77,14 +80,23 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       setMsg("No account exists for this Google/GitHub login. Switch to Create account to register first.");
     } else if (params.get("error") === "link-bad") {
       setMode("in");
-      setMsg("That confirmation link expired or was already used. Create an account again or log in if your email is already confirmed.");
+      setMsg("That confirmation link expired or was already used. Request a fresh one below.");
+      setShowResend(true);
+      try {
+        const saved = window.localStorage.getItem("nimcuet-pending-email");
+        if (saved) setResendEmail(saved);
+      } catch {}
+    } else if (params.get("error") === "recovery-bad") {
+      setMode("in");
+      setMsg("That reset link expired, was already used, or was opened on another device. Request a fresh one with Forgot password below.");
     } else if (params.get("verify-required") === "1") {
       try {
         const sb = getSupabase();
         sb.auth.signOut().catch(() => {});
       } catch {}
       setMode("in");
-      setMsg("Please confirm your email using the link we sent, then open that link to log in automatically.");
+      setMsg("Please confirm your email using the link we sent, then log in on the login page.");
+      setShowResend(true);
     } else if (params.has("error")) {
       setMode("in");
       setMsg("We couldn’t complete authentication. Please try again.");
@@ -119,7 +131,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           email: cleanEmail,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            // ?challenge= marks email-confirmation links so the callback can
+            // tell them apart from OAuth codes (which carry ?mode= instead).
+            emailRedirectTo: `${window.location.origin}/auth/callback?challenge=${crypto.randomUUID()}`,
             data: { first_name: firstName.trim(), last_name: lastName.trim() },
           },
         });
@@ -145,7 +159,16 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             return;
           }
           if (/email not confirmed/i.test(probeError.message)) {
-            setMsg("This email is registered but not verified. Check your inbox for the confirmation email, then open it to log in automatically.");
+            setResendEmail(cleanEmail);
+            setShowResend(true);
+            setMsg("This email is registered but not verified. We just sent a fresh confirmation link — click it, then log in.");
+            try {
+              await sb.auth.resend({
+                type: "signup",
+                email: cleanEmail,
+                options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+              });
+            } catch {}
             return;
           }
           setMode("in");
@@ -158,7 +181,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           return;
         }
         if (!data.user) throw new Error("We couldn’t start signup. Please try again.");
-        setMsg(`Account created — a confirmation link was sent to ${cleanEmail}. Open that link to confirm your email and log in automatically in the browser where you open it.`);
+        setResendEmail(cleanEmail);
+        setShowResend(true);
+        setMsg(`Account created — click the confirmation link we emailed to ${cleanEmail}, then log in. Links expire, so confirm soon.`);
       } else {
         const { data, error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
@@ -220,12 +245,38 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     try {
       const sb = getSupabase();
       const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?flow=recovery`,
       });
       if (error) throw error;
       setMsg("Reset link sent — check your inbox.");
     } catch (err: unknown) {
       setMsg(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  };
+
+  const resend = async () => {
+    const target = resendEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
+      setMsg("Enter the email you registered with, then tap resend.");
+      return;
+    }
+    setResendBusy(true);
+    try {
+      const sb = getSupabase();
+      const { error } = await sb.auth.resend({
+        type: "signup",
+        email: target,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) throw error;
+      setMsg("Fresh confirmation link sent — click it in your inbox (and spam), then log in.");
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : "Could not resend. Please try again.";
+      setMsg(/rate.?limit|too many|after \d+ second|wait a moment|slow down|throttl/i.test(raw)
+        ? "Too many requests — wait a couple of minutes, then tap resend once."
+        : raw);
+    } finally {
+      setResendBusy(false);
     }
   };
 
@@ -516,6 +567,25 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             )}
             {msg && (
               <p role="status" aria-live="polite" className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
+            )}
+            {showResend && (
+              <div className="mt-3 rounded-xl p-4" style={{ border: "1px dashed var(--border)" }}>
+                <label htmlFor="auth-resend" className="block text-[13px] font-bold">Get a fresh confirmation link</label>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    id="auth-resend" type="email" value={resendEmail} onChange={(e) => setResendEmail(e.target.value)}
+                    placeholder="you@example.com" className="min-w-0 flex-1 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
+                  />
+                  <button
+                    type="button" onClick={resend} disabled={resendBusy}
+                    className="shrink-0 cursor-pointer rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-50"
+                    style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+                  >
+                    {resendBusy ? "…" : "Resend"}
+                  </button>
+                </div>
+              </div>
             )}
             {loginFailed && mode === "in" && (
               <div className="mt-2.5 grid grid-cols-2 gap-2">

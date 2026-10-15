@@ -88,9 +88,16 @@ export async function GET(req: Request) {
     const code = searchParams.get("code");
     if (code) {
       const isEmailFlow = searchParams.has("challenge");
+      const isRecoveryFlow = searchParams.get("flow") === "recovery";
       const { error } = await sb.auth.exchangeCodeForSession(code);
       if (error) {
-        console.error(`[auth] code exchange failed flow=${isEmailFlow ? "email" : "oauth"}`);
+        console.error(`[auth] code exchange failed flow=${isEmailFlow ? "email" : isRecoveryFlow ? "recovery" : "oauth"}`);
+        if (isRecoveryFlow) {
+          // Reset links are single-use and short-lived; a failure here means
+          // expired/used link or another device. Never sign the user in.
+          await sb.auth.signOut().catch(() => {});
+          return fail("recovery-bad");
+        }
         if (isEmailFlow && /verifier/i.test(error.message)) {
           // The email WAS confirmed server-side (Supabase only mints this
           // code post-verify); only the signup browser holds the PKCE
@@ -115,7 +122,9 @@ export async function GET(req: Request) {
 
       if (isEmailFlow) {
         // Same browser that signed up: session established, email verified.
-        // Best-effort bookkeeping only — never fail the confirmation itself.
+        // Best-effort bookkeeping only — never fail the confirmation itself —
+        // then drop the session: entry always goes through the interstitial
+        // checkpoint, never straight into the dashboard.
         try {
           const { data: { user: confirmedUser } } = await sb.auth.getUser();
           if (confirmedUser) {
@@ -133,7 +142,15 @@ export async function GET(req: Request) {
             }
           }
         } catch {}
-        return NextResponse.redirect(new URL("/dashboard", origin));
+        await sb.auth.signOut().catch(() => {});
+        return NextResponse.redirect(new URL("/auth/verified", origin));
+      }
+
+      // Password-recovery links carry ?flow=recovery. A working exchange
+      // means a live session for that user: send them to set a new password
+      // without any registry checks.
+      if (isRecoveryFlow) {
+        return NextResponse.redirect(new URL("/reset-password", origin));
       }
 
       const mode = searchParams.get("mode") === "up" ? "up" : "in";
