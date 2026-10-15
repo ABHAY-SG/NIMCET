@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
+import DashNav from "@/components/dash-nav";
 import { getSupabase } from "@/lib/supabase";
 
 type Attempt = {
@@ -79,33 +80,17 @@ export default function DashboardPage() {
     })();
   }, [router]);
 
-  const signOut = async () => {
-    try {
-      const sb = getSupabase();
-      await sb.auth.signOut();
-    } catch {}
-    router.push("/login");
-  };
-
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 pb-20 pt-28">
+    <>
+      {!loading && email && <DashNav email={email} onLogout={() => {}} />}
+      <main id="attempts" className="mx-auto w-full max-w-4xl scroll-mt-24 px-4 pb-20 pt-24">
       <Reveal>
         <p className="text-[11px] font-semibold uppercase" style={{ color: "var(--accent)", letterSpacing: "0.22em" }}>
           Dashboard
         </p>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            {loading ? "Loading…" : displayName ? `Hello ${displayName.split(" ").slice(0, 2).join(" ")}` : "Hello"}
-          </h1>
-          <button
-            type="button"
-            onClick={signOut}
-            className="rounded-full px-5 py-2 text-sm font-bold"
-            style={{ border: "1px solid var(--border)", color: "var(--text)" }}
-          >
-            Log out
-          </button>
-        </div>
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
+          {loading ? "Loading…" : displayName ? `Hello ${displayName.split(" ").slice(0, 2).join(" ")}` : "Hello"}
+        </h1>
       </Reveal>
       {note && (
         <p className="mt-4 rounded-xl px-4 py-3 text-[13px]" style={{ background: "var(--pill)" }}>{note}</p>
@@ -139,5 +124,6 @@ export default function DashboardPage() {
         </Reveal>
       )}
     </main>
+    </>
   );
 }

@@ -4,7 +4,7 @@ import Navbar from "@/components/navbar";
 import ContactStrip from "@/components/contact";
 import Footer from "@/components/footer";
 
-const BARE = ["/login", "/signup"];
+const BARE = ["/login", "/signup", "/dashboard"];
 
 function useBare() {
   const path = usePathname();
