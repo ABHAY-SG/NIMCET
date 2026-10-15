@@ -52,6 +52,11 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [remember, setRemember] = useState(true);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState<{
+    challengeId: string;
+    email: string;
+    password: string;
+  } | null>(null);
 
   useEffect(() => {
     const savedPreference = window.localStorage.getItem("nimcuet-remember-me");
@@ -74,6 +79,54 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     }
   }, []);
 
+  useEffect(() => {
+    if (!pendingVerification) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const checkVerification = async () => {
+      try {
+        const sb = getSupabase();
+        const { data, error } = await sb
+          .from("signup_verification_sessions")
+          .select("verified_at")
+          .eq("challenge_id", pendingVerification.challengeId)
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (!error && data?.verified_at) {
+          setMsg("Email verified. Signing you in on this device…");
+          const { error: signInError } = await sb.auth.signInWithPassword({
+            email: pendingVerification.email,
+            password: pendingVerification.password,
+          });
+
+          if (cancelled) return;
+          if (signInError) {
+            setMsg("Email verified. Please log in here with your email and password.");
+            setPendingVerification(null);
+            return;
+          }
+
+          setPendingVerification(null);
+          router.replace("/dashboard");
+          return;
+        }
+      } catch {
+        // Keep waiting; temporary network failures should not cancel verification.
+      }
+
+      if (!cancelled) timer = setTimeout(checkVerification, 2500);
+    };
+
+    void checkVerification();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [pendingVerification, router]);
+
   const pwLen = password.length >= 8;
   const pwNum = /\d/.test(password);
   const pwOk = pwLen && pwNum;
@@ -89,19 +142,46 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     try {
       const sb = getSupabase();
       if (mode === "up") {
+        const challengeId = crypto.randomUUID();
         const { data, error } = await sb.auth.signUp({
-          email, password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?challenge=${challengeId}`,
+            data: { signup_challenge: challengeId },
+          },
         });
         if (error) throw error;
+
+        // Supabase may return a placeholder user for an existing email to prevent enumeration.
+        if (data.user && data.user.identities?.length === 0) {
+          setMsg("If this email can be registered, a verification email will arrive shortly. Check your inbox or try logging in.");
+          return;
+        }
+
         if (data.user && data.session) {
           const { error: registryError } = await sb.from("oauth_account_registry").insert({
             user_id: data.user.id,
             email: data.user.email ?? email,
           });
           if (registryError && registryError.code !== "23505") throw registryError;
+          router.replace("/dashboard");
+          return;
         }
-        setMsg("Account created — check your email to confirm, then log in.");
+
+        if (!data.user) throw new Error("We couldn’t start signup. Please try again.");
+
+        const { error: challengeError } = await sb.from("signup_verification_sessions").insert({
+          challenge_id: challengeId,
+          user_id: data.user.id,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        });
+        if (challengeError) {
+          throw new Error("Signup started, but we couldn’t prepare automatic sign-in. Please try again or log in after confirming your email.");
+        }
+
+        setPendingVerification({ challengeId, email, password });
+        setMsg("Verification email sent. Keep this tab open; once you confirm from any device, this device will sign you in automatically.");
       } else {
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -129,9 +209,11 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback?mode=${mode}`,
-          // Ask Google and GitHub to show the account chooser instead of
-          // silently reusing the browser's currently signed-in account.
-          queryParams: { prompt: "select_account" },
+          // Always show the account chooser. Google also gets an explicit consent prompt
+          // during signup; GitHub ignores unsupported prompt values.
+          queryParams: {
+            prompt: provider === "google" && mode === "up" ? "select_account consent" : "select_account",
+          },
         },
       });
       if (error) throw error;
