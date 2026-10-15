@@ -122,9 +122,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback?mode=${mode}`,
-          // Ask Google to show the account chooser instead of silently reusing
-          // the browser's currently signed-in Google account.
-          ...(provider === "google" ? { queryParams: { prompt: "select_account" } } : {}),
+          // Ask Google and GitHub to show the account chooser instead of
+          // silently reusing the browser's currently signed-in account.
+          queryParams: { prompt: "select_account" },
         },
       });
       if (error) throw error;
