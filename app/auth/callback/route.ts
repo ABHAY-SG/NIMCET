@@ -4,14 +4,18 @@ import { getSupabaseServer } from "@/lib/supabase-server";
 export async function GET(req: Request) {
   const { searchParams, origin } = new URL(req.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
-  if (!code) return NextResponse.redirect(`${origin}/login?error=no-code`);
+  if (!code) return NextResponse.redirect(new URL("/login?error=no-code", origin));
+
   try {
     const sb = await getSupabaseServer();
     const { error } = await sb.auth.exchangeCodeForSession(code);
-    if (error) return NextResponse.redirect(`${origin}/login?error=exchange`);
+    if (error) {
+      return NextResponse.redirect(new URL("/login?error=exchange", origin));
+    }
   } catch {
-    return NextResponse.redirect(`${origin}/login?error=config`);
+    return NextResponse.redirect(new URL("/login?error=config", origin));
   }
-  return NextResponse.redirect(`${origin}${next}`);
+
+  // After confirming their email, send users to the login page with a success notice.
+  return NextResponse.redirect(new URL("/login?verified=1", origin));
 }
