@@ -233,12 +233,13 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOAuth({
         provider,
-        // No `prompt` param on purpose: forcing it makes Google show the
-        // consent screen on EVERY login (including the unverified-app domain
-        // line). Without it, Google signs returning users straight through
-        // and only shows consent once, on first grant.
+        // `select_account` forces Google's account chooser on every attempt
+        // without forcing the full consent screen. (Consent-only prompts
+        // would reshow the unverified-app domain line each time.)
+        // GitHub does not support Google's prompt parameter.
         options: {
           redirectTo: `${window.location.origin}/auth/callback?mode=${mode}`,
+          ...(provider === "google" ? { queryParams: { prompt: "select_account" } } : {}),
         },
       });
       if (error) throw error;
