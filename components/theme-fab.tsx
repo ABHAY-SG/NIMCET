@@ -64,7 +64,7 @@ export default function ThemeFab() {
                 style={t.id === theme ? { background: "var(--pill)", color: "var(--text)" } : undefined}
               >
                 <span className="tdot inline-block h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: t.dot, border: "1px solid var(--border)" }} />
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2" style={{ color: t.icon }}>
                   <ThemeIcon id={t.id} />
                 </span>
                 <span className="flex-1">{t.name}</span>
