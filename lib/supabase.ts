@@ -49,6 +49,15 @@ export function forgetMemorySession() {
   memoryActive = false;
 }
 
+// The ONLY avatar the app ever displays: the user's own uploaded photo.
+// Provider pictures (Google/GitHub) are deliberately never used, so a custom
+// photo can never be overwritten or shadowed by them on login, refresh, or
+// profile load. Empty string = neutral initials placeholder.
+export function resolveAvatarUrl(meta: unknown): string {
+  const m = (meta ?? {}) as { custom_avatar?: unknown };
+  return typeof m.custom_avatar === "string" ? m.custom_avatar : "";
+}
+
 export async function signOutAll(): Promise<void> {
   try {
     await getSupabase(true).auth.signOut();

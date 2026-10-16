@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
-import { getAuthClient, signOutAll } from "@/lib/supabase";
+import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
 import { calcBestStreak, calcStreak, lastWeekActivity } from "@/lib/streak";
 
 type Attempt = {
@@ -146,11 +146,10 @@ export default function DashboardPage() {
           return;
         }
         setEmail(user.email ?? "");
-        const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string; full_name?: string; name?: string; avatar_url?: string; picture?: string; custom_avatar?: string };
+        const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string; full_name?: string; name?: string };
         const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";
         setDisplayName(full.trim() || (user.email ?? "").split("@")[0]);
-        // Uploaded photo wins, then the OAuth provider photo.
-        setAvatarUrl(meta.custom_avatar || meta.avatar_url || meta.picture || "");
+        setAvatarUrl(resolveAvatarUrl(user.user_metadata));
         const { data, error } = await sb
           .from("attempts")
           .select("id,test,score,correct,wrong,skipped,created_at")

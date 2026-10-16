@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
-import { getAuthClient } from "@/lib/supabase";
+import { getAuthClient, resolveAvatarUrl } from "@/lib/supabase";
 import { calcBestStreak, calcStreak, lastWeekActivity } from "@/lib/streak";
 
 type Attempt = {
@@ -98,14 +98,8 @@ export default function ProfilePage() {
   const [panel, setPanel] = useState<null | "name" | "password">(null);
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
-  const [mobile, setMobile] = useState("");
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("");
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [verifying, setVerifying] = useState(false);
-  const [verifyMsg, setVerifyMsg] = useState("");
   const [uploading, setUploading] = useState(false);
   const [photoMsg, setPhotoMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -147,17 +141,13 @@ export default function ProfilePage() {
         setEmail(user.email ?? "");
         const meta = (user.user_metadata ?? {}) as {
           first_name?: string; last_name?: string; full_name?: string; name?: string;
-          avatar_url?: string; picture?: string; custom_avatar?: string; mobile?: string; dob?: string; gender?: string;
+          dob?: string; gender?: string;
         };
         const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";
         setDisplayName(full.trim() || (user.email ?? "").split("@")[0]);
-        setAvatarUrl(meta.custom_avatar || meta.avatar_url || meta.picture || "");
-        setMobile(typeof meta.mobile === "string" ? meta.mobile : "");
+        setAvatarUrl(resolveAvatarUrl(user.user_metadata));
         setDob(typeof meta.dob === "string" ? meta.dob : "");
         setGender(typeof meta.gender === "string" ? meta.gender : "");
-        // Phone counts as verified only when the confirmed phone on the
-        // account matches the stored mobile number.
-        setPhoneVerified(!!user.phone_confirmed_at && !!user.phone && user.phone === (meta.mobile || ""));
         try {
           setMemberSince(new Date(user.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }));
         } catch { setMemberSince("—"); }
@@ -204,18 +194,13 @@ export default function ProfilePage() {
     const f = first.trim();
     const l = last.trim();
     if (!f) { setFormMsg("First name is required."); return; }
-    const m = mobile.trim();
-    if (m && !/^\+[1-9]\d{7,14}$/.test(m)) {
-      setFormMsg("Mobile must be international format, e.g. +917425097293 — or leave it empty.");
-      return;
-    }
     if (dob && Number.isNaN(Date.parse(dob))) { setFormMsg("Pick a valid date of birth."); return; }
     setBusy(true);
     setFormMsg("");
     try {
       const sb = getAuthClient();
       const { error } = await sb.auth.updateUser({
-        data: { first_name: f, last_name: l, mobile: m, dob, gender },
+        data: { first_name: f, last_name: l, dob, gender },
       });
       if (error) throw error;
       setDisplayName([f, l].filter(Boolean).join(" "));
@@ -224,50 +209,6 @@ export default function ProfilePage() {
       setFormMsg(err instanceof Error ? err.message : "Could not save. Try again.");
     } finally {
       setBusy(false);
-    }
-  };
-
-  const sendOtp = async () => {
-    const num = mobile.trim();
-    if (!/^\+[1-9]\d{7,14}$/.test(num)) {
-      setVerifyMsg("Save a valid mobile first (international format, e.g. +917425097293).");
-      return;
-    }
-    setVerifying(true);
-    setVerifyMsg("");
-    try {
-      const sb = getAuthClient();
-      // Links this number to the CURRENT user (no duplicate account); Supabase
-      // texts a code if an SMS provider is configured on the project.
-      const { error } = await sb.auth.updateUser({ phone: num });
-      if (error) throw error;
-      setOtpSent(true);
-      setVerifyMsg("Code sent by SMS — enter it below.");
-    } catch (err: unknown) {
-      setVerifyMsg(err instanceof Error ? err.message : "Could not send code.");
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  const confirmOtp = async () => {
-    const num = mobile.trim();
-    const code = otp.trim();
-    if (!/^\d{6,8}$/.test(code)) { setVerifyMsg("Enter the 6-digit code from the SMS."); return; }
-    setVerifying(true);
-    setVerifyMsg("");
-    try {
-      const sb = getAuthClient();
-      const { error } = await sb.auth.verifyOtp({ phone: num, token: code, type: "phone_change" });
-      if (error) throw error;
-      setPhoneVerified(true);
-      setOtpSent(false);
-      setOtp("");
-      setVerifyMsg("Mobile verified ✓");
-    } catch (err: unknown) {
-      setVerifyMsg(err instanceof Error ? err.message : "Wrong code. Try again.");
-    } finally {
-      setVerifying(false);
     }
   };
 
@@ -310,9 +251,9 @@ export default function ProfilePage() {
       const sb = getAuthClient();
       const { error } = await sb.auth.updateUser({ data: { custom_avatar: "" } });
       if (error) throw error;
-      const { data: { user } } = await sb.auth.getUser();
-      const meta = (user?.user_metadata ?? {}) as { avatar_url?: string; picture?: string };
-      setAvatarUrl(meta.avatar_url || meta.picture || "");
+      // Cleared photo falls back to the neutral placeholder — never to a
+      // provider picture.
+      setAvatarUrl("");
     } catch (err: unknown) {
       setPhotoMsg(err instanceof Error ? err.message : "Could not remove photo.");
     } finally {
@@ -452,13 +393,6 @@ export default function ProfilePage() {
                     style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
                 <div>
-                  <label htmlFor="profile-mobile" className="mb-1.5 block text-[13px] font-bold">Mobile No.</label>
-                  <input id="profile-mobile" type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} autoComplete="tel"
-                    placeholder="+917425097293"
-                    className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
-                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
-                </div>
-                <div>
                   <label htmlFor="profile-dob" className="mb-1.5 block text-[13px] font-bold">Date of Birth</label>
                   <input id="profile-dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)}
                     className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
@@ -538,40 +472,6 @@ export default function ProfilePage() {
               <div className="mt-2">
                 <DetailRow label="Name" value={loading ? "…" : displayName || "—"} />
                 <DetailRow label="Email" value={email || "—"} />
-                <DetailRow
-                  label="Mobile No."
-                  value={loading ? "…" : mobile || "—"}
-                />
-                {!loading && mobile && (
-                  <div className="border-b py-2.5" style={{ borderColor: "var(--border)" }}>
-                    {phoneVerified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold text-white" style={{ background: "#16a34a" }}>
-                        ✓ Verified
-                      </span>
-                    ) : otpSent ? (
-                      <div className="flex gap-2">
-                        <input
-                          type="text" inputMode="numeric" value={otp} onChange={(e) => setOtp(e.target.value)}
-                          placeholder="6-digit SMS code" aria-label="SMS verification code"
-                          className="min-w-0 flex-1 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2"
-                          style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
-                        />
-                        <button type="button" onClick={confirmOtp} disabled={verifying}
-                          className="shrink-0 cursor-pointer rounded-xl px-4 py-2 text-[13px] font-bold text-white disabled:opacity-50"
-                          style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
-                          {verifying ? "…" : "Confirm"}
-                        </button>
-                      </div>
-                    ) : (
-                      <button type="button" onClick={sendOtp} disabled={verifying}
-                        className="cursor-pointer rounded-xl px-3.5 py-1.5 text-xs font-bold disabled:opacity-50"
-                        style={{ border: "1.5px solid var(--accent)", color: "var(--accent)" }}>
-                        {verifying ? "Sending…" : "Verify mobile"}
-                      </button>
-                    )}
-                    {verifyMsg && <p className="mt-1.5 text-xs font-semibold" style={{ color: phoneVerified && !otpSent ? "#16a34a" : "#dc2626" }}>{verifyMsg}</p>}
-                  </div>
-                )}
                 <DetailRow
                   label="Date of Birth"
                   value={loading ? "…" : dob ? (() => { try { return new Date(dob + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); } catch { return dob; } })() : "—"}
