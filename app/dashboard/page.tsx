@@ -15,6 +15,17 @@ type Attempt = {
   created_at: string;
 };
 
+type SeriesTest = {
+  id: string;
+  exam: string;
+  title: string;
+  tag: string;
+  minutes: number;
+  free: boolean;
+  published: boolean;
+  question_ids: string[];
+};
+
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -34,6 +45,13 @@ function calcStreak(all: Attempt[]): number {
     cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
+}
+
+function examLabel(exam: string): string {
+  const e = exam.toLowerCase();
+  if (e === "nimcet") return "NIMCET";
+  if (e === "cuet-pg-mca" || e === "cuet") return "CUET PG";
+  return exam.toUpperCase();
 }
 
 function AttemptRow({ a, cloud = false }: { a: Attempt; cloud?: boolean }) {
@@ -63,11 +81,11 @@ function AttemptRow({ a, cloud = false }: { a: Attempt; cloud?: boolean }) {
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div
-      className="rounded-2xl px-4 py-4 backdrop-blur-xl"
-      style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
+      className="rounded-2xl bg-white px-4 py-4 backdrop-blur-xl"
+      style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
     >
       <div className="mono text-2xl font-extrabold" style={{ color: "var(--accent)" }}>{value}</div>
-      <div className="mt-1 text-[13px] font-bold">{label}</div>
+      <div className="mt-1 text-[13px] font-bold" style={{ color: "#1e2952" }}>{label}</div>
       <div className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>{sub}</div>
     </div>
   );
@@ -82,11 +100,11 @@ function TrendChart({ data }: { data: Attempt[] }) {
   const bw = (W - PAD * 2) / pts.length;
   return (
     <div
-      className="mt-3 rounded-2xl px-5 py-4 backdrop-blur-xl"
-      style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
+      className="mt-3 rounded-2xl bg-white px-5 py-4"
+      style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
     >
       <div className="flex items-baseline justify-between">
-        <div className="text-sm font-extrabold tracking-tight">Score trend</div>
+        <div className="text-sm font-extrabold tracking-tight" style={{ color: "#1e2952" }}>Score trend</div>
         <div className="text-[11px]" style={{ color: "var(--muted)" }}>last {pts.length} mocks • oldest → newest</div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="Score trend chart">
@@ -115,8 +133,18 @@ export default function DashboardPage() {
   const [displayName, setDisplayName] = useState("");
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [localAttempts, setLocalAttempts] = useState<Attempt[]>([]);
+  const [series, setSeries] = useState<SeriesTest[]>([]);
+  const [seriesReady, setSeriesReady] = useState(false);
+  const [examFilter, setExamFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
+  const [todayLine, setTodayLine] = useState("");
+
+  useEffect(() => {
+    try {
+      setTodayLine(new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }));
+    } catch {}
+  }, []);
 
   useEffect(() => {
     try {
@@ -147,6 +175,17 @@ export default function DashboardPage() {
           .limit(20);
         if (error) setNote("Attempts table not found yet — run the SQL from setup to enable history.");
         else setAttempts(data ?? []);
+        // Published test series for the catalog. Failure hides the section —
+        // never a fake list.
+        try {
+          const { data: tdata, error: terror } = await sb
+            .from("tests")
+            .select("id,exam,title,tag,minutes,free,published,question_ids")
+            .eq("published", true)
+            .limit(12);
+          if (!terror && tdata) setSeries(tdata as SeriesTest[]);
+        } catch {}
+        setSeriesReady(true);
       } catch (e) {
         setNote(e instanceof Error ? e.message : "Auth is not configured yet.");
       } finally {
@@ -159,7 +198,7 @@ export default function DashboardPage() {
   const statsSource = attempts.length > 0 ? attempts : localAttempts;
   const statsLabel = attempts.length > 0 ? "saved to cloud" : "on this device";
   const stats = useMemo(() => {
-    if (statsSource.length === 0) return { total: "0", best: "—", avg: "—", acc: "—", questions: "0", streak: "0" };
+    if (statsSource.length === 0) return { total: "0", best: "—", avg: "—", acc: "—", questions: "0", streak: 0 };
     const scores = statsSource.map((a) => Number(a.score) || 0);
     const best = Math.max(...scores);
     const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
@@ -173,9 +212,18 @@ export default function DashboardPage() {
       avg: String(Math.round(avg * 10) / 10),
       acc: answered === 0 ? "—" : `${Math.round((correct / answered) * 100)}%`,
       questions: String(correct + wrong + skipped),
-      streak: `${calcStreak(statsSource)}d`,
+      streak: calcStreak(statsSource),
     };
   }, [statsSource]);
+
+  const exams = useMemo(() => {
+    const set = new Set(series.map((t) => t.exam).filter(Boolean));
+    return ["all", ...Array.from(set)];
+  }, [series]);
+
+  const visibleSeries = examFilter === "all" ? series : series.filter((t) => t.exam === examFilter);
+
+  const attemptsForTitle = (title: string) => attempts.filter((a) => a.test === title).length;
 
   const clearLocal = () => {
     try {
@@ -187,64 +235,176 @@ export default function DashboardPage() {
   return (
     <>
       {!loading && email && <DashNav email={email} onLogout={() => {}} />}
-      <main id="attempts" className="mx-auto w-full max-w-4xl scroll-mt-24 px-4 pb-20 pt-24">
+      <main id="attempts" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-20 pt-24">
       <Reveal>
-        <p className="text-[11px] font-semibold uppercase" style={{ color: "var(--accent)", letterSpacing: "0.22em" }}>
-          Dashboard
-        </p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
-          {loading ? "Loading…" : displayName ? `Hello ${displayName.split(" ").slice(0, 2).join(" ")}` : "Hello"}
-        </h1>
-        {!loading && statsSource.length > 0 && (
-          <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
-            {stats.streak === "0d" ? "Attempt a mock to start your streak." : `🔥 ${stats.streak} streak — keep it going.`}
-          </p>
-        )}
+        <section
+          className="relative overflow-hidden rounded-[26px] px-6 py-8 text-white sm:px-10 sm:py-10"
+          style={{ background: "linear-gradient(120deg, #141b34 0%, #2b3a7a 55%, var(--accent) 130%)", boxShadow: "0 40px 90px -35px rgba(20, 27, 52, 0.7)" }}
+        >
+          <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(600px 220px at 85% 0%, rgba(255,255,255,0.16), transparent 65%), radial-gradient(500px 260px at 0% 100%, rgba(255,255,255,0.08), transparent 60%)" }} />
+          <div className="relative flex flex-wrap items-center justify-between gap-6">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase" style={{ letterSpacing: "0.22em", color: "rgba(255,255,255,0.7)" }}>
+                {todayLine}
+              </p>
+              <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
+                {loading ? "Loading…" : displayName ? `Hello ${displayName.split(" ").slice(0, 2).join(" ")}` : "Hello"}
+              </h1>
+              <p className="mt-2 max-w-md text-sm leading-6" style={{ color: "rgba(255,255,255,0.82)" }}>
+                {!loading && statsSource.length > 0
+                  ? stats.streak > 0
+                    ? `🔥 ${stats.streak}-day streak. Your best so far is ${stats.best} — go beat it.`
+                    : "Your history is warming up — attempt a mock to start your streak."
+                  : "Your preparation home: stats, test series and history live here."}
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2.5">
+                <a
+                  href="/#demo"
+                  className="cursor-pointer rounded-xl bg-white px-5 py-2.5 text-sm font-extrabold transition-transform hover:-translate-y-px"
+                  style={{ color: "#1e2952" }}
+                >
+                  Start practice mock →
+                </a>
+                <a
+                  href="#series"
+                  className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-px"
+                  style={{ border: "1.5px solid rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.1)" }}
+                >
+                  Browse test series
+                </a>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-3 rounded-2xl px-5 py-4" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
+              <div className="text-3xl font-extrabold">🔥</div>
+              <div>
+                <div className="mono text-2xl font-extrabold">{loading ? "…" : `${stats.streak}d`}</div>
+                <div className="text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>day streak</div>
+              </div>
+            </div>
+          </div>
+        </section>
       </Reveal>
+
       {note && (
-        <p className="mt-4 rounded-xl px-4 py-3 text-[13px]" style={{ background: "var(--pill)" }}>{note}</p>
+        <p className="mt-4 rounded-xl bg-white px-4 py-3 text-[13px]" style={{ border: "1px solid var(--border)" }}>{note}</p>
       )}
+
       <Reveal>
-        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        <section
+          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-5 py-4"
+          style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg font-extrabold text-white" style={{ background: "var(--accent)" }}>N</span>
+            <div>
+              <div className="text-sm font-extrabold" style={{ color: "#1e2952" }}>NIMCET 2027 <span className="ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>DATE TBA</span></div>
+              <div className="text-xs" style={{ color: "var(--muted)" }}>June 2027 cycle • official date awaited — countdown starts on announcement.</div>
+            </div>
+          </div>
+          <div className="flex gap-2 text-center">
+            {[["120", "Questions"], ["1000", "Marks"], ["120 min", "Duration"]].map(([v, l]) => (
+              <div key={l} className="rounded-xl px-3.5 py-2" style={{ background: "var(--pill)" }}>
+                <div className="mono text-sm font-extrabold" style={{ color: "#1e2952" }}>{v}</div>
+                <div className="text-[10px] font-semibold" style={{ color: "var(--muted)" }}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
           <StatCard label="Mocks" value={loading ? "…" : stats.total} sub={statsLabel} />
           <StatCard label="Best score" value={loading ? "…" : stats.best} sub={statsLabel} />
           <StatCard label="Avg score" value={loading ? "…" : stats.avg} sub={statsLabel} />
           <StatCard label="Accuracy" value={loading ? "…" : stats.acc} sub="correct ÷ answered" />
           <StatCard label="Questions" value={loading ? "…" : stats.questions} sub="attempted total" />
-          <StatCard label="Day streak" value={loading ? "…" : stats.streak} sub="consecutive days" />
+          <StatCard label="Day streak" value={loading ? "…" : `${stats.streak}d`} sub="consecutive days" />
         </div>
       </Reveal>
+
       {!loading && attempts.length > 0 && (
         <Reveal>
           <TrendChart data={attempts} />
         </Reveal>
       )}
-      <Reveal>
-        <div
-          className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4 backdrop-blur-xl"
-          style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
-        >
-          <div>
-            <div className="text-sm font-extrabold tracking-tight">Ready for the next one?</div>
-            <div className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>12 questions • 12 minutes • instant solutions. Scores save here automatically.</div>
+
+      {seriesReady && series.length > 0 && (
+        <Reveal>
+          <div id="series" className="mt-8 scroll-mt-24">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-extrabold tracking-tight">Test series</h2>
+                <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Published by admin • practice opens the demo mock.</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {exams.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => setExamFilter(e)}
+                    className="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold transition-transform hover:-translate-y-px"
+                    style={examFilter === e
+                      ? { background: "var(--btn-bg)", color: "var(--btn-text)" }
+                      : { border: "1px solid var(--border)", color: "var(--muted)" }}
+                  >
+                    {e === "all" ? "All" : examLabel(e)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+              {visibleSeries.map((t) => {
+                const done = attemptsForTitle(t.title);
+                const qcount = Array.isArray(t.question_ids) ? t.question_ids.length : 0;
+                return (
+                  <div
+                    key={t.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-5 py-4"
+                    style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>
+                          {examLabel(t.exam)}
+                        </span>
+                        {t.free && (
+                          <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "#16a34a", color: "#fff" }}>FREE</span>
+                        )}
+                        {done > 0 && (
+                          <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>
+                            ATTEMPTED ×{done}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1.5 truncate text-sm font-extrabold" style={{ color: "#1e2952" }}>{t.title}</div>
+                      <div className="mono mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
+                        {qcount}Q • {t.minutes} min{t.tag ? ` • ${t.tag}` : ""}
+                      </div>
+                    </div>
+                    <a
+                      href="/#demo"
+                      className="shrink-0 cursor-pointer rounded-xl px-4 py-2 text-[13px] font-extrabold text-white transition-transform hover:-translate-y-px"
+                      style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                    >
+                      Practice →
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <a
-            href="/#demo"
-            className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
-            style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
-          >
-            Start practice mock →
-          </a>
-        </div>
-      </Reveal>
+        </Reveal>
+      )}
+
       <Reveal>
-        <h2 className="mt-8 text-lg font-extrabold tracking-tight">Saved attempts</h2>
+        <h2 className="mt-8 text-lg font-extrabold tracking-tight">Recent attempts</h2>
         {attempts.length === 0 && !loading ? (
           <div
-            className="mt-3 rounded-2xl p-6 text-center text-sm backdrop-blur-xl"
+            className="mt-3 rounded-2xl bg-white p-6 text-center text-sm"
             style={{ border: "1px dashed var(--border)", color: "var(--muted)" }}
           >
-            No cloud attempts yet. Finish the demo mock on the homepage — it saves here when you are logged in.
+            No attempts yet. <a href="/#demo" className="font-bold underline" style={{ color: "var(--accent)" }}>Attempt the demo mock</a> — it saves here when you are logged in.
           </div>
         ) : (
           <div className="mt-3 grid gap-2.5">
