@@ -121,9 +121,9 @@ export default function DashNav({
             aria-label={`Change theme (current: ${theme})`}
             title="Theme"
             className={iconBtn}
-            style={{ border: "1px solid var(--border)", color: "var(--text)" }}
+            style={{ border: "1px solid var(--border)", color: THEMES.find((t) => t.id === theme)?.icon }}
           >
-            <span aria-hidden className="inline-block h-4 w-4 rounded-full" style={{ background: THEMES.find((t) => t.id === theme)?.dot, border: "1px solid var(--border)" }} />
+            <ThemeIcon id={theme} />
           </button>
           <button
             type="button"
@@ -224,28 +224,55 @@ export default function DashNav({
           )}
 
           {openMenu === "profile" && (
-            <div className="menu-in absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-2xl p-1.5" style={panelStyle}>
-              <a
-                href="/dashboard/profile"
-                onClick={() => setOpenMenu(null)}
-                className="tmenu flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-bold"
+            <div className="menu-in absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl" style={panelStyle}>
+              <div
+                className="flex items-center gap-3 px-4 pb-3.5 pt-4 text-white"
+                style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
               >
-                <span aria-hidden>👤</span> Profile
-              </a>
-              <a
-                href="/dashboard#attempts"
-                onClick={() => setOpenMenu(null)}
-                className="tmenu flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-bold"
-              >
-                <span aria-hidden>🕘</span> Test history
-              </a>
-              <button
-                type="button"
-                onClick={logout}
-                className="tmenu flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-bold"
-              >
-                <span aria-hidden>↩</span> Log out
-              </button>
+                <span className="block h-11 w-11 shrink-0 overflow-hidden rounded-full" style={{ border: "2px solid rgba(255,255,255,0.6)" }}>
+                  {avatarUrl && imgOk ? (
+                    <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center bg-white/20 text-base font-extrabold text-white">
+                      {initialsOf(displayName, email)}
+                    </span>
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-extrabold">{displayName || email.split("@")[0]}</div>
+                  <div className="truncate text-xs" style={{ color: "rgba(255,255,255,0.8)" }} title={email}>{email}</div>
+                </div>
+              </div>
+              <div className="p-1.5">
+                <a
+                  href="/dashboard/profile"
+                  onClick={() => setOpenMenu(null)}
+                  className="tmenu flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold"
+                >
+                  <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>👤</span>
+                  Profile
+                  <span aria-hidden className="ml-auto" style={{ color: "var(--muted)" }}>›</span>
+                </a>
+                <a
+                  href="/dashboard#attempts"
+                  onClick={() => setOpenMenu(null)}
+                  className="tmenu flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold"
+                >
+                  <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>🕘</span>
+                  Test history
+                  <span aria-hidden className="ml-auto" style={{ color: "var(--muted)" }}>›</span>
+                </a>
+                <div className="mx-3 my-1 h-px" style={{ background: "var(--border)" }} />
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="tmenu flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold"
+                  style={{ color: "#dc2626" }}
+                >
+                  <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "rgba(220,38,38,0.12)" }}>↩</span>
+                  Log out
+                </button>
+              </div>
             </div>
           )}
         </div>
