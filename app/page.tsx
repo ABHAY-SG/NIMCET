@@ -1,7 +1,6 @@
 import Hero from "@/components/hero";
 import Exams from "@/components/exams";
 import Demo from "@/components/demo";
-import LoginCta from "@/components/login-cta";
 import How from "@/components/how";
 import Pricing from "@/components/pricing";
 import About from "@/components/about";
@@ -26,8 +25,6 @@ export default function Home() {
       <Exams />
       <Divider />
       <Demo />
-      <Divider />
-      <LoginCta />
       <Divider />
       <How />
       <Divider />

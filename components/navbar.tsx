@@ -255,7 +255,7 @@ export default function Navbar() {
             </a>
           ) : (
             <>
-              <a href="/login" className={plainCls + " hidden sm:block"}>Log in</a>
+              <a href="/login-choice" className={plainCls + " hidden sm:block"}>Log in</a>
               <a
                 href="/signup"
                 className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
@@ -292,7 +292,7 @@ export default function Navbar() {
           {loggedIn ? (
             <a href="/dashboard" onClick={() => setOpen(false)} className={plainCls}>Dashboard →</a>
           ) : (
-            <a href="/login" onClick={() => setOpen(false)} className={plainCls}>Log in</a>
+            <a href="/login-choice" onClick={() => setOpen(false)} className={plainCls}>Log in</a>
           )}
           <div className="flex gap-1.5 py-2">
             {THEMES.map((t) => (
