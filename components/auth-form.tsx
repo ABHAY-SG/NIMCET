@@ -324,17 +324,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         className="auth-card relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[560px]"
         style={{ border: "1px solid var(--border)" }}
       >
-        {BG.map(([cls, src, fallback]) => (
-          <img
-            key={cls}
-            src={src}
-            alt=""
-            loading="eager"
-            aria-hidden
-            className={`authbg pointer-events-none absolute inset-0 h-full w-full object-cover ${cls}`}
-            style={{ background: fallback }}
-          />
-        ))}
         <div className="auth-photo relative z-10 hidden flex-col justify-end p-8 md:flex">
           <span className="inline-flex w-fit items-center rounded-2xl bg-white/95 px-4 py-2.5" style={{ boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)" }}>
             <img src="/logo.png" alt="NimCuet" className="block h-7 w-auto" />
