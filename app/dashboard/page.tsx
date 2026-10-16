@@ -15,6 +15,27 @@ type Attempt = {
   created_at: string;
 };
 
+function dayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function calcStreak(all: Attempt[]): number {
+  const days = new Set(all.map((a) => {
+    const d = new Date(a.created_at);
+    return Number.isNaN(d.getTime()) ? "" : dayKey(d);
+  }));
+  days.delete("");
+  let streak = 0;
+  const cursor = new Date();
+  // Allow today to be empty (streak stays alive if yesterday is present).
+  if (!days.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while (days.has(dayKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
 function AttemptRow({ a, cloud = false }: { a: Attempt; cloud?: boolean }) {
   return (
     <div
@@ -48,6 +69,42 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub: st
       <div className="mono text-2xl font-extrabold" style={{ color: "var(--accent)" }}>{value}</div>
       <div className="mt-1 text-[13px] font-bold">{label}</div>
       <div className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>{sub}</div>
+    </div>
+  );
+}
+
+function TrendChart({ data }: { data: Attempt[] }) {
+  // Oldest → newest, last 10.
+  const pts = data.slice(0, 10).reverse();
+  if (pts.length === 0) return null;
+  const max = Math.max(...pts.map((a) => Number(a.score) || 0), 1);
+  const W = 560, H = 150, PAD = 8;
+  const bw = (W - PAD * 2) / pts.length;
+  return (
+    <div
+      className="mt-3 rounded-2xl px-5 py-4 backdrop-blur-xl"
+      style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
+    >
+      <div className="flex items-baseline justify-between">
+        <div className="text-sm font-extrabold tracking-tight">Score trend</div>
+        <div className="text-[11px]" style={{ color: "var(--muted)" }}>last {pts.length} mocks • oldest → newest</div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="Score trend chart">
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line key={f} x1={PAD} x2={W - PAD} y1={H * f} y2={H * f} stroke="var(--border)" strokeWidth="1" />
+        ))}
+        {pts.map((a, i) => {
+          const v = Number(a.score) || 0;
+          const h = Math.max(4, ((H - 30) * v) / max);
+          const x = PAD + i * bw + bw * 0.22;
+          return (
+            <g key={a.id ?? i}>
+              <rect x={x} y={H - 14 - h} width={Math.max(6, bw * 0.56)} height={h} rx="5" fill="var(--accent)" opacity={0.85} />
+              <text x={x + bw * 0.28} y={H - 18 - h} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text)">{v}</text>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }
@@ -102,18 +159,21 @@ export default function DashboardPage() {
   const statsSource = attempts.length > 0 ? attempts : localAttempts;
   const statsLabel = attempts.length > 0 ? "saved to cloud" : "on this device";
   const stats = useMemo(() => {
-    if (statsSource.length === 0) return { total: "0", best: "—", avg: "—", acc: "—" };
+    if (statsSource.length === 0) return { total: "0", best: "—", avg: "—", acc: "—", questions: "0", streak: "0" };
     const scores = statsSource.map((a) => Number(a.score) || 0);
     const best = Math.max(...scores);
     const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
     const correct = statsSource.reduce((s, a) => s + (Number(a.correct) || 0), 0);
     const wrong = statsSource.reduce((s, a) => s + (Number(a.wrong) || 0), 0);
+    const skipped = statsSource.reduce((s, a) => s + (Number(a.skipped) || 0), 0);
     const answered = correct + wrong;
     return {
       total: String(statsSource.length),
       best: String(Math.round(best * 10) / 10),
       avg: String(Math.round(avg * 10) / 10),
       acc: answered === 0 ? "—" : `${Math.round((correct / answered) * 100)}%`,
+      questions: String(correct + wrong + skipped),
+      streak: `${calcStreak(statsSource)}d`,
     };
   }, [statsSource]);
 
@@ -135,18 +195,30 @@ export default function DashboardPage() {
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
           {loading ? "Loading…" : displayName ? `Hello ${displayName.split(" ").slice(0, 2).join(" ")}` : "Hello"}
         </h1>
+        {!loading && statsSource.length > 0 && (
+          <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
+            {stats.streak === "0d" ? "Attempt a mock to start your streak." : `🔥 ${stats.streak} streak — keep it going.`}
+          </p>
+        )}
       </Reveal>
       {note && (
         <p className="mt-4 rounded-xl px-4 py-3 text-[13px]" style={{ background: "var(--pill)" }}>{note}</p>
       )}
       <Reveal>
-        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           <StatCard label="Mocks" value={loading ? "…" : stats.total} sub={statsLabel} />
           <StatCard label="Best score" value={loading ? "…" : stats.best} sub={statsLabel} />
           <StatCard label="Avg score" value={loading ? "…" : stats.avg} sub={statsLabel} />
           <StatCard label="Accuracy" value={loading ? "…" : stats.acc} sub="correct ÷ answered" />
+          <StatCard label="Questions" value={loading ? "…" : stats.questions} sub="attempted total" />
+          <StatCard label="Day streak" value={loading ? "…" : stats.streak} sub="consecutive days" />
         </div>
       </Reveal>
+      {!loading && attempts.length > 0 && (
+        <Reveal>
+          <TrendChart data={attempts} />
+        </Reveal>
+      )}
       <Reveal>
         <div
           className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4 backdrop-blur-xl"
