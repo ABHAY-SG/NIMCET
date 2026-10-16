@@ -1,10 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
-import AuthBg from "@/components/auth-bg";
 
+// Minimal verification landing, styled like a plain email-auth success page:
+// success message, then the tab tries to close itself. No clicks needed.
+// Same-device confirmations carry a session (auto-dashboard via fallback);
+// cross-device confirmations just close and let the original tab continue.
 function VerifiedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -13,6 +16,8 @@ function VerifiedContent() {
   const [phase, setPhase] = useState<"checking" | "ready" | "failed">(failed ? "failed" : "checking");
   const [count, setCount] = useState(3);
   const [target, setTarget] = useState("/login?verified=1");
+  const [hasSession, setHasSession] = useState(false);
+  const doneRef = useRef(false);
 
   useEffect(() => {
     if (failed) return;
@@ -22,11 +27,9 @@ function VerifiedContent() {
         const sb = getSupabase();
         const { data: { session } } = await sb.auth.getSession();
         if (cancelled) return;
-        // Session present (same-device confirm or fresh OAuth): head for the
-        // dashboard. Otherwise fall back to login — never strand the user,
-        // and never falsely claim logged-in.
         const nextTarget = session ? "/dashboard" : "/login?verified=1";
         setTarget(nextTarget);
+        setHasSession(!!session);
         // If this confirmation carried ?challenge=, mark the rendezvous row
         // (authenticated, so RLS passes) and wake the original waiting tab
         // via BroadcastChannel + storage event. Best-effort only.
@@ -61,66 +64,71 @@ function VerifiedContent() {
   }, []);
 
   useEffect(() => {
-    if (phase !== "ready") return;
+    if (phase !== "ready" || doneRef.current) return;
     if (count <= 0) {
-      router.replace(target);
+      doneRef.current = true;
+      try { window.close(); } catch {}
+      // window.close() is blocked unless a script opened this tab. When this
+      // tab holds a session, fall back to the dashboard; otherwise stay on
+      // this success page with a manual login link.
+      if (hasSession) {
+        window.setTimeout(() => {
+          try {
+            if (!document.hidden) router.replace(target);
+          } catch {
+            router.replace(target);
+          }
+        }, 800);
+      }
       return;
     }
     const t = setTimeout(() => setCount((c) => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, count, target, router]);
-
-  if (phase === "failed") {
-    return (
-      <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
-        <AuthBg />
-        <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl" style={{ background: "var(--pill)", color: "#dc2626" }}>!</div>
-          <h1 className="mt-5 text-2xl font-extrabold tracking-tight">Email confirmed</h1>
-          <p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>
-            Your email was confirmed, but this signup session has expired or could not be matched. Return to the device where you signed up and log in there.
-          </p>
-          <a href="/login" className="mt-6 inline-flex rounded-xl px-5 py-3 text-sm font-bold text-white" style={{ background: "var(--accent)" }}>
-            Log in
-          </a>
-        </section>
-      </main>
-    );
-  }
-
-  if (phase === "checking") {
-    return (
-      <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
-        <AuthBg />
-        <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-          <div className="mx-auto h-14 w-14 animate-spin rounded-full" style={{ border: "3px solid var(--border)", borderTopColor: "var(--accent)" }} />
-          <h1 className="mt-5 text-2xl font-extrabold tracking-tight">Security Challenge</h1>
-          <p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>
-            Verifying your confirmation — one moment.
-          </p>
-        </section>
-      </main>
-    );
-  }
+  }, [phase, count, target, hasSession, router]);
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
-      <AuthBg />
-      <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-        <h1 className="text-2xl font-extrabold tracking-tight">Email Authentication</h1>
-        <div className="mx-auto mt-5 flex h-14 w-14 items-center justify-center rounded-full text-2xl text-white" style={{ background: "#16a34a" }}>✓</div>
-        <p className="mt-5 font-semibold">Email authentication is successful.</p>
-        <p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>
-          Continuing in {count} second{count === 1 ? "" : "s"} — this tab will take you forward automatically, or close it and continue where you started.
-        </p>
-        <p className="mt-5 text-sm" style={{ color: "var(--muted)" }}>
-          Not working?{" "}
-          <a href={target} className="font-bold underline" style={{ color: "var(--accent)" }}>
-            Click Here To Continue
-          </a>
-          .
-        </p>
-      </section>
+    <main style={{ background: "#ffffff", minHeight: "100svh", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+      <div style={{ width: "100%", maxWidth: 640, textAlign: "center" }}>
+        <h1 style={{ color: "#555555", fontWeight: 500, fontSize: 28, letterSpacing: 0 }}>Email Authentication</h1>
+        {phase === "checking" ? (
+          <p style={{ color: "#333333", marginTop: 28, fontSize: 16 }}>Verifying your confirmation — one moment.</p>
+        ) : phase === "failed" ? (
+          <>
+            <p style={{ color: "#333333", marginTop: 28, fontSize: 16 }}>
+              Your email was confirmed, but this signup session has expired or could not be matched.
+            </p>
+            <p style={{ color: "#333333", marginTop: 20, fontSize: 16 }}>
+              <a href="/login" style={{ color: "#1a73e8", textDecoration: "underline" }}>Continue to log in</a>.
+            </p>
+          </>
+        ) : (
+          <>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#7cb342", color: "#ffffff", fontSize: 28, lineHeight: "56px", margin: "36px auto 0" }}>✓</div>
+            <p style={{ color: "#222222", marginTop: 32, fontSize: 17 }}>Email authentication is successful.</p>
+            <p style={{ color: "#222222", marginTop: 28, fontSize: 17, lineHeight: 1.7 }}>
+              This browser window/tab will attempt to automatically close in {count} second{count === 1 ? "" : "s"},
+              or you may manually close.
+            </p>
+            {hasSession ? (
+              <p style={{ color: "#555555", marginTop: 28, fontSize: 14 }}>
+                Not working?{" "}
+                <a href={target} style={{ color: "#1a73e8", textDecoration: "underline" }}>
+                  Click Here To Continue
+                </a>
+                .
+              </p>
+            ) : (
+              <p style={{ color: "#555555", marginTop: 28, fontSize: 14 }}>
+                Your email is confirmed — close this tab and continue on your other device, or{" "}
+                <a href="/login?verified=1" style={{ color: "#1a73e8", textDecoration: "underline" }}>
+                  continue to log in
+                </a>
+                .
+              </p>
+            )}
+          </>
+        )}
+      </div>
     </main>
   );
 }
@@ -129,9 +137,8 @@ export default function EmailVerifiedPage() {
   return (
     <Suspense
       fallback={
-        <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
-          <AuthBg />
-          <p className="text-sm" style={{ color: "var(--muted)" }}>Checking verification status…</p>
+        <main style={{ background: "#ffffff", minHeight: "100svh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p style={{ color: "#555555", fontSize: 15 }}>Verifying…</p>
         </main>
       }
     >

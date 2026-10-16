@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 import AuthBg from "@/components/auth-bg";
 
-const POLL_MS = 4000;
+const POLL_MS = 3000;
 const MAX_WAIT_MS = 30 * 60 * 1000;
 const RESEND_COOLDOWN_S = 60;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -25,7 +25,6 @@ function CheckEmailContent() {
   const [msg, setMsg] = useState("");
   const [resendBusy, setResendBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-  const [verifyBusy, setVerifyBusy] = useState(false);
   const [count, setCount] = useState(3);
   const [target, setTarget] = useState("/login?verified=1");
   const startRef = useRef(0);
@@ -235,16 +234,6 @@ function CheckEmailContent() {
     }
   };
 
-  const manualCheck = async () => {
-    if (verifyBusy) return;
-    setVerifyBusy(true);
-    try {
-      await checkOnce(true);
-    } finally {
-      setVerifyBusy(false);
-    }
-  };
-
   if (phase === "verified-session" || phase === "verified-nosession") {
     return (
       <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
@@ -286,15 +275,6 @@ function CheckEmailContent() {
             </p>
           )}
           <div className="mt-6 flex flex-col gap-2.5">
-            <button
-              type="button"
-              onClick={manualCheck}
-              disabled={verifyBusy}
-              className="w-full cursor-pointer rounded-xl py-3 text-sm font-bold disabled:opacity-50"
-              style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
-            >
-              {verifyBusy ? "Checking…" : "I've verified — continue"}
-            </button>
             <button
               type="button"
               onClick={resend}
@@ -353,37 +333,12 @@ function CheckEmailContent() {
         <div className="mt-6 flex flex-col gap-2.5">
           <button
             type="button"
-            onClick={manualCheck}
-            disabled={verifyBusy}
-            className="w-full cursor-pointer rounded-xl py-3 text-sm font-bold disabled:opacity-50"
-            style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
-          >
-            {verifyBusy ? "Checking…" : "I've verified — continue"}
-          </button>
-          <button
-            type="button"
             onClick={resend}
             disabled={resendBusy || cooldown > 0}
             className="w-full cursor-pointer rounded-xl py-3 text-sm font-bold transition-transform hover:-translate-y-px disabled:opacity-50"
             style={{ border: "1px solid var(--border)" }}
           >
             {resendBusy ? "Sending…" : cooldown > 0 ? `Resend available in ${cooldown}s` : "Resend confirmation email"}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/signup")}
-            className="w-full cursor-pointer rounded-xl py-3 text-sm font-bold"
-            style={{ border: "1px solid var(--border)" }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/login")}
-            className="w-full cursor-pointer rounded-xl py-3 text-sm font-bold"
-            style={{ border: "1px solid var(--border)" }}
-          >
-            Go to log in
           </button>
         </div>
       </section>

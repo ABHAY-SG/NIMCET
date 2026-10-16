@@ -126,8 +126,8 @@ export async function GET(req: Request) {
           // code post-verify); only the signup browser holds the PKCE
           // verifier, so no session can be minted here (e.g. confirmed on
           // another device). Mark the challenge best-effort so the original
-          // tab can auto-sign-in, then send them to log in — the email is
-          // confirmed.
+          // tab transitions automatically, then show the minimal success
+          // page (it tries to close itself) instead of a login screen.
           try {
             const cid = searchParams.get("challenge");
             if (cid) {
@@ -138,7 +138,8 @@ export async function GET(req: Request) {
                 .gt("expires_at", new Date().toISOString());
             }
           } catch {}
-          return NextResponse.redirect(new URL("/login?verified=1", origin));
+          const next = challenge ? `/auth/verified?challenge=${encodeURIComponent(challenge)}` : "/auth/verified";
+          return NextResponse.redirect(new URL(next, origin));
         }
         return fail("exchange");
       }
