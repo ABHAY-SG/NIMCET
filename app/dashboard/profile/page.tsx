@@ -131,6 +131,7 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState(false);
   const [formMsg, setFormMsg] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [localAttempts, setLocalAttempts] = useState<Attempt[]>([]);
   const [streakSummary, setStreakSummary] = useState<{
     current: number;
     best: number;
@@ -142,12 +143,22 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem("nimcuet-attempts");
+      if (raw) setLocalAttempts(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  // Same source rule as the dashboard: cloud first, this-device fallback.
+  const histSrc = attempts.length > 0 ? attempts : localAttempts;
+
+  useEffect(() => {
     setStreakSummary({
-      current: calcStreak(attempts),
-      best: calcBestStreak(attempts),
-      week: lastWeekActivity(attempts),
+      current: calcStreak(histSrc),
+      best: calcBestStreak(histSrc),
+      week: lastWeekActivity(histSrc),
     });
-  }, [attempts]);
+  }, [attempts, localAttempts]);
 
   useEffect(() => {
     (async () => {
@@ -192,18 +203,18 @@ export default function ProfilePage() {
   }, [router]);
 
   const overview = useMemo(() => {
-    if (attempts.length === 0) return { tests: "0", questions: "0", best: "—", acc: "—" };
-    const correct = attempts.reduce((s, a) => s + (Number(a.correct) || 0), 0);
-    const wrong = attempts.reduce((s, a) => s + (Number(a.wrong) || 0), 0);
-    const skipped = attempts.reduce((s, a) => s + (Number(a.skipped) || 0), 0);
+    if (histSrc.length === 0) return { tests: "0", questions: "0", best: "—", acc: "—" };
+    const correct = histSrc.reduce((s, a) => s + (Number(a.correct) || 0), 0);
+    const wrong = histSrc.reduce((s, a) => s + (Number(a.wrong) || 0), 0);
+    const skipped = histSrc.reduce((s, a) => s + (Number(a.skipped) || 0), 0);
     const answered = correct + wrong;
     return {
-      tests: String(attempts.length),
+      tests: String(histSrc.length),
       questions: String(correct + wrong + skipped),
-      best: String(Math.max(...attempts.map((a) => Number(a.score) || 0))),
+      best: String(Math.max(...histSrc.map((a) => Number(a.score) || 0))),
       acc: answered === 0 ? "—" : `${Math.round((correct / answered) * 100)}%`,
     };
-  }, [attempts]);
+  }, [attempts, localAttempts]);
 
   const openNameEditor = () => {
     const parts = displayName.trim().split(/\s+/).filter(Boolean);
@@ -574,6 +585,26 @@ export default function ProfilePage() {
                 {loading ? "…" : `🔥 ${formatStreak(streakSummary.current)}`}
               </div>
               <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>current • best {streakSummary.best}d all-time</p>
+              {streakSummary.best > 0 && (
+                <div className="mt-3">
+                  <div className="h-2 overflow-hidden rounded-full" style={{ background: "var(--pill)" }} role="progressbar"
+                    aria-valuenow={streakSummary.current} aria-valuemin={0} aria-valuemax={streakSummary.best}
+                    aria-label="Progress toward best streak">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.min(100, Math.round((streakSummary.current / Math.max(streakSummary.best, 1)) * 100))}%`,
+                        background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))",
+                      }}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-[11px] font-semibold" style={{ color: "var(--muted)" }}>
+                    {streakSummary.current >= streakSummary.best && streakSummary.best > 0
+                      ? "🏆 All-time best — now extend it."
+                      : `${streakSummary.best - streakSummary.current}d to match your best.`}
+                  </p>
+                </div>
+              )}
               <div className="mt-4 flex justify-between gap-1">
                 {streakSummary.week.map((d, i) => (
                   <div key={i} className="flex flex-1 flex-col items-center gap-1">
@@ -600,7 +631,7 @@ export default function ProfilePage() {
             </h2>
             <h3 className="mt-4 text-center text-sm font-extrabold" style={{ color: "var(--muted)" }}>Test Performance Over Time</h3>
             {mounted ? (
-              <PerformanceLine data={attempts} />
+              <PerformanceLine data={histSrc} />
             ) : (
               <p className="mt-3 text-center text-sm" style={{ color: "var(--muted)" }}>Loading chart…</p>
             )}
