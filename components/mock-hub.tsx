@@ -68,12 +68,17 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
     (async () => {
       try {
         const sb = getSupabase();
-        const [{ data: tdata }, { data: qdata }] = await Promise.all([
-          sb.from("tests").select("id,exam,title,tag,minutes,free,published,question_ids").eq("published", true).limit(30),
-          sb.from("question_bank_public").select("id,exam,section,difficulty,stem,options,plus,minus").limit(300),
-        ]);
+        const { data: tdata, error: tErr } = await sb
+          .from("tests")
+          .select("id,exam,title,tag,minutes,free,published,question_ids")
+          .eq("published", true)
+          .limit(30);
+        if (tErr) throw tErr;
+        const qRes = await fetch("/api/student/questions?limit=300", { credentials: "same-origin" });
+        const qj = (await qRes.json()) as { error?: string; rows?: BankRow[] };
+        if (!qRes.ok) throw new Error(qj.error || "Bank load failed.");
         if (tdata) setTests(tdata as Test[]);
-        if (qdata) setBank(qdata as BankRow[]);
+        setBank(qj.rows ?? []);
       } catch {}
       setReady(true);
     })();
@@ -112,12 +117,12 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
     let rows: BankRow[] = t.question_ids.map((id) => byId.get(id)).filter((q): q is BankRow => !!q);
     if (missing.length > 0) {
       try {
-        const sb = getSupabase();
-        const { data } = await sb
-          .from("question_bank_public")
-          .select("id,exam,section,difficulty,stem,options,plus,minus")
-          .in("id", missing.slice(0, 200));
-        for (const q of (data ?? []) as BankRow[]) {
+        const qRes = await fetch(`/api/student/questions?ids=${missing.slice(0, 200).join(",")}`, {
+          credentials: "same-origin",
+        });
+        const qj = (await qRes.json()) as { error?: string; rows?: BankRow[] };
+        if (!qRes.ok) throw new Error(qj.error || "Load failed.");
+        for (const q of qj.rows ?? []) {
           byId.set(q.id, q);
         }
         rows = t.question_ids.map((id) => byId.get(id)).filter((q): q is BankRow => !!q);
