@@ -2,12 +2,13 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getSupabase } from "@/lib/supabase";
+import { getAuthClient, getSupabase } from "@/lib/supabase";
 import AuthBg from "@/components/auth-bg";
 
 const POLL_MS = 3000;
 const MAX_WAIT_MS = 30 * 60 * 1000;
 const RESEND_COOLDOWN_S = 60;
+const RATE_LIMIT_COOLDOWN_S = 180;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Phase = "waiting" | "verified-session" | "verified-nosession" | "timeout";
@@ -63,7 +64,7 @@ function CheckEmailContent() {
         setMsg("This waiting session is older than 24 hours — confirmation links expire. Request a fresh link below.");
       }
       // Restore resend cooldown across reloads so a refresh can't bypass
-      // the guard and trip Supabase's "email rate limit exceeded".
+      // the guard and trip Supabase's email rate limit.
       try {
         const lastResend = Number(window.localStorage.getItem("nimcuet-resend-at") ?? "0");
         if (lastResend) {
@@ -74,10 +75,10 @@ function CheckEmailContent() {
     } catch {}
   }, [searchParams]);
 
-  const checkOnce = useCallback(async (manual = false) => {
+  const checkOnce = useCallback(async () => {
     if (phaseRef.current !== "waiting") return false;
     try {
-      const sb = getSupabase();
+      const sb = getAuthClient();
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         try {
@@ -95,16 +96,16 @@ function CheckEmailContent() {
       const cid = challengeIdRef.current;
       if (cid) {
         try {
-          const sb2 = getSupabase();
-          const { data } = await sb2
+          // Anon clients can only read verified rows (RLS) — a result here
+          // means the email was confirmed, possibly on another device.
+          const { data } = await getSupabase()
             .from("signup_verification_sessions")
             .select("verified_at")
             .eq("challenge_id", cid)
             .maybeSingle();
           const verifiedAt = (data as { verified_at?: string | null } | null)?.verified_at;
           if (verifiedAt) {
-            // Email confirmed (possibly on another device). This browser has no
-            // session, so never claim logged-in — send them to log in.
+            // No session in THIS browser: never claim logged-in — go log in.
             if (session) {
               setTarget("/dashboard");
               setPhase("verified-session");
@@ -116,12 +117,8 @@ function CheckEmailContent() {
           }
         } catch {}
       }
-      if (manual) {
-        setMsg("We couldn't confirm yet — check your inbox and spam, click the newest link, wait a few seconds, then try again.");
-      }
       return false;
     } catch {
-      if (manual) setMsg("Could not reach the server. Check your connection and try again.");
       return false;
     }
   }, []);
@@ -141,7 +138,7 @@ function CheckEmailContent() {
         window.clearInterval(id);
         return;
       }
-      const done = await checkOnce(false);
+      const done = await checkOnce();
       if (done) window.clearInterval(id);
     }, POLL_MS);
     return () => window.clearInterval(id);
@@ -152,10 +149,10 @@ function CheckEmailContent() {
     let ch: BroadcastChannel | null = null;
     try {
       ch = new BroadcastChannel("nimcuet-verify");
-      ch.onmessage = () => { checkOnce(false); };
+      ch.onmessage = () => { checkOnce(); };
     } catch {}
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "nimcuet-just-verified") checkOnce(false);
+      if (e.key === "nimcuet-just-verified") checkOnce();
     };
     window.addEventListener("storage", onStorage);
     return () => {
@@ -224,7 +221,7 @@ function CheckEmailContent() {
       if (isRateLimit(raw)) {
         // Supabase throttles confirmation mail strictly; hammering resend
         // only extends the block. Back off longer — the first email stays valid.
-        setCooldown(180);
+        setCooldown(RATE_LIMIT_COOLDOWN_S);
         setMsg(`Email limit hit — wait a few minutes before resending. Your first email is still valid (check spam). (Supabase: ${raw})`);
         return;
       }

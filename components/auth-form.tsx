@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabase } from "@/lib/supabase";
+import { forgetMemorySession, getSupabase, markMemorySessionActive, signOutAll } from "@/lib/supabase";
 import ThemeFab from "@/components/theme-fab";
 
 function EyeIcon({ off = false }: { off?: boolean }) {
@@ -38,9 +38,6 @@ const BG: Array<[string, string, string]> = [
   ["authbg-forest", "/auth/bg-forest.jpg", "#0b1512"],
   ["authbg-sunset", "/auth/bg-sunset.jpg", "#431407"],
 ];
-
-const SLOPE_RIGHT = "polygon(10% 0, 100% 0, 100% 100%, 0% 100%)";
-const SLOPE_LEFT = "polygon(0 0, 100% 0, 90% 100%, 0% 100%)";
 
 export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) {
   const router = useRouter();
@@ -111,10 +108,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       setMode("in");
       setMsg("That reset link expired, was already used, or was opened on another device. Request a fresh one with Forgot password below.");
     } else if (params.get("verify-required") === "1") {
-      try {
-        const sb = getSupabase();
-        sb.auth.signOut().catch(() => {});
-      } catch {}
+      signOutAll().catch(() => {});
       setMode("in");
       setMsg("Please confirm your email using the link we sent, then log in. Need a fresh link? Open the verification page to resend.");
       setShowCheckEmailLink(true);
@@ -136,6 +130,10 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     e.preventDefault();
     setMsg("");
     setShowCheckEmailLink(false);
+    // Fresh attempt under a single identity: drop any tab-scoped session so
+    // a stale memory login can never leak into the new attempt's result.
+    try { await getSupabase(false).auth.signOut(); } catch {}
+    forgetMemorySession();
     const cleanEmail = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) { setMsg("Enter a valid email address (e.g. you@example.com)."); return; }
     if (mode === "up") {
@@ -177,7 +175,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             password,
           });
           if (!probeError) {
-            try { await sb.auth.signOut(); } catch {}
+            await signOutAll().catch(() => {});
             setMode("in");
             setMsg("An account with this email already exists. Please log in instead.");
             return;
@@ -185,10 +183,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           if (/email not confirmed/i.test(probeError.message)) {
             persistPending(cleanEmail, challengeId);
             if (data.user?.id) await insertChallengeRow(challengeId, data.user.id);
-            // No auto-resend here: signUp above already triggered a
-            // confirmation email, and an immediate second send trips
-            // Supabase's "email rate limit exceeded". The waiting page
-            // offers a cooldown-guarded resend instead.
+            // No auto-resend: signUp already triggered a confirmation email,
+            // and an immediate second send trips Supabase's email rate limit.
             router.push(`/auth/check-email?email=${encodeURIComponent(cleanEmail)}&challenge=${challengeId}`);
             return;
           }
@@ -206,7 +202,10 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         await insertChallengeRow(challengeId, data.user.id);
         router.push(`/auth/check-email?email=${encodeURIComponent(cleanEmail)}&challenge=${challengeId}`);
       } else {
-        const { data, error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
+        // Remember-me OFF keeps the session tab-scoped (memory only):
+        // closing the tab ends it; a reload asks for login again.
+        const loginSb = getSupabase(remember);
+        const { data, error } = await loginSb.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
           if (/email not confirmed/i.test(error.message)) {
             try { window.localStorage.setItem("nimcuet-pending-email", cleanEmail); } catch {}
@@ -219,12 +218,13 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           throw error;
         }
         if (data.user) {
-          const { error: registryError } = await sb.from("oauth_account_registry").insert({
+          const { error: registryError } = await loginSb.from("oauth_account_registry").insert({
             user_id: data.user.id,
             email: data.user.email ?? cleanEmail,
           });
           if (registryError && registryError.code !== "23505") throw registryError;
         }
+        if (!remember) markMemorySessionActive();
         router.push("/dashboard");
       }
     } catch (err: unknown) {
@@ -241,6 +241,10 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
 
   const oauth = async (provider: "google" | "github") => {
     setMsg("");
+    // Drop any tab-scoped session so a stale memory login can never leak
+    // into the OAuth result.
+    try { await getSupabase(false).auth.signOut(); } catch {}
+    forgetMemorySession();
     try {
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOAuth({
@@ -278,113 +282,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   };
 
   const inputCls = "w-full rounded-xl py-2.5 pl-11 pr-11 text-sm outline-none transition-shadow focus:ring-2";
-
-  const form = (which: "in" | "up") => (
-    <div className="flex h-full flex-col justify-center p-6 sm:p-8">
-      <h1 className="text-2xl font-extrabold tracking-tight sm:text-[26px]">
-        {which === "in" ? "Welcome back" : "Join NimCuet"}
-      </h1>
-      <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
-        {which === "in" ? "Log in to continue to your dashboard." : "One account for mocks, reports and streaks."}
-      </p>
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          type="button" onClick={() => oauth("google")}
-          className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-transform hover:-translate-y-px"
-          style={{ border: "1px solid var(--border)", background: "var(--pill)" }}
-        >
-          <GoogleIcon /> Google
-        </button>
-        <button
-          type="button" onClick={() => oauth("github")}
-          className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-transform hover:-translate-y-px"
-          style={{ border: "1px solid var(--border)", background: "var(--pill)" }}
-        >
-          <GithubIcon /> GitHub
-        </button>
-      </div>
-      <div className="my-3.5 flex items-center gap-3 text-[10px] font-bold" style={{ color: "var(--muted)" }}>
-        <span className="h-px flex-1" style={{ background: "var(--border)" }} /> OR <span className="h-px flex-1" style={{ background: "var(--border)" }} />
-      </div>
-      <form onSubmit={submit}>
-        <label className="mb-1.5 block text-[13px] font-bold">Email</label>
-        <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px]" style={{ color: "var(--muted)" }}>✉</span>
-          <input type="email" required value={which === mode ? email : ""} onChange={(e) => setEmail(e.target.value)} onFocus={() => which !== mode && setMode(which)} placeholder="Enter your email" className={inputCls}
-            style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
-        </div>
-        <div className="mb-1.5 mt-3.5 flex items-center justify-between">
-          <label className="text-[13px] font-bold">Password</label>
-          {which === "in" && (
-            <button type="button" onClick={forgot} className="text-xs font-bold" style={{ color: "var(--accent)" }}>
-              Forgot password?
-            </button>
-          )}
-        </div>
-        <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="10" width="16" height="10" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
-          </span>
-          <input type={show ? "text" : "password"} required minLength={6} value={which === mode ? password : ""} onChange={(e) => setPassword(e.target.value)} onFocus={() => which !== mode && setMode(which)} placeholder={which === "in" ? "Enter your password" : "Min. 6 characters"} className={inputCls}
-            style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
-          <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Hide password" : "Show password"} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
-            <EyeIcon off={!show} />
-          </button>
-        </div>
-        {which === "up" && (
-          <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs leading-5" style={{ color: "var(--muted)" }}>
-            <input type="checkbox" required className="mt-1 h-4 w-4 shrink-0 accent-current" />
-            <span>I agree to the <a href="/terms" className="font-bold" style={{ color: "var(--accent)" }}>Terms</a> and <a href="/privacy" className="font-bold" style={{ color: "var(--accent)" }}>Privacy Policy</a></span>
-          </label>
-        )}
-        {which === mode && msg && (
-          <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
-        )}
-        <button
-          type="submit" disabled={busy}
-          onClick={() => setMode(which)}
-          className="cta-glow mt-3 w-full rounded-xl py-3 text-sm font-extrabold text-white disabled:opacity-50"
-          style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
-        >
-          {busy && which === mode ? "Please wait…" : which === "in" ? "Log in →" : "Create account →"}
-        </button>
-      </form>
-    </div>
-  );
-
-  const panel = (which: "in" | "up") => (
-    <div key={which} className="panel-in flex h-full flex-col justify-center p-8 text-white sm:p-10">
-      <span className="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold" style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.24)", backdropFilter: "blur(8px)" }}>
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#fff" }} />
-        {which === "in" ? "Welcome back" : "New here?"}
-      </span>
-      <h2 className="mt-4 text-4xl font-extrabold leading-[1.05] drop-shadow-lg sm:text-[2.6rem]">
-        {which === "in" ? (<>Welcome<br />back.</>) : (<>Join<br />NimCuet.</>)}
-      </h2>
-      <div className="mt-3 h-1 w-12 rounded-full" style={{ background: "rgba(255,255,255,0.7)" }} />
-      <p className="mt-3 max-w-xs text-sm leading-6 text-white/80">
-        {which === "in"
-          ? "Your mocks, reports and streaks are exactly where you left them. Log in to continue."
-          : "One account for every mock, every report and every streak. Free tier included."}
-      </p>
-      <div className="mono mt-4 flex gap-2 text-[11px] font-bold">
-        <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)" }}>120Q NIMCET</span>
-        <span className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)" }}>75Q CUET</span>
-      </div>
-      <div className="mt-5 rounded-2xl p-4 text-[13px] leading-6 text-white/80" style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.16)", backdropFilter: "blur(10px)" }}>
-        {which === "in" ? "Saved attempts sync to your dashboard automatically." : "No card needed. Cancel anytime."}
-        <div className="mt-2 text-white/60">• NIMCUET + CUET PG mocks</div>
-      </div>
-      <button
-        type="button"
-        onClick={() => { setMode(which === "in" ? "up" : "in"); setMsg(""); }}
-        className="mt-6 w-fit rounded-full px-6 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-px hover:scale-[1.03]"
-        style={{ border: "1.5px solid rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)" }}
-      >
-        {which === "in" ? "New here? Create account →" : "Have an account? Log in →"}
-      </button>
-    </div>
-  );
 
   return (
     <>
@@ -593,6 +490,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
                 Open verification page →
               </button>
             )}
+
             <button
               type="submit" disabled={busy}
               className="mt-4 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold text-white transition-all hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"

@@ -20,6 +20,10 @@ function isExpiredOrUsedUp(message: string): boolean {
   return /expir|invalid|consumed|not found|already used/i.test(message);
 }
 
+function validProvider(value: string | null): "github" | "google" | null {
+  return value === "github" || value === "google" ? value : null;
+}
+
 export async function GET(req: Request) {
   const { searchParams, origin } = new URL(req.url);
   const fail = (reason: string) => NextResponse.redirect(new URL(`/login?error=${reason}`, origin));
@@ -52,27 +56,15 @@ export async function GET(req: Request) {
         // and must never turn a confirmed email into a failure screen:
         // a verified user can always log in with their password.
         // Diagnostics: error CODES only (no tokens, emails, or user data).
-        const { error: registryError } = await (async () => {
-          try {
-            const ok = await addAccountRegistry(sb);
-            return { error: ok ? null : new Error("registry-unavailable") };
-          } catch (e) {
-            return { error: e };
-          }
-        })();
-        if (registryError) {
-          const code =
-            registryError instanceof Error
-              ? registryError.message
-              : typeof registryError === "object" && registryError !== null && "code" in registryError
-                ? String((registryError as { code: unknown }).code)
-                : "unknown";
-          console.error(`[auth] signup registry step failed code=${code}`);
+        try {
+          const ok = await addAccountRegistry(sb);
+          if (!ok) console.error("[auth] signup registry step failed code=registry-unavailable");
+        } catch {
+          console.error("[auth] signup registry step failed code=unknown");
         }
 
         // Mark the rendezvous row so the original waiting tab (possibly on
-        // another device, polling as anon) can detect confirmation. Needs the
-        // session from verifyOtp above, so it only runs when authenticated.
+        // another device, polling as anon) can detect confirmation.
         const challenge = searchParams.get("challenge");
         if (challenge) {
           try {
@@ -87,11 +79,10 @@ export async function GET(req: Request) {
           } catch {}
         }
 
-        // verifyOtp has established a session in the browser that opened the
-        // confirmation link. Keep it (never signOut here) and route through
-        // the interstitial checkpoint, preserving ?challenge= so that page
-        // can also mark/broadcast the confirmation for the waiting tab.
-        // It forwards to the dashboard once it sees the session.
+        // verifyOtp established a session in the browser that opened the
+        // link. Keep it (never signOut here) and route through the minimal
+        // success page, preserving ?challenge= so that page can also
+        // mark/broadcast the confirmation for the waiting tab.
         const next = challenge ? `/auth/verified?challenge=${encodeURIComponent(challenge)}` : "/auth/verified";
         return NextResponse.redirect(new URL(next, origin));
       }
@@ -102,21 +93,20 @@ export async function GET(req: Request) {
       return NextResponse.redirect(new URL("/auth/verified", origin));
     }
 
-    // Provider refusal (e.g. user pressed Cancel on GitHub's screen):
-    // no code is issued and no session exists. Send them back to the page
-    // they started from — signup stays signup — without signing anything in.
-    if (!searchParams.get("code") && !searchParams.get("token_hash") && /access_denied|user_denied|cancel/i.test(searchParams.get("error") ?? "")) {
+    // Provider refusal (e.g. Cancel on GitHub's/Google's screen): no code is
+    // issued and no session exists. Send them back to the page they started
+    // from — signup stays signup — without signing anything in.
+    if (!searchParams.get("code") && /access_denied|user_denied|cancel/i.test(searchParams.get("error") ?? "")) {
       const backMode = searchParams.get("mode") === "up" ? "up" : "in";
-      const backProv = searchParams.get("provider");
+      const backProv = validProvider(searchParams.get("provider"));
       const backTo = backMode === "up" ? "/signup" : "/login";
-      const suffix = backProv === "github" || backProv === "google" ? `&provider=${backProv}` : "";
-      return NextResponse.redirect(new URL(`${backTo}?error=cancelled${suffix}`, origin));
+      return NextResponse.redirect(new URL(`${backTo}?error=cancelled${backProv ? `&provider=${backProv}` : ""}`, origin));
     }
 
     // OAuth (Google/GitHub) returns a PKCE code. Email confirmation links
     // also land here with ONLY a code (Supabase consumes the token server
     // side): our signup links always carry ?challenge=, OAuth links carry
-    // ?mode= — that tells the two flows apart.
+    // ?mode= (plus ?provider=) — that tells the flows apart.
     const code = searchParams.get("code");
     if (code) {
       const challenge = searchParams.get("challenge");
@@ -125,8 +115,7 @@ export async function GET(req: Request) {
       const hasMode = searchParams.has("mode");
       // OAuth-only provider tag (email links never carry it): used solely to
       // word error messages correctly. Never trusted for auth decisions.
-      const provParam = searchParams.get("provider");
-      const prov = hasMode && (provParam === "github" || provParam === "google") ? provParam : null;
+      const prov = hasMode ? validProvider(searchParams.get("provider")) : null;
       const ofail = (reason: string) =>
         NextResponse.redirect(new URL(`/login?error=${reason}${prov ? `&provider=${prov}` : ""}`, origin));
       const { error } = await sb.auth.exchangeCodeForSession(code);
@@ -141,16 +130,13 @@ export async function GET(req: Request) {
         if (isEmailFlow && /verifier/i.test(error.message)) {
           // The email WAS confirmed server-side (Supabase only mints this
           // code post-verify); only the signup browser holds the PKCE
-          // verifier, so no session can be minted here (e.g. confirmed on
-          // another device). Mark the challenge best-effort so the original
-          // tab transitions automatically, then show the minimal success
-          // page (it tries to close itself) instead of a login screen.
+          // verifier, so no session can be minted here. Mark best-effort so
+          // the waiting tab transitions, then show the minimal success page.
           try {
-            const cid = searchParams.get("challenge");
-            if (cid) {
+            if (challenge) {
               await sb.from("signup_verification_sessions")
                 .update({ verified_at: new Date().toISOString() })
-                .eq("challenge_id", cid)
+                .eq("challenge_id", challenge)
                 .is("verified_at", null)
                 .gt("expires_at", new Date().toISOString());
             }
@@ -162,9 +148,8 @@ export async function GET(req: Request) {
       }
 
       if (isEmailFlow) {
-        // Same browser that signed up: the exchange above established a real
-        // session (PKCE verifier cookie was present), and the email is now
-        // verified. Keep that session (never signOut) and checkpoint.
+        // Same browser that signed up: the exchange established a real
+        // session and the email is now verified. Keep it (never signOut).
         // Best-effort bookkeeping only — never fail the confirmation itself.
         try {
           const { data: { user: confirmedUser } } = await sb.auth.getUser();
@@ -173,11 +158,10 @@ export async function GET(req: Request) {
               user_id: confirmedUser.id,
               email: confirmedUser.email ?? null,
             });
-            const cid = challenge;
-            if (cid) {
+            if (challenge) {
               await sb.from("signup_verification_sessions")
                 .update({ verified_at: new Date().toISOString() })
-                .eq("challenge_id", cid)
+                .eq("challenge_id", challenge)
                 .eq("user_id", confirmedUser.id)
                 .is("verified_at", null);
             }
@@ -194,10 +178,9 @@ export async function GET(req: Request) {
         return NextResponse.redirect(new URL("/reset-password", origin));
       }
 
-      // Legacy email links (sent before ?challenge= existed, e.g. via resend
-      // without a challenge) carry neither ?challenge= nor ?mode=. A
-      // successful exchange here means the email is confirmed and a session
-      // was minted — treat it as an email confirmation, NOT an OAuth failure.
+      // Legacy email links (sent before ?challenge= existed) carry neither
+      // ?challenge= nor ?mode=. A successful exchange means the email is
+      // confirmed and a session was minted — treat as email confirmation.
       if (!hasMode) {
         try {
           const { data: { user: legacyUser } } = await sb.auth.getUser();
@@ -237,7 +220,7 @@ export async function GET(req: Request) {
         }
         if (!(await addAccountRegistry(sb))) {
           await sb.auth.signOut();
-          return fail("registry");
+          return ofail("registry");
         }
         return NextResponse.redirect(new URL("/auth/verified?mode=oauth", origin));
       }

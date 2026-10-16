@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
-import { getSupabase } from "@/lib/supabase";
+import { getAuthClient, signOutAll } from "@/lib/supabase";
 
 type Attempt = {
   id: string;
@@ -58,11 +58,11 @@ export default function DashboardPage() {
   useEffect(() => {
     (async () => {
       try {
-        const sb = getSupabase();
+        const sb = getAuthClient();
         const { data: { user } } = await sb.auth.getUser();
         if (!user) { router.replace("/login"); return; }
         if (!user.email_confirmed_at) {
-          try { await sb.auth.signOut(); } catch {}
+          try { await signOutAll(); } catch {}
           router.replace("/login?verify-required=1");
           return;
         }

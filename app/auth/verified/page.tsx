@@ -2,12 +2,12 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getSupabase } from "@/lib/supabase";
+import { getAuthClient } from "@/lib/supabase";
 
-// Minimal verification landing, styled like a plain email-auth success page:
-// success message, then the tab tries to close itself. No clicks needed.
-// Same-device confirmations carry a session (auto-dashboard via fallback);
-// cross-device confirmations just close and let the original tab continue.
+// Minimal verification landing: success message, then the tab tries to
+// close itself. No clicks needed. Same-device confirmations carry a session
+// (auto-dashboard via fallback); cross-device confirmations just close and
+// let the original tab continue.
 function VerifiedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,7 +24,7 @@ function VerifiedContent() {
     let cancelled = false;
     (async () => {
       try {
-        const sb = getSupabase();
+        const sb = getAuthClient();
         const { data: { session } } = await sb.auth.getSession();
         if (cancelled) return;
         const nextTarget = session ? "/dashboard" : "/login?verified=1";

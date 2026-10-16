@@ -1,13 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { getSupabase } from "@/lib/supabase";
+import { signOutAll } from "@/lib/supabase";
 
 export default function DashNav({ email, onLogout }: { email: string; onLogout: () => void }) {
   const router = useRouter();
   const logout = async () => {
     try {
-      const sb = getSupabase();
-      await sb.auth.signOut();
+      await signOutAll();
     } catch {}
     onLogout();
     router.push("/login");
