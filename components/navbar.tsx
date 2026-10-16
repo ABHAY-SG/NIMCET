@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, type ComponentType } from "react";
+import { getAuthClient } from "@/lib/supabase";
 
 const THEMES = [
   { id: "light", name: "Light", dot: "#ffffff" },
@@ -101,6 +102,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [wide, setWide] = useState(true);
   const [active, setActive] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
     try {
@@ -110,6 +112,15 @@ export default function Navbar() {
         document.documentElement.dataset.theme = saved;
       }
     } catch {}
+    // Session-aware buttons: a logged-in visitor must see Dashboard, never a
+    // misleading Log in prompt. Read-only check — touches no auth flow.
+    (async () => {
+      try {
+        const sb = getAuthClient();
+        const { data: { user } } = await sb.auth.getUser();
+        if (user) setLoggedIn(true);
+      } catch {}
+    })();
     const onScroll = () => setScrolled(window.scrollY > 8);
     const onResize = () => setWide(window.innerWidth >= 1280);
     onScroll();
@@ -233,15 +244,28 @@ export default function Navbar() {
             )}
           </div>
 
-          <a href="/login" className={plainCls + " hidden sm:block"}>Log in</a>
-          <a
-            href="/signup"
-            className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
-            style={{ background: "var(--text)", color: "var(--bg)" }}
-          >
-            Get Started
-            <span className="carr text-[15px]">→</span>
-          </a>
+          {loggedIn ? (
+            <a
+              href="/dashboard"
+              className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
+              style={{ background: "var(--text)", color: "var(--bg)" }}
+            >
+              Dashboard
+              <span className="carr text-[15px]">→</span>
+            </a>
+          ) : (
+            <>
+              <a href="/login" className={plainCls + " hidden sm:block"}>Log in</a>
+              <a
+                href="/signup"
+                className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
+                style={{ background: "var(--text)", color: "var(--bg)" }}
+              >
+                Get Started
+                <span className="carr text-[15px]">→</span>
+              </a>
+            </>
+          )}
         </div>
       </div>
 
@@ -265,7 +289,11 @@ export default function Navbar() {
               {label}
             </a>
           ))}
-          <a href="/login" onClick={() => setOpen(false)} className={plainCls}>Log in</a>
+          {loggedIn ? (
+            <a href="/dashboard" onClick={() => setOpen(false)} className={plainCls}>Dashboard →</a>
+          ) : (
+            <a href="/login" onClick={() => setOpen(false)} className={plainCls}>Log in</a>
+          )}
           <div className="flex gap-1.5 py-2">
             {THEMES.map((t) => (
               <button
