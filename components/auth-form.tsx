@@ -518,11 +518,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
           </button>
           <p className="auth-secure-note mt-3 text-center text-[11px]" style={{ color: "var(--muted)" }}>● Secure & encrypted</p>
-          {mode === "in" && (
-            <a href="/admin" className="mt-2 block text-center text-xs font-bold" style={{ color: "var(--muted)" }}>
-              Admin Login →
-            </a>
-          )}
         </div>
       </div>
     </main>
