@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import AdminShell from "@/components/admin-shell";
+import AdminLayout from "@/components/admin-layout";
 import { getSupabase } from "@/lib/supabase";
 import type { QuestionRow, TestRow } from "@/lib/admin";
 
@@ -89,7 +89,7 @@ export default function TestsAdmin() {
   const pool = bank.filter((b) => filter === "all" || b.exam === filter);
 
   return (
-    <AdminShell>
+    <AdminLayout title="Mock Tests" crumbs={["Mock Tests"]}>
       {msg && <p className="mb-3 rounded-xl px-4 py-2.5 text-[13px]" style={{ background: "var(--pill)" }}>{msg}</p>}
       <form onSubmit={create} className="rounded-2xl p-5" style={{ border: "1px solid var(--border)" }}>
         <div className="text-sm font-extrabold">New mock test</div>
@@ -151,6 +151,6 @@ export default function TestsAdmin() {
         ))}
         {tests.length === 0 && <p className="py-6 text-center text-sm" style={{ color: "var(--muted)" }}>No mock tests yet.</p>}
       </div>
-    </AdminShell>
+    </AdminLayout>
   );
 }

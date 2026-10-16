@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import AdminShell from "@/components/admin-shell";
+import AdminLayout from "@/components/admin-layout";
 import { getSupabase } from "@/lib/supabase";
 import type { QuestionRow } from "@/lib/admin";
 
@@ -105,7 +105,7 @@ export default function QuestionsAdmin() {
   const istyle = { background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" } as const;
 
   return (
-    <AdminShell>
+    <AdminLayout title="Question Bank" crumbs={["Question Bank"]}>
       <div className="flex flex-wrap items-center gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search stem, topic…" className={`${input} max-w-xs`} style={istyle} />
         <select value={exam} onChange={(e) => setExam(e.target.value)} className={`${input} w-auto`} style={istyle}>
@@ -181,6 +181,6 @@ export default function QuestionsAdmin() {
         ))}
         {list.length === 0 && <p className="py-6 text-center text-sm" style={{ color: "var(--muted)" }}>No questions yet — add one above or seed the starters.</p>}
       </div>
-    </AdminShell>
+    </AdminLayout>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import AdminShell from "@/components/admin-shell";
+import AdminLayout from "@/components/admin-layout";
 import { getSupabase } from "@/lib/supabase";
 import type { AttemptRow } from "@/lib/admin";
 
@@ -29,7 +29,7 @@ export default function AttemptsAdmin() {
   const avg = list.length > 0 ? (list.reduce((a, r) => a + Number(r.score), 0) / list.length).toFixed(1) : "—";
 
   return (
-    <AdminShell>
+    <AdminLayout title="Attempts" crumbs={["Attempts"]}>
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search test, user, score…"
@@ -71,6 +71,6 @@ export default function AttemptsAdmin() {
       <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
         User emails need the service key — user IDs above map to Supabase Auth → Users in your dashboard.
       </p>
-    </AdminShell>
+    </AdminLayout>
   );
 }

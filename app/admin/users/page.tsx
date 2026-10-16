@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import AdminShell from "@/components/admin-shell";
+import AdminLayout from "@/components/admin-layout";
 import { getSupabase } from "@/lib/supabase";
 
 type UserStat = { id: string; attempts: number; best: number; last: string };
@@ -37,7 +37,7 @@ export default function UsersAdmin() {
   const list = rows.filter((r) => q === "" || r.id.toLowerCase().includes(q.toLowerCase()));
 
   return (
-    <AdminShell>
+    <AdminLayout title="Users" crumbs={["Users"]}>
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search user ID…"
@@ -66,6 +66,6 @@ export default function UsersAdmin() {
       <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
         Full emails, bans and deletes live in your Supabase dashboard under Authentication → Users.
       </p>
-    </AdminShell>
+    </AdminLayout>
   );
 }
