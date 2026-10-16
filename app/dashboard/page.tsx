@@ -146,12 +146,11 @@ export default function DashboardPage() {
           return;
         }
         setEmail(user.email ?? "");
-        const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string; full_name?: string; name?: string; avatar_url?: string; picture?: string };
+        const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string; full_name?: string; name?: string; avatar_url?: string; picture?: string; custom_avatar?: string };
         const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";
         setDisplayName(full.trim() || (user.email ?? "").split("@")[0]);
-        // OAuth providers (Google/GitHub) supply a profile photo URL in the
-        // user metadata — shown in the navbar, no storage needed.
-        setAvatarUrl(meta.avatar_url || meta.picture || "");
+        // Uploaded photo wins, then the OAuth provider photo.
+        setAvatarUrl(meta.custom_avatar || meta.avatar_url || meta.picture || "");
         const { data, error } = await sb
           .from("attempts")
           .select("id,test,score,correct,wrong,skipped,created_at")

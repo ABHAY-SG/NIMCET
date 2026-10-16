@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
@@ -98,6 +98,17 @@ export default function ProfilePage() {
   const [panel, setPanel] = useState<null | "name" | "password">(null);
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [photoMsg, setPhotoMsg] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [busy, setBusy] = useState(false);
@@ -136,11 +147,17 @@ export default function ProfilePage() {
         setEmail(user.email ?? "");
         const meta = (user.user_metadata ?? {}) as {
           first_name?: string; last_name?: string; full_name?: string; name?: string;
-          avatar_url?: string; picture?: string;
+          avatar_url?: string; picture?: string; custom_avatar?: string; mobile?: string; dob?: string; gender?: string;
         };
         const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";
         setDisplayName(full.trim() || (user.email ?? "").split("@")[0]);
-        setAvatarUrl(meta.avatar_url || meta.picture || "");
+        setAvatarUrl(meta.custom_avatar || meta.avatar_url || meta.picture || "");
+        setMobile(typeof meta.mobile === "string" ? meta.mobile : "");
+        setDob(typeof meta.dob === "string" ? meta.dob : "");
+        setGender(typeof meta.gender === "string" ? meta.gender : "");
+        // Phone counts as verified only when the confirmed phone on the
+        // account matches the stored mobile number.
+        setPhoneVerified(!!user.phone_confirmed_at && !!user.phone && user.phone === (meta.mobile || ""));
         try {
           setMemberSince(new Date(user.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }));
         } catch { setMemberSince("—"); }
@@ -183,15 +200,23 @@ export default function ProfilePage() {
     setPanel("name");
   };
 
-  const saveName = async () => {
+  const saveProfile = async () => {
     const f = first.trim();
     const l = last.trim();
     if (!f) { setFormMsg("First name is required."); return; }
+    const m = mobile.trim();
+    if (m && !/^\+[1-9]\d{7,14}$/.test(m)) {
+      setFormMsg("Mobile must be international format, e.g. +917425097293 — or leave it empty.");
+      return;
+    }
+    if (dob && Number.isNaN(Date.parse(dob))) { setFormMsg("Pick a valid date of birth."); return; }
     setBusy(true);
     setFormMsg("");
     try {
       const sb = getAuthClient();
-      const { error } = await sb.auth.updateUser({ data: { first_name: f, last_name: l } });
+      const { error } = await sb.auth.updateUser({
+        data: { first_name: f, last_name: l, mobile: m, dob, gender },
+      });
       if (error) throw error;
       setDisplayName([f, l].filter(Boolean).join(" "));
       setPanel(null);
@@ -199,6 +224,99 @@ export default function ProfilePage() {
       setFormMsg(err instanceof Error ? err.message : "Could not save. Try again.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const sendOtp = async () => {
+    const num = mobile.trim();
+    if (!/^\+[1-9]\d{7,14}$/.test(num)) {
+      setVerifyMsg("Save a valid mobile first (international format, e.g. +917425097293).");
+      return;
+    }
+    setVerifying(true);
+    setVerifyMsg("");
+    try {
+      const sb = getAuthClient();
+      // Links this number to the CURRENT user (no duplicate account); Supabase
+      // texts a code if an SMS provider is configured on the project.
+      const { error } = await sb.auth.updateUser({ phone: num });
+      if (error) throw error;
+      setOtpSent(true);
+      setVerifyMsg("Code sent by SMS — enter it below.");
+    } catch (err: unknown) {
+      setVerifyMsg(err instanceof Error ? err.message : "Could not send code.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const confirmOtp = async () => {
+    const num = mobile.trim();
+    const code = otp.trim();
+    if (!/^\d{6,8}$/.test(code)) { setVerifyMsg("Enter the 6-digit code from the SMS."); return; }
+    setVerifying(true);
+    setVerifyMsg("");
+    try {
+      const sb = getAuthClient();
+      const { error } = await sb.auth.verifyOtp({ phone: num, token: code, type: "phone_change" });
+      if (error) throw error;
+      setPhoneVerified(true);
+      setOtpSent(false);
+      setOtp("");
+      setVerifyMsg("Mobile verified ✓");
+    } catch (err: unknown) {
+      setVerifyMsg(err instanceof Error ? err.message : "Wrong code. Try again.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const changePhoto = async (file: File) => {
+    if (!file.type.startsWith("image/")) { setPhotoMsg("Choose an image file (JPG, PNG or WebP)."); return; }
+    if (file.size > 2 * 1024 * 1024) { setPhotoMsg("Keep the photo under 2 MB."); return; }
+    setUploading(true);
+    setPhotoMsg("");
+    try {
+      const sb = getAuthClient();
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) throw new Error("Log in again, then retry.");
+      const ext = ((file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg");
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: upErr } = await sb.storage.from("avatars").upload(path, file, {
+        upsert: true,
+        contentType: file.type,
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = sb.storage.from("avatars").getPublicUrl(path);
+      const url = `${pub.publicUrl}?t=${Date.now()}`;
+      const { error: metaErr } = await sb.auth.updateUser({ data: { custom_avatar: url } });
+      if (metaErr) throw metaErr;
+      setAvatarUrl(url);
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : "Upload failed.";
+      setPhotoMsg(/bucket|not found|row-level|policy|permission/i.test(raw)
+        ? `${raw} — admin must create the public 'avatars' bucket first (SQL in the release notes).`
+        : raw);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const removePhoto = async () => {
+    setUploading(true);
+    setPhotoMsg("");
+    try {
+      const sb = getAuthClient();
+      const { error } = await sb.auth.updateUser({ data: { custom_avatar: "" } });
+      if (error) throw error;
+      const { data: { user } } = await sb.auth.getUser();
+      const meta = (user?.user_metadata ?? {}) as { avatar_url?: string; picture?: string };
+      setAvatarUrl(meta.avatar_url || meta.picture || "");
+    } catch (err: unknown) {
+      setPhotoMsg(err instanceof Error ? err.message : "Could not remove photo.");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -243,14 +361,19 @@ export default function ProfilePage() {
           </p>
         </Reveal>
         <Reveal>
-          <section className="mt-3 flex flex-wrap items-center justify-between gap-4 rounded-[22px] p-6 backdrop-blur-2xl sm:p-7" style={cardStyle}>
+          <section
+            className="relative mt-3 overflow-hidden rounded-[26px] p-6 text-white sm:p-8"
+            style={{ background: "linear-gradient(120deg, #141b34 0%, #2b3a7a 55%, var(--accent) 130%)", boxShadow: "0 40px 90px -35px rgba(20, 27, 52, 0.7)" }}
+          >
+            <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(600px 220px at 85% 0%, rgba(255,255,255,0.16), transparent 65%), radial-gradient(500px 260px at 0% 100%, rgba(255,255,255,0.08), transparent 60%)" }} />
+            <div className="relative flex flex-wrap items-center justify-between gap-5">
             <div className="flex min-w-0 items-center gap-4">
-              <span className="block h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
+              <span className="relative block h-20 w-20 shrink-0 overflow-hidden rounded-3xl" style={{ border: "2px solid rgba(255,255,255,0.55)", boxShadow: "0 14px 36px -12px rgba(0,0,0,0.55)" }}>
                 {avatarUrl && imgOk ? (
                   <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
                 ) : (
                   <span
-                    className="flex h-full w-full items-center justify-center text-2xl font-extrabold text-white"
+                    className="flex h-full w-full items-center justify-center text-3xl font-extrabold text-white"
                     style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
                   >
                     {initialsOf(displayName, email)}
@@ -258,29 +381,48 @@ export default function ProfilePage() {
                 )}
               </span>
               <div className="min-w-0">
-                <h1 className="truncate text-2xl font-extrabold tracking-tight">
+                <h1 className="truncate text-2xl font-extrabold tracking-tight sm:text-[28px]">
                   {loading ? "Loading…" : displayName || "Profile"}
                 </h1>
-                <p className="mt-0.5 truncate text-sm" style={{ color: "var(--muted)" }}>{email}</p>
+                <p className="mt-0.5 truncate text-sm" style={{ color: "rgba(255,255,255,0.8)" }}>{email}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose profile photo"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) changePhoto(f); }}
+                    className="hidden" />
+                  <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                    className="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold text-white transition-transform hover:-translate-y-px disabled:opacity-50"
+                    style={{ border: "1.5px solid rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.12)" }}>
+                    {uploading ? "Uploading…" : "📷 Change photo"}
+                  </button>
+                  {avatarUrl && (
+                    <button type="button" onClick={removePhoto} disabled={uploading}
+                      className="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold transition-transform hover:-translate-y-px disabled:opacity-50"
+                      style={{ color: "rgba(255,255,255,0.85)" }}>
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {photoMsg && <p className="mt-1.5 max-w-sm text-xs font-semibold" style={{ color: "#ffd7d7" }}>{photoMsg}</p>}
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => { setPanel(panel === "name" ? null : "name"); setFormMsg(""); if (panel !== "name") openNameEditor(); }}
-                className="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-bold"
-                style={{ border: "1.5px solid var(--accent)", color: "var(--accent)" }}
+                className="cursor-pointer rounded-xl bg-white px-4 py-2.5 text-sm font-extrabold transition-transform hover:-translate-y-px"
+                style={{ color: "#1e2952" }}
               >
                 ✎ Update Profile
               </button>
               <button
                 type="button"
                 onClick={() => { setPanel(panel === "password" ? null : "password"); setFormMsg(""); setNewPw(""); setConfirmPw(""); }}
-                className="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-bold"
-                style={{ border: "1px solid var(--border)" }}
+                className="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-px"
+                style={{ border: "1.5px solid rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.12)" }}
               >
                 🔒 Change Password
               </button>
+            </div>
             </div>
           </section>
         </Reveal>
@@ -309,9 +451,33 @@ export default function ProfilePage() {
                     className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
                     style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
+                <div>
+                  <label htmlFor="profile-mobile" className="mb-1.5 block text-[13px] font-bold">Mobile No.</label>
+                  <input id="profile-mobile" type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} autoComplete="tel"
+                    placeholder="+917425097293"
+                    className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
+                </div>
+                <div>
+                  <label htmlFor="profile-dob" className="mb-1.5 block text-[13px] font-bold">Date of Birth</label>
+                  <input id="profile-dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)}
+                    className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
+                </div>
+                <div>
+                  <label htmlFor="profile-gender" className="mb-1.5 block text-[13px] font-bold">Gender</label>
+                  <select id="profile-gender" value={gender} onChange={(e) => setGender(e.target.value)}
+                    className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}>
+                    <option value="">Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
               <div className="mt-3 flex gap-2">
-                <button type="button" onClick={saveName} disabled={busy}
+                <button type="button" onClick={saveProfile} disabled={busy}
                   className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                   style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
                   {busy ? "Saving…" : "Save changes"}
@@ -372,6 +538,45 @@ export default function ProfilePage() {
               <div className="mt-2">
                 <DetailRow label="Name" value={loading ? "…" : displayName || "—"} />
                 <DetailRow label="Email" value={email || "—"} />
+                <DetailRow
+                  label="Mobile No."
+                  value={loading ? "…" : mobile || "—"}
+                />
+                {!loading && mobile && (
+                  <div className="border-b py-2.5" style={{ borderColor: "var(--border)" }}>
+                    {phoneVerified ? (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold text-white" style={{ background: "#16a34a" }}>
+                        ✓ Verified
+                      </span>
+                    ) : otpSent ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="text" inputMode="numeric" value={otp} onChange={(e) => setOtp(e.target.value)}
+                          placeholder="6-digit SMS code" aria-label="SMS verification code"
+                          className="min-w-0 flex-1 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2"
+                          style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
+                        />
+                        <button type="button" onClick={confirmOtp} disabled={verifying}
+                          className="shrink-0 cursor-pointer rounded-xl px-4 py-2 text-[13px] font-bold text-white disabled:opacity-50"
+                          style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
+                          {verifying ? "…" : "Confirm"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={sendOtp} disabled={verifying}
+                        className="cursor-pointer rounded-xl px-3.5 py-1.5 text-xs font-bold disabled:opacity-50"
+                        style={{ border: "1.5px solid var(--accent)", color: "var(--accent)" }}>
+                        {verifying ? "Sending…" : "Verify mobile"}
+                      </button>
+                    )}
+                    {verifyMsg && <p className="mt-1.5 text-xs font-semibold" style={{ color: phoneVerified && !otpSent ? "#16a34a" : "#dc2626" }}>{verifyMsg}</p>}
+                  </div>
+                )}
+                <DetailRow
+                  label="Date of Birth"
+                  value={loading ? "…" : dob ? (() => { try { return new Date(dob + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); } catch { return dob; } })() : "—"}
+                />
+                <DetailRow label="Gender" value={loading ? "…" : gender || "—"} />
                 <DetailRow label="Member since" value={memberSince} />
                 <DetailRow label="Sign-in method" value={provider} />
               </div>
