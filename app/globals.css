@@ -235,8 +235,49 @@ footer .nlink::after { display: none; }
 }
 .auth-lock .auth-card {
   max-height: calc(100dvh - 84px);
-  overflow-y: auto;
-  scrollbar-width: thin;
+  overflow: hidden;
+  scrollbar-width: none;
+}
+/* Floating error toast: overlays the viewport, never shifts card layout,
+   so messages (rate limits, mismatches) can never make the page scroll. */
+.auth-toast {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(92vw, 480px);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+  animation: toast-in 0.25s ease-out;
+}
+.auth-toast-x {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 2px 4px;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+/* Short viewports: shrink the card to fit instead of scrolling or clipping. */
+@media (max-height: 720px) {
+  .auth-lock .auth-card { zoom: 0.92; }
+}
+@media (max-height: 640px) {
+  .auth-lock .auth-card { zoom: 0.84; }
+}
+@media (max-height: 560px) {
+  .auth-lock .auth-card { zoom: 0.76; }
 }
 @media (max-height: 760px) {
   .auth-lock .auth-photo { display: none; }

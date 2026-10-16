@@ -398,6 +398,29 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         />
       </div>
       <main className="auth-lock relative mx-auto flex w-full max-w-6xl flex-col justify-center px-4 py-4" style={{ minHeight: "100svh" }}>
+      {msg && (
+        <div className="auth-toast" role="status" aria-live="polite">
+          <p className="pr-6 text-[13px] font-medium">{msg}</p>
+          {showCheckEmailLink && (
+            <button
+              type="button"
+              onClick={() => router.push("/auth/check-email")}
+              className="mt-2 w-full cursor-pointer rounded-xl py-2 text-[13px] font-bold"
+              style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+            >
+              Open verification page →
+            </button>
+          )}
+          <button
+            type="button"
+            aria-label="Dismiss message"
+            onClick={() => { setMsg(""); setShowCheckEmailLink(false); }}
+            className="auth-toast-x"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <ThemeFab />
       <a href="/" className="mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
         <span aria-hidden>←</span> Back to home
@@ -557,19 +580,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
                 />
                 Remember me
               </label>
-            )}
-            {msg && (
-              <p role="status" aria-live="polite" className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
-            )}
-            {showCheckEmailLink && (
-              <button
-                type="button"
-                onClick={() => router.push("/auth/check-email")}
-                className="mt-3 w-full cursor-pointer rounded-xl py-2.5 text-[13px] font-bold transition-transform hover:-translate-y-px"
-                style={{ border: "1px solid var(--border)" }}
-              >
-                Open verification page →
-              </button>
             )}
             {loginFailed && mode === "in" && (
               <div className="mt-2.5 grid grid-cols-2 gap-2">
