@@ -262,13 +262,13 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         // Google: `select_account consent` forces the account chooser on
         // every attempt AND re-shows Google's authorization screen
         // (Continue/Cancel) even if the account authorized us before.
-        // GitHub supports no equivalent: its authorize endpoint only honors
-        // client_id/redirect_uri/scope/state/allow_signup/login, so a
-        // signed-in + granted session is silently reused. Account switching
-        // is therefore handled by the "Try another GitHub account" fallback.
+        // GitHub: `select_account` forces GitHub's account picker to appear
+        // (per GitHub's OAuth docs), so a previously authorized account is
+        // never silently reused — the user sees which account is about to
+        // authorize and can Cancel back to signup instead.
         options: {
           redirectTo: `${window.location.origin}/auth/callback?mode=${oauthMode}&provider=${provider}`,
-          ...(provider === "google" ? { queryParams: { prompt: "select_account consent" } } : {}),
+          queryParams: { prompt: provider === "google" ? "select_account consent" : "select_account" },
         },
       });
       if (error) throw error;
@@ -504,7 +504,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             {showTryAnother && (
               <div className="mt-3 rounded-xl p-4" style={{ border: "1px dashed var(--border)" }}>
                 <p className="text-[13px] leading-5" style={{ color: "var(--muted)" }}>
-                  Wrong GitHub account? GitHub remembers your last sign-in, so reopening it alone reuses the same one. Sign out of that account on github.com first — then tap below. A new GitHub identity will register; an existing one stays protected and is never duplicated or silently logged in.
+                  Wrong GitHub account? GitHub now always shows you an account picker first — choose the right account there, or Cancel to come back here. If your other account isn&apos;t listed, sign in to it on github.com (or sign out the wrong one), then tap below. A new GitHub identity will register; an existing one stays protected and is never duplicated or silently logged in.
                 </p>
                 <button
                   type="button"
