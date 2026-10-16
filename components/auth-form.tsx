@@ -179,7 +179,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           if (!probeError) {
             await signOutAll().catch(() => {});
             setMode("in");
-            setMsg("An account with this email already exists. Please log in instead.");
+            setMsg("An account with this email already exists. Please log in instead — joined with Google/GitHub and want a password? Use Forgot password? after switching to Log in.");
             return;
           }
           if (/email not confirmed/i.test(probeError.message)) {
@@ -191,7 +191,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             return;
           }
           setMode("in");
-          setMsg("An account with this email already exists. Please log in instead.");
+          setMsg("An account with this email already exists. Please log in instead — joined with Google/GitHub and want a password? Use Forgot password? after switching to Log in.");
           return;
         }
         if (data.user && data.session) {
@@ -215,7 +215,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             throw new Error("Email not verified yet — check your inbox for the confirmation link, or open the verification page to resend.");
           }
           if (/invalid login credentials/i.test(error.message)) {
-            throw new Error("Unable to log in with these details. Check your email and password, or create an account.");
+            throw new Error("Unable to log in with these details. Check your email and password, or create an account. Registered with Google or GitHub? Use Continue above — or set a password anytime with Forgot password?.");
           }
           throw error;
         }
@@ -232,7 +232,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     } catch (err: unknown) {
       const m = err instanceof Error ? err.message : "Something went wrong.";
       if (/invalid login credentials/i.test(m)) {
-        setMsg("Unable to log in with these details. Check your email and password, or create an account.");
+        setMsg("Unable to log in with these details. Check your email and password, or create an account. Registered with Google or GitHub? Use Continue above — or set a password anytime with Forgot password?.");
       } else {
         setMsg(m);
       }
