@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
-import { calcBestStreak, calcStreak, lastWeekActivity } from "@/lib/streak";
+import { calcBestStreak, calcStreak, formatStreak, lastWeekActivity } from "@/lib/streak";
 
 type Attempt = {
   id: string;
@@ -266,7 +266,7 @@ export default function DashboardPage() {
               <p className="mt-2 max-w-md text-sm leading-6" style={{ color: "rgba(255,255,255,0.82)" }}>
                 {!loading && derived
                   ? derived.streak > 0
-                    ? `🔥 ${derived.streak}-day streak. Your best so far is ${derived.best} — go beat it.`
+                    ? `🔥 ${formatStreak(derived.streak)}. Your best so far is ${derived.best} — go beat it.`
                     : "Your history is warming up — attempt a mock to start your streak."
                   : "Your preparation home: stats, test series and history live here."}
               </p>
@@ -290,7 +290,7 @@ export default function DashboardPage() {
             <div className="flex shrink-0 items-center gap-3 rounded-2xl px-5 py-4" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
               <div className="text-3xl font-extrabold">🔥</div>
               <div>
-                <div className="mono text-2xl font-extrabold">{loading ? "…" : `${derived?.streak ?? 0}d`}</div>
+                <div className="mono text-2xl font-extrabold">{loading ? "…" : `🔥 ${derived?.streak ?? 0}`}</div>
                 <div className="text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>day streak</div>
               </div>
             </div>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
           <StatCard label="Avg score" value={loading ? "…" : (derived?.avg ?? "—")} sub={statsLabel} />
           <StatCard label="Accuracy" value={loading ? "…" : (derived?.acc ?? "—")} sub="correct ÷ answered" />
           <StatCard label="Questions" value={loading ? "…" : (derived?.questions ?? "0")} sub="attempted total" />
-          <StatCard label="Day streak" value={loading ? "…" : `${derived?.streak ?? 0}d`} sub="consecutive days" />
+          <StatCard label="Day streak" value={loading ? "…" : formatStreak(derived?.streak ?? 0)} sub={derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily"} />
         </div>
       </Reveal>
 

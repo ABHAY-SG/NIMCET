@@ -50,6 +50,11 @@ export function calcBestStreak(all: AttemptLike[]): number {
   return best;
 }
 
+// Human label: 0 → "No streak", 1 → "1 Day Streak", n → "N Days Streak".
+export function formatStreak(days: number): string {
+  if (days <= 0) return "No streak";
+  return days === 1 ? "1 Day Streak" : `${days} Days Streak`;
+}
 // Last 7 days ending today, for the weekly activity row.
 export function lastWeekActivity(all: AttemptLike[]): Array<{ label: string; active: boolean; isToday: boolean }> {
   const days = activeDays(all);

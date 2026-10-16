@@ -5,7 +5,7 @@ import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
 import PhotoCropper from "@/components/photo-cropper";
 import { getAuthClient, resolveAvatarUrl } from "@/lib/supabase";
-import { calcBestStreak, calcStreak, lastWeekActivity } from "@/lib/streak";
+import { calcBestStreak, calcStreak, formatStreak, lastWeekActivity } from "@/lib/streak";
 
 type Attempt = {
   id: string;
@@ -570,8 +570,8 @@ export default function ProfilePage() {
               <h2 className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
                 <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>🔥</span> Streak
               </h2>
-              <div className="mono mt-4 text-4xl font-extrabold" style={{ color: "var(--accent)" }}>
-                {loading ? "…" : `🔥 ${streakSummary.current}d`}
+              <div className="mono mt-4 text-2xl font-extrabold" style={{ color: "var(--accent)" }}>
+                {loading ? "…" : `🔥 ${formatStreak(streakSummary.current)}`}
               </div>
               <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>current • best {streakSummary.best}d all-time</p>
               <div className="mt-4 flex justify-between gap-1">

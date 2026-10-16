@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOutAll } from "@/lib/supabase";
 import { THEMES, applyTheme, readTheme, type ThemeId } from "@/lib/theme";
+import { formatStreak } from "@/lib/streak";
 import { ThemeIcon } from "@/components/theme-fab";
 
 export type StreakSummary = {
@@ -160,9 +161,9 @@ export default function DashNav({
               <div className="mt-3 flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}>
                 <span aria-hidden className="text-4xl">🔥</span>
                 <div>
-                  <div className="mono text-3xl font-extrabold leading-none text-white">{streak.current}<span className="text-base">d</span></div>
+                  <div className="text-xl font-extrabold leading-tight text-white">{formatStreak(streak.current)}</div>
                   <div className="mt-1 text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>
-                    {streak.current > 0 ? "days in a row — keep it burning" : "attempt a mock to ignite it"}
+                    {streak.current > 0 ? "in a row — keep it burning" : "attempt a mock to ignite it"}
                   </div>
                 </div>
               </div>
