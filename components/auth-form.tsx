@@ -90,7 +90,16 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       setMsg("Email confirmed successfully. Log in to continue.");
     } else if (params.get("error") === "exists") {
       setMode("in");
-      setMsg("An account with this Google account already exists. Please log in instead.");
+      setMsg(params.get("provider") === "github"
+        ? "An account with this GitHub account already exists. Please log in instead."
+        : "An account with this Google account already exists. Please log in instead.");
+    } else if (params.get("error") === "cancelled") {
+      // Provider authorization was dismissed (e.g. Cancel on GitHub's
+      // screen). Stay on this page — nothing was signed in or registered.
+      const cancelledProv = params.get("provider") === "github" ? "GitHub" : params.get("provider") === "google" ? "Google" : null;
+      setMsg(cancelledProv
+        ? `${cancelledProv} authorization was cancelled — no account was created and nothing was signed in.`
+        : "Authorization was cancelled — no account was created and nothing was signed in.");
     } else if (params.get("error") === "no-account") {
       setMode("in");
       setMsg("No account exists for this Google/GitHub login. Switch to Create account to register first.");
@@ -243,7 +252,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         // authorization screen appears (it shows whenever authorization
         // is not yet granted, with Authorize/Cancel).
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?mode=${mode}`,
+          redirectTo: `${window.location.origin}/auth/callback?mode=${mode}&provider=${provider}`,
           ...(provider === "google" ? { queryParams: { prompt: "select_account consent" } } : {}),
         },
       });

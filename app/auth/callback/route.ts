@@ -102,6 +102,17 @@ export async function GET(req: Request) {
       return NextResponse.redirect(new URL("/auth/verified", origin));
     }
 
+    // Provider refusal (e.g. user pressed Cancel on GitHub's screen):
+    // no code is issued and no session exists. Send them back to the page
+    // they started from — signup stays signup — without signing anything in.
+    if (!searchParams.get("code") && !searchParams.get("token_hash") && /access_denied|user_denied|cancel/i.test(searchParams.get("error") ?? "")) {
+      const backMode = searchParams.get("mode") === "up" ? "up" : "in";
+      const backProv = searchParams.get("provider");
+      const backTo = backMode === "up" ? "/signup" : "/login";
+      const suffix = backProv === "github" || backProv === "google" ? `&provider=${backProv}` : "";
+      return NextResponse.redirect(new URL(`${backTo}?error=cancelled${suffix}`, origin));
+    }
+
     // OAuth (Google/GitHub) returns a PKCE code. Email confirmation links
     // also land here with ONLY a code (Supabase consumes the token server
     // side): our signup links always carry ?challenge=, OAuth links carry
@@ -112,6 +123,12 @@ export async function GET(req: Request) {
       const isEmailFlow = !!challenge;
       const isRecoveryFlow = searchParams.get("flow") === "recovery";
       const hasMode = searchParams.has("mode");
+      // OAuth-only provider tag (email links never carry it): used solely to
+      // word error messages correctly. Never trusted for auth decisions.
+      const provParam = searchParams.get("provider");
+      const prov = hasMode && (provParam === "github" || provParam === "google") ? provParam : null;
+      const ofail = (reason: string) =>
+        NextResponse.redirect(new URL(`/login?error=${reason}${prov ? `&provider=${prov}` : ""}`, origin));
       const { error } = await sb.auth.exchangeCodeForSession(code);
       if (error) {
         console.error(`[auth] code exchange failed flow=${isEmailFlow ? "email" : isRecoveryFlow ? "recovery" : "oauth"}`);
@@ -201,7 +218,7 @@ export async function GET(req: Request) {
         const { data: { user: upUser }, error: upUserError } = await sb.auth.getUser();
         if (upUserError || !upUser) {
           await sb.auth.signOut();
-          return fail("user");
+          return ofail("user");
         }
         // If this identity already registered before, this is NOT a new
         // signup — refuse it instead of silently logging in.
@@ -212,11 +229,11 @@ export async function GET(req: Request) {
           .maybeSingle();
         if (lookupError) {
           await sb.auth.signOut();
-          return fail("registry");
+          return ofail("registry");
         }
         if (existing) {
           await sb.auth.signOut();
-          return fail("exists");
+          return ofail("exists");
         }
         if (!(await addAccountRegistry(sb))) {
           await sb.auth.signOut();
@@ -228,7 +245,7 @@ export async function GET(req: Request) {
       const { data: { user }, error: userError } = await sb.auth.getUser();
       if (userError || !user) {
         await sb.auth.signOut();
-        return fail("user");
+        return ofail("user");
       }
 
       const { data: registered, error: registryError } = await sb
@@ -239,13 +256,13 @@ export async function GET(req: Request) {
 
       if (registryError) {
         await sb.auth.signOut();
-        return fail("registry");
+        return ofail("registry");
       }
       if (!registered) {
         // OAuth providers can create a Supabase Auth user even during a login attempt.
         // Do not allow that newly-created identity into the app until the user registers.
         await sb.auth.signOut();
-        return fail("no-account");
+        return ofail("no-account");
       }
 
       return NextResponse.redirect(new URL("/auth/verified?mode=oauth", origin));
