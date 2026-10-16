@@ -27,6 +27,13 @@ const ICONS: Record<string, React.ReactNode> = {
 
 const GROUPS: Array<{ title: string; items: Item[] }> = [
   {
+    title: "NIMCET",
+    items: [
+      { label: "NIMCET Mock", icon: ICONS.play, view: "mock" },
+      { label: "NIMCET PYQ", icon: ICONS.history, soon: true },
+    ],
+  },
+  {
     title: "Practice",
     items: [
       { label: "Start mock", icon: ICONS.play, view: "mock" },
@@ -126,7 +133,7 @@ export default function DashSide({
 }) {
   const body = (
     <div className="noscroll flex h-full flex-col gap-5 overflow-y-auto p-4">
-      <div>
+      <div className="sticky top-0 z-10 -m-4 mb-0 border-b border-white/10 p-4 backdrop-blur-2xl" style={{ background: "rgba(20, 27, 52, 0.72)" }}>
         <button
           type="button"
           onClick={() => { onSelect("home"); onClose(); }}
