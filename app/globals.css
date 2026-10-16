@@ -37,6 +37,24 @@ html, body {
   overscroll-behavior-x: none;
 }
 
+/* Hidden scrollbars: scrolling still works (wheel/touch/keys), no visible track. */
+.noscroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.noscroll::-webkit-scrollbar {
+  display: none;
+}
+html.noscrollbar,
+html.noscrollbar body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html.noscrollbar::-webkit-scrollbar,
+html.noscrollbar body::-webkit-scrollbar {
+  display: none;
+}
+
 html { scroll-behavior: smooth; }
 body {
   background: var(--bg);

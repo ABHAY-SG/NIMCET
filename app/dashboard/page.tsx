@@ -123,6 +123,18 @@ export default function DashboardPage() {
   const [todayLine, setTodayLine] = useState("");
   const [sideOpen, setSideOpen] = useState(false);
 
+  // Dashboard scrolls without a visible scrollbar track.
+  useEffect(() => {
+    try {
+      document.documentElement.classList.add("noscrollbar");
+    } catch {}
+    return () => {
+      try {
+        document.documentElement.classList.remove("noscrollbar");
+      } catch {}
+    };
+  }, []);
+
   useEffect(() => {
     try {
       setTodayLine(new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }));
@@ -252,9 +264,8 @@ export default function DashboardPage() {
         />
       )}
       <main className="mx-auto w-full px-4 pb-20 pt-24 sm:px-6 lg:px-8">
-      <div className="flex items-start gap-6">
         <DashSide mobileOpen={sideOpen} onClose={() => setSideOpen(false)} />
-        <div id="attempts" className="min-w-0 flex-1 scroll-mt-24">
+        <div id="attempts" className="min-w-0 scroll-mt-24 md:ml-[18.5rem]">
       <Reveal>
         <section
           className="relative overflow-hidden rounded-[26px] px-6 py-8 text-white sm:px-10 sm:py-10"
@@ -473,7 +484,6 @@ export default function DashboardPage() {
         </Reveal>
       )}
         </div>
-      </div>
     </main>
     </>
   );

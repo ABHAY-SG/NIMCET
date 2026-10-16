@@ -67,7 +67,7 @@ function Row({ item, active }: { item: Item; active: boolean }) {
 export default function DashSide({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const body = (
-    <div className="flex h-full flex-col gap-5 overflow-y-auto p-4">
+    <div className="noscroll flex h-full flex-col gap-5 overflow-y-auto p-4">
       <div>
         <a
           href="/dashboard"
@@ -105,7 +105,7 @@ export default function DashSide({ mobileOpen, onClose }: { mobileOpen: boolean;
   return (
     <>
       <aside
-        className="sticky top-24 hidden max-h-[calc(100dvh-7rem)] w-64 shrink-0 self-start overflow-hidden rounded-[22px] md:block"
+        className="fixed bottom-4 left-4 top-20 z-40 hidden w-64 overflow-hidden rounded-[22px] md:block"
         style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}
       >
         {body}
