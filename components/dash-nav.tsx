@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOutAll } from "@/lib/supabase";
 import { THEMES, applyTheme, readTheme, type ThemeId } from "@/lib/theme";
+import { ThemeIcon } from "@/components/theme-fab";
 
 export type StreakSummary = {
   current: number;
@@ -146,29 +147,41 @@ export default function DashNav({
           )}
 
           {openMenu === "streak" && streak && (
-            <div className="menu-in absolute right-0 top-12 z-50 w-64 rounded-2xl p-4" style={panelStyle}>
-              <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Daily streak</div>
-              <div className="mt-2 flex items-end gap-3">
-                <div className="mono text-3xl font-extrabold" style={{ color: "var(--accent)" }}>🔥 {streak.current}</div>
-                <div className="pb-1 text-xs" style={{ color: "var(--muted)" }}>best {streak.best}d</div>
+            <div className="menu-in absolute right-0 top-12 z-50 w-72 rounded-2xl p-5" style={panelStyle}>
+              <div className="flex items-center justify-between">
+                <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Daily streak</div>
+                <span className="mono rounded-full px-2.5 py-1 text-[10px] font-extrabold" style={{ background: "var(--pill)", color: "var(--accent)" }}>
+                  BEST {streak.best}d
+                </span>
               </div>
-              <div className="mt-3 flex justify-between gap-1">
+              <div className="mt-3 flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}>
+                <span aria-hidden className="text-4xl">🔥</span>
+                <div>
+                  <div className="mono text-3xl font-extrabold leading-none text-white">{streak.current}<span className="text-base">d</span></div>
+                  <div className="mt-1 text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>
+                    {streak.current > 0 ? "days in a row — keep it burning" : "attempt a mock to ignite it"}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-between gap-1">
                 {streak.week.map((d, i) => (
-                  <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                  <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
                     <span
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold"
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-extrabold"
                       style={d.active
-                        ? { background: "var(--accent)", color: "#fff" }
-                        : { background: "var(--pill)", color: "var(--muted)", border: d.isToday ? "1.5px solid var(--accent)" : "1px solid transparent" }}
+                        ? { background: "linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "#fff", boxShadow: "0 8px 20px -8px var(--accent)" }
+                        : { background: "var(--pill)", color: "var(--muted)", border: d.isToday ? "2px solid var(--accent)" : "1px solid transparent" }}
                     >
                       {d.active ? "✓" : d.label}
                     </span>
-                    <span className="text-[9px] font-bold" style={{ color: "var(--muted)" }}>{d.label}</span>
+                    <span className="text-[9px] font-bold" style={{ color: d.isToday ? "var(--accent)" : "var(--muted)" }}>{d.label}</span>
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-[11px] leading-5" style={{ color: "var(--muted)" }}>
-                Attempt any mock to keep the streak alive. Today is ringed.
+              <p className="mt-3 rounded-xl px-3 py-2 text-[11px] font-semibold leading-5" style={{ background: "var(--pill)", color: "var(--muted)" }}>
+                {streak.week.length > 0 && streak.week[streak.week.length - 1]?.active
+                  ? "Today's mock is done — see you tomorrow. 🔥"
+                  : "No mock yet today — one attempt keeps the streak alive."}
               </p>
             </div>
           )}
@@ -200,6 +213,9 @@ export default function DashNav({
                   style={t.id === theme ? { background: "var(--pill)", color: "var(--text)" } : undefined}
                 >
                   <span className="tdot inline-block h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: t.dot, border: "1px solid var(--border)" }} />
+                  <span className="flex items-center gap-2" style={{ color: "var(--accent)" }}>
+                    <ThemeIcon id={t.id} />
+                  </span>
                   <span className="flex-1">{t.name}</span>
                   {t.id === theme && <span>✓</span>}
                 </button>

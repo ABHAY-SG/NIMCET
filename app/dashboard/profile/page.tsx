@@ -410,7 +410,7 @@ export default function ProfilePage() {
           </section>
         </Reveal>
 
-        {formMsg && (
+        {!panel && formMsg && (
           <p className="mt-4 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{formMsg}</p>
         )}
         {note && (
@@ -452,6 +452,9 @@ export default function ProfilePage() {
                   </select>
                 </div>
               </div>
+              {formMsg && panel === "name" && (
+                <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{formMsg}</p>
+              )}
               <div className="mt-3 flex gap-2">
                 <button type="button" onClick={saveProfile} disabled={busy}
                   className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
@@ -511,6 +514,9 @@ export default function ProfilePage() {
                     style={{ background: "var(--pill)", border: confirmPw && newPw !== confirmPw ? "1px solid #dc2626" : "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
               </div>
+              {formMsg && panel === "password" && (
+                <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{formMsg}</p>
+              )}
               <div className="mt-3 flex gap-2">
                 <button type="button" onClick={savePassword} disabled={busy}
                   className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
@@ -530,8 +536,8 @@ export default function ProfilePage() {
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <Reveal>
             <section className="h-full rounded-[22px] p-6 backdrop-blur-2xl" style={cardStyle}>
-              <h2 className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
-                <span aria-hidden className="inline-block h-5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} /> Personal Details
+              <h2 className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+                <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>👤</span> Personal Details
               </h2>
               <div className="mt-2">
                 <DetailRow label="Name" value={loading ? "…" : displayName || "—"} />
@@ -548,8 +554,8 @@ export default function ProfilePage() {
           </Reveal>
           <Reveal>
             <section className="h-full rounded-[22px] p-6 backdrop-blur-2xl" style={cardStyle}>
-              <h2 className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
-                <span aria-hidden className="inline-block h-5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} /> Overview
+              <h2 className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+                <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>📊</span> Overview
               </h2>
               <div className="mt-4 grid grid-cols-2 gap-2.5">
                 <MiniStat value={loading ? "…" : overview.tests} label="TESTS" />
@@ -561,8 +567,8 @@ export default function ProfilePage() {
           </Reveal>
           <Reveal>
             <section className="h-full rounded-[22px] p-6 backdrop-blur-2xl" style={cardStyle}>
-              <h2 className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
-                <span aria-hidden className="inline-block h-5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} /> Streak
+              <h2 className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+                <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>🔥</span> Streak
               </h2>
               <div className="mono mt-4 text-4xl font-extrabold" style={{ color: "var(--accent)" }}>
                 {loading ? "…" : `🔥 ${streakSummary.current}d`}
@@ -589,8 +595,8 @@ export default function ProfilePage() {
 
         <Reveal>
           <section className="mt-4 rounded-[22px] p-6 backdrop-blur-2xl sm:p-7" style={cardStyle}>
-            <h2 className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
-              <span aria-hidden className="inline-block h-5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} /> Performance Analysis
+            <h2 className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+              <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>📈</span> Performance Analysis
             </h2>
             <h3 className="mt-4 text-center text-sm font-extrabold" style={{ color: "var(--muted)" }}>Test Performance Over Time</h3>
             {mounted ? (
