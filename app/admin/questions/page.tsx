@@ -22,6 +22,7 @@ export default function QuestionsAdmin() {
   const [rows, setRows] = useState<QuestionRow[]>([]);
   const [q, setQ] = useState("");
   const [exam, setExam] = useState("all");
+  const [difficulty, setDifficulty] = useState("all");
   const [form, setForm] = useState<Omit<QuestionRow, "id">>(EMPTY);
   const [editing, setEditing] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
@@ -71,12 +72,65 @@ export default function QuestionsAdmin() {
     if (!confirm("Delete this question?")) return;
     try {
       const sb = getSupabase();
+      // Dangling references would corrupt tests: block while any test uses it.
+      const { count } = await sb.from("tests").select("id", { count: "exact", head: true }).filter("question_ids", "cs", `{${id}}`);
+      if ((count ?? 0) > 0) {
+        setMsg(`Cannot delete — ${count} test(s) still reference this question. Remove it from those tests first.`);
+        return;
+      }
       const { error } = await sb.from("questions").delete().eq("id", id);
       if (error) throw error;
       await load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Delete failed.");
     }
+  };
+
+  const duplicate = async (r: QuestionRow) => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const sb = getSupabase();
+      const { error } = await sb.from("questions").insert({
+        exam: r.exam,
+        section: r.section,
+        topic: r.topic,
+        difficulty: r.difficulty,
+        stem: `${r.stem} (copy)`,
+        options: r.options,
+        answer: r.answer,
+        explanation: r.explanation,
+      });
+      if (error) throw error;
+      setMsg("Question duplicated — edit the copy.");
+      await load();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Duplicate failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startEdit = async (r: QuestionRow) => {
+    // Attempts store only totals, so recorded scores can never change — but
+    // the question text itself goes live wherever it is used. Warn first.
+    try {
+      const sb = getSupabase();
+      const { data, error } = await sb.from("tests").select("id,title,published").filter("question_ids", "cs", `{${r.id}}`).limit(6);
+      if (!error && data && data.length > 0) {
+        const live = (data as Array<{ title: string; published: boolean }>).filter((t) => t.published);
+        setMsg(
+          live.length > 0
+            ? `Heads up: used in ${data.length} test(s), ${live.length} published (${live.slice(0, 3).map((t) => t.title).join(", ")}). Edits go live immediately; recorded scores store only totals and stay unchanged.`
+            : `Used in ${data.length} draft test(s). Recorded scores store only totals and stay unchanged.`
+        );
+      } else {
+        setMsg("");
+      }
+    } catch {}
+    setEditing(r.id);
+    setForm({ exam: r.exam, section: r.section, topic: r.topic, difficulty: r.difficulty, stem: r.stem, options: r.options, answer: r.answer, explanation: r.explanation });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const seed = async () => {
@@ -98,6 +152,7 @@ export default function QuestionsAdmin() {
   const list = rows.filter(
     (r) =>
       (exam === "all" || r.exam === exam) &&
+      (difficulty === "all" || r.difficulty === difficulty) &&
       (q === "" || `${r.stem} ${r.topic} ${r.section}`.toLowerCase().includes(q.toLowerCase()))
   );
 
@@ -112,6 +167,12 @@ export default function QuestionsAdmin() {
           <option value="all">All exams</option>
           <option value="nimcet">NIMCET</option>
           <option value="cuet-pg-mca">CUET PG</option>
+        </select>
+        <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={`${input} w-auto`} style={istyle} aria-label="Filter by difficulty">
+          <option value="all">All levels</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
         </select>
         <span className="mono ml-auto text-xs" style={{ color: "var(--muted)" }}>{list.length} shown</span>
         <button type="button" onClick={seed} disabled={busy} className="rounded-full px-4 py-2 text-[13px] font-bold disabled:opacity-50" style={{ border: "1px solid var(--border)" }}>
@@ -165,7 +226,8 @@ export default function QuestionsAdmin() {
               <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>{r.exam}</span>
               <span className="mono rounded px-1.5 py-0.5 text-[10px]" style={{ background: "var(--pill)", color: "var(--muted)" }}>{r.section} • {r.topic} • {r.difficulty}</span>
               <span className="ml-auto flex gap-1.5">
-                <button type="button" onClick={() => { setEditing(r.id); setForm({ exam: r.exam, section: r.section, topic: r.topic, difficulty: r.difficulty, stem: r.stem, options: r.options, answer: r.answer, explanation: r.explanation }); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="rounded-full px-3 py-1 text-xs font-bold" style={{ border: "1px solid var(--border)" }}>Edit</button>
+                <button type="button" onClick={() => startEdit(r)} className="rounded-full px-3 py-1 text-xs font-bold" style={{ border: "1px solid var(--border)" }}>Edit</button>
+                <button type="button" onClick={() => duplicate(r)} disabled={busy} className="rounded-full px-3 py-1 text-xs font-bold disabled:opacity-50" style={{ border: "1px solid var(--border)" }}>Duplicate</button>
                 <button type="button" onClick={() => remove(r.id)} className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: "#dc2626", color: "#fff" }}>Delete</button>
               </span>
             </div>

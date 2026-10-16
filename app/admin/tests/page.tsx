@@ -14,6 +14,7 @@ export default function TestsAdmin() {
   const [published, setPublished] = useState(true);
   const [picked, setPicked] = useState<string[]>([]);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -44,6 +45,7 @@ export default function TestsAdmin() {
     setMsg("");
     try {
       if (!title.trim()) throw new Error("Title is required.");
+      if (!minutes || minutes < 5 || minutes > 180) throw new Error("Duration must be 5–180 minutes.");
       if (picked.length === 0) throw new Error("Pick at least one question.");
       const sb = getSupabase();
       const { error } = await sb.from("tests").insert({
@@ -72,7 +74,43 @@ export default function TestsAdmin() {
     }
   };
 
-  const remove = async (id: string) => {
+  const duplicate = async (t: TestRow) => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const sb = getSupabase();
+      const { error } = await sb.from("tests").insert({
+        exam: t.exam,
+        title: `${t.title} (copy)`,
+        tag: t.tag,
+        minutes: t.minutes,
+        free: t.free,
+        published: false,
+        question_ids: t.question_ids,
+      });
+      if (error) throw error;
+      setMsg(`Duplicated as draft — attempts never copy over.`);
+      await load();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Duplicate failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (id: string, title: string) => {
+    try {
+      const sb = getSupabase();
+      // Attempts reference tests by title string: never destroy history.
+      const { count } = await sb.from("attempts").select("id", { count: "exact", head: true }).eq("test", title);
+      if ((count ?? 0) > 0) {
+        setMsg(`Cannot delete — ${count} recorded attempt(s) reference this mock. Unpublish instead to preserve history.`);
+        return;
+      }
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Delete check failed.");
+      return;
+    }
     if (!confirm("Delete this mock test?")) return;
     try {
       const sb = getSupabase();
@@ -87,6 +125,7 @@ export default function TestsAdmin() {
   const input = "rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2";
   const istyle = { background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" } as const;
   const pool = bank.filter((b) => filter === "all" || b.exam === filter);
+  const shown = tests.filter((t) => search.trim() === "" || t.title.toLowerCase().includes(search.trim().toLowerCase()));
 
   return (
     <AdminLayout title="Mock Tests" crumbs={["Mock Tests"]}>
@@ -131,8 +170,12 @@ export default function TestsAdmin() {
         </button>
       </form>
 
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tests by title…" className={`${input} w-full max-w-xs`} style={istyle} />
+        <span className="mono ml-auto text-xs" style={{ color: "var(--muted)" }}>{shown.length} shown</span>
+      </div>
       <div className="mt-4 space-y-2.5">
-        {tests.map((t) => (
+        {shown.map((t) => (
           <div key={t.id} className="flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3 text-sm backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 60%, transparent)", border: "1px solid var(--border)" }}>
             <div className="min-w-0 flex-1">
               <div className="truncate font-bold">{t.title}</div>
@@ -146,10 +189,13 @@ export default function TestsAdmin() {
             <button type="button" onClick={() => flip(t, "free")} className="rounded-full px-3 py-1 text-xs font-bold" style={{ border: "1px solid var(--border)" }}>
               {t.free ? "Make paid" : "Make free"}
             </button>
-            <button type="button" onClick={() => remove(t.id)} className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: "#dc2626", color: "#fff" }}>Delete</button>
+            <button type="button" onClick={() => duplicate(t)} disabled={busy} className="rounded-full px-3 py-1 text-xs font-bold disabled:opacity-50" style={{ border: "1px solid var(--border)" }}>
+              Duplicate
+            </button>
+            <button type="button" onClick={() => remove(t.id, t.title)} className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: "#dc2626", color: "#fff" }}>Delete</button>
           </div>
         ))}
-        {tests.length === 0 && <p className="py-6 text-center text-sm" style={{ color: "var(--muted)" }}>No mock tests yet.</p>}
+        {shown.length === 0 && <p className="py-6 text-center text-sm" style={{ color: "var(--muted)" }}>No mock tests yet.</p>}
       </div>
     </AdminLayout>
   );
