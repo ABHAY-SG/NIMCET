@@ -34,14 +34,6 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
     ],
   },
   {
-    title: "Practice",
-    items: [
-      { label: "Start mock", icon: ICONS.play, view: "mock" },
-      { label: "Test history", icon: ICONS.history, view: "history" },
-      { label: "My profile", icon: ICONS.user, href: "/dashboard/profile" },
-    ],
-  },
-  {
     title: "Library",
     items: [
       { label: "Courses", icon: ICONS.film, soon: true },
@@ -115,9 +107,11 @@ function Row({
 }
 
 const PANEL_STYLE: React.CSSProperties = {
-  background: "linear-gradient(180deg, #141b34 0%, #1c2450 60%, #232c63 100%)",
+  background: "linear-gradient(180deg, rgba(20,27,52,0.88) 0%, rgba(28,36,80,0.88) 60%, rgba(35,44,99,0.88) 100%)",
   border: "1px solid rgba(255,255,255,0.12)",
   boxShadow: "0 32px 70px -30px rgba(10, 15, 35, 0.8)",
+  backdropFilter: "blur(24px)",
+  WebkitBackdropFilter: "blur(24px)",
 };
 
 export default function DashSide({
@@ -132,7 +126,7 @@ export default function DashSide({
   onSelect: (v: DashView) => void;
 }) {
   const body = (
-    <div className="noscroll flex h-full flex-col gap-5 overflow-y-auto p-4">
+    <div className="noscroll flex h-full flex-col gap-5 overflow-y-auto overscroll-contain p-4">
       <div className="sticky top-0 z-10 -m-4 mb-0 border-b border-white/10 p-4 backdrop-blur-2xl" style={{ background: "rgba(20, 27, 52, 0.72)" }}>
         <button
           type="button"
