@@ -18,9 +18,9 @@ function shortUid(id: string): string {
 
 function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="rounded-2xl bg-white px-5 py-4" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
+    <div className="rounded-2xl px-5 py-4 backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}>
       <div className="mono text-[11px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>{label}</div>
-      <div className="mono mt-1 text-3xl font-extrabold" style={{ color: "#1e2952" }}>{value}</div>
+      <div className="mono mt-1 text-3xl font-extrabold" style={{ color: "var(--text)" }}>{value}</div>
       <div className="mt-1 text-[11px]" style={{ color: "var(--muted)" }}>{sub}</div>
     </div>
   );
@@ -179,9 +179,8 @@ export default function AdminHome() {
   const recent = attempts.slice(0, 5);
 
   const cardStyle: React.CSSProperties = {
-    background: "#ffffff",
+    background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)",
     border: "1px solid var(--border)",
-    boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)",
   };
 
   return (
@@ -222,7 +221,7 @@ export default function AdminHome() {
 
           <div className="mt-4 grid gap-2.5 lg:grid-cols-2">
             <div className="rounded-2xl p-5" style={cardStyle}>
-              <h2 className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Attempts per day</h2>
+              <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Attempts per day</h2>
               {attemptsByDay.every((d) => d.value === 0) ? (
                 <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No attempts in this range yet.</p>
               ) : (
@@ -230,7 +229,7 @@ export default function AdminHome() {
               )}
             </div>
             <div className="rounded-2xl p-5" style={cardStyle}>
-              <h2 className="text-sm font-extrabold" style={{ color: "#1e2952" }}>First-seen users per day</h2>
+              <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>First-seen users per day</h2>
               {usersByDay.every((d) => d.value === 0) ? (
                 <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No new users in this range yet.</p>
               ) : (
@@ -241,7 +240,7 @@ export default function AdminHome() {
 
           <div className="mt-4 grid gap-2.5 lg:grid-cols-2">
             <div className="rounded-2xl p-5" style={cardStyle}>
-              <h2 className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Most attempted tests</h2>
+              <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Most attempted tests</h2>
               {topTests.length === 0 ? (
                 <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No attempts in this range yet.</p>
               ) : (
@@ -249,7 +248,7 @@ export default function AdminHome() {
                   {topTests.map((t) => (
                     <div key={t.label}>
                       <div className="flex justify-between text-xs font-bold">
-                        <span className="truncate" style={{ color: "#1e2952" }}>{t.label}</span>
+                        <span className="truncate" style={{ color: "var(--text)" }}>{t.label}</span>
                         <span className="mono ml-2" style={{ color: "var(--accent)" }}>{t.value}</span>
                       </div>
                       <div className="mt-1 h-1.5 overflow-hidden rounded-full" style={{ background: "var(--pill)" }}>
@@ -261,14 +260,14 @@ export default function AdminHome() {
               )}
             </div>
             <div className="rounded-2xl p-5" style={cardStyle}>
-              <h2 className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Draft tests</h2>
+              <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Draft tests</h2>
               {drafts.length === 0 ? (
                 <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No drafts — everything published is live.</p>
               ) : (
                 <ul className="mt-2 space-y-2 text-sm">
                   {drafts.slice(0, 5).map((t) => (
                     <li key={t.id} className="flex items-center justify-between gap-2">
-                      <span className="truncate font-bold" style={{ color: "#1e2952" }}>{t.title}</span>
+                      <span className="truncate font-bold" style={{ color: "var(--text)" }}>{t.title}</span>
                       <span className="mono shrink-0 text-[11px]" style={{ color: "var(--muted)" }}>
                         {Array.isArray(t.question_ids) ? t.question_ids.length : 0}Q • DRAFT
                       </span>
@@ -280,7 +279,7 @@ export default function AdminHome() {
           </div>
 
           <div className="mt-4 rounded-2xl p-5" style={cardStyle}>
-            <h2 className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Recent attempts</h2>
+            <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Recent attempts</h2>
             {recent.length === 0 ? (
               <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No attempts yet.</p>
             ) : (
@@ -288,7 +287,7 @@ export default function AdminHome() {
                 {recent.map((a, i) => (
                   <li key={`${a.user_id}-${a.created_at}-${i}`} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span className="mono text-xs" style={{ color: "var(--muted)" }} title={a.user_id}>{shortUid(a.user_id)}</span>
-                    <span className="min-w-0 flex-1 truncate font-bold" style={{ color: "#1e2952" }}>{a.test}</span>
+                    <span className="min-w-0 flex-1 truncate font-bold" style={{ color: "var(--text)" }}>{a.test}</span>
                     <span className="mono text-xs font-extrabold" style={{ color: "var(--accent)" }}>{a.score}</span>
                     <span className="mono text-[11px]" style={{ color: "var(--muted)" }}>
                       {new Date(a.created_at).toLocaleString("en-IN")}

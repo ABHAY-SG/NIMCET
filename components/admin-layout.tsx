@@ -54,7 +54,7 @@ export default function AdminLayout({ title, crumbs, children }: { title: string
 
   if (state === "loading") {
     return (
-      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28">
+      <main data-theme="midnight" className="mx-auto max-w-3xl px-4 pb-20 pt-28" style={{ background: "var(--bg)", color: "var(--text)" }}>
         <div className="animate-pulse space-y-3" aria-label="Loading">
           <div className="h-8 w-48 rounded-xl" style={{ background: "var(--pill)" }} />
           <div className="h-24 rounded-2xl" style={{ background: "var(--pill)" }} />
@@ -67,7 +67,7 @@ export default function AdminLayout({ title, crumbs, children }: { title: string
   if (state === "noauth") {
     const back = `/login?next=${encodeURIComponent(path || "/admin")}`;
     return (
-      <main className="mx-auto max-w-md px-4 pb-20 pt-28 text-center">
+      <main data-theme="midnight" className="mx-auto max-w-md px-4 pb-20 pt-28 text-center" style={{ background: "var(--bg)", color: "var(--text)" }}>
         <h1 className="text-2xl font-extrabold">Admins only</h1>
         <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>Log in with an admin account first.</p>
         <div className="mt-5 flex justify-center gap-2">
@@ -80,7 +80,7 @@ export default function AdminLayout({ title, crumbs, children }: { title: string
 
   if (state === "denied") {
     return (
-      <main className="mx-auto max-w-md px-4 pb-20 pt-28 text-center">
+      <main data-theme="midnight" className="mx-auto max-w-md px-4 pb-20 pt-28 text-center" style={{ background: "var(--bg)", color: "var(--text)" }}>
         <h1 className="text-2xl font-extrabold">Not authorized</h1>
         <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
           Signed in as {email || "unknown"}. This account is not in the admin list — add it to NEXT_PUBLIC_ADMIN_EMAILS.
@@ -138,7 +138,7 @@ export default function AdminLayout({ title, crumbs, children }: { title: string
   );
 
   return (
-    <div className="min-h-[100svh]">
+    <div data-theme="midnight" className="min-h-[100svh]" style={{ background: "var(--bg)", color: "var(--text)" }}>
       <header
         className="fixed inset-x-0 top-0 z-50 backdrop-blur-2xl"
         style={{ background: "color-mix(in srgb, var(--nav-bg) 85%, transparent)", borderBottom: "1px solid var(--border)" }}
