@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
-import DashSide from "@/components/dash-side";
+import DashSide, { type DashView } from "@/components/dash-side";
+import MockDemo from "@/components/mockdemo";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
 import { calcBestStreak, calcStreak, formatStreak, lastWeekActivity } from "@/lib/streak";
 
@@ -122,6 +123,7 @@ export default function DashboardPage() {
   const [note, setNote] = useState("");
   const [todayLine, setTodayLine] = useState("");
   const [sideOpen, setSideOpen] = useState(false);
+  const [view, setView] = useState<DashView>("home");
 
   // Dashboard scrolls without a visible scrollbar track.
   useEffect(() => {
@@ -244,7 +246,28 @@ export default function DashboardPage() {
     setLocalAttempts([]);
   };
 
-  // Navbar streak panel data (same source as the stat strip).
+  // Refresh history whenever returning to home/history (e.g. after finishing
+  // a mock inside the dashboard) — silent, no spinners or notes.
+  useEffect(() => {
+    if (view !== "home" && view !== "history") return;
+    (async () => {
+      try {
+        const sb = getAuthClient();
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) return;
+        const { data, error } = await sb
+          .from("attempts")
+          .select("id,test,score,correct,wrong,skipped,created_at")
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (!error) setAttempts(data ?? []);
+        try {
+          const raw = localStorage.getItem("nimcuet-attempts");
+          if (raw) setLocalAttempts(JSON.parse(raw));
+        } catch {}
+      } catch {}
+    })();
+  }, [view]);
   const streakSummary = {
     current: derived?.streak ?? 0,
     best: derived?.bestStreak ?? 0,
@@ -264,8 +287,10 @@ export default function DashboardPage() {
         />
       )}
       <main className="mx-auto w-full px-4 pb-20 pt-24 sm:px-6 lg:px-8">
-        <DashSide mobileOpen={sideOpen} onClose={() => setSideOpen(false)} />
+        <DashSide mobileOpen={sideOpen} onClose={() => setSideOpen(false)} view={view} onSelect={(v) => setView(v)} />
         <div id="attempts" className="min-w-0 scroll-mt-24 md:ml-[18.5rem]">
+      {view === "home" && (
+      <>
       <Reveal>
         <section
           className="relative overflow-hidden rounded-[26px] px-6 py-8 text-white sm:px-10 sm:py-10"
@@ -288,13 +313,14 @@ export default function DashboardPage() {
                   : "Your preparation home: stats, test series and history live here."}
               </p>
               <div className="mt-5 flex flex-wrap gap-2.5">
-                <a
-                  href="/#demo"
+                <button
+                  type="button"
+                  onClick={() => setView("mock")}
                   className="cursor-pointer rounded-xl bg-white px-5 py-2.5 text-sm font-extrabold transition-transform hover:-translate-y-px"
                   style={{ color: "#1e2952" }}
                 >
                   Start practice mock →
-                </a>
+                </button>
                 <a
                   href="#series"
                   className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-px"
@@ -430,13 +456,14 @@ export default function DashboardPage() {
                         {qcount}Q • {t.minutes} min{t.tag ? ` • ${t.tag}` : ""}
                       </div>
                     </div>
-                    <a
-                      href="/#demo"
+                    <button
+                      type="button"
+                      onClick={() => setView("mock")}
                       className="shrink-0 cursor-pointer rounded-xl px-4 py-2 text-[13px] font-extrabold text-white transition-transform hover:-translate-y-px"
                       style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
                     >
                       Practice →
-                    </a>
+                    </button>
                   </div>
                 );
               })}
@@ -452,7 +479,11 @@ export default function DashboardPage() {
             className="mt-3 rounded-2xl bg-white p-6 text-center text-sm"
             style={{ border: "1px dashed var(--border)", color: "var(--muted)" }}
           >
-            No attempts yet. <a href="/#demo" className="font-bold underline" style={{ color: "var(--accent)" }}>Attempt the demo mock</a> — it saves here when you are logged in.
+            No attempts yet.{" "}
+            <button type="button" onClick={() => setView("mock")} className="cursor-pointer font-bold underline" style={{ color: "var(--accent)" }}>
+              Attempt the demo mock
+            </button>{" "}
+            — it saves here when you are logged in.
           </div>
         ) : (
           <div className="mt-3 grid gap-2.5">
@@ -481,6 +512,143 @@ export default function DashboardPage() {
               <AttemptRow key={a.id} a={a} />
             ))}
           </div>
+        </Reveal>
+      )}
+      </>
+      )}
+      {view === "mock" && (
+        <Reveal>
+          <h1 className="text-2xl font-extrabold tracking-tight">Practice mock</h1>
+          <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
+            12 questions • 12 minutes • instant solutions. Your score saves to history automatically.
+          </p>
+          <div className="mt-4"><MockDemo /></div>
+        </Reveal>
+      )}
+      {view === "history" && (
+        <>
+          <Reveal>
+            <h1 className="text-2xl font-extrabold tracking-tight">Test history</h1>
+            <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
+              Every attempt, newest first — cloud history plus this device.
+            </p>
+          </Reveal>
+          <Reveal>
+            <div className="mt-4 grid gap-2.5">
+              {attempts.length === 0 && !loading ? (
+                <div className="rounded-2xl p-6 text-center text-sm backdrop-blur-xl" style={{ border: "1px dashed var(--border)", color: "var(--muted)" }}>
+                  No cloud attempts yet — finish a mock and it lands here.
+                </div>
+              ) : (
+                attempts.map((a) => <AttemptRow key={a.id} a={a} cloud />)
+              )}
+            </div>
+          </Reveal>
+          {localAttempts.length > 0 && (
+            <Reveal>
+              <h2 className="mt-8 text-lg font-extrabold tracking-tight">On this device</h2>
+              <div className="mt-3 grid gap-2.5">
+                {localAttempts.map((a) => (
+                  <AttemptRow key={a.id} a={a} />
+                ))}
+              </div>
+            </Reveal>
+          )}
+        </>
+      )}
+      {view === "contact" && (
+        <Reveal>
+          <h1 className="text-2xl font-extrabold tracking-tight">Contact</h1>
+          <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
+            Syllabus confusion, plan help, or a bug in a mock — one message away.
+          </p>
+          <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+            <a
+              href="mailto:abhayincodingworld@gmail.com"
+              className="rounded-2xl px-5 py-4 backdrop-blur-xl transition-transform hover:-translate-y-px"
+              style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
+            >
+              <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Email</div>
+              <div className="mt-1 break-all text-sm font-extrabold">abhayincodingworld@gmail.com</div>
+            </a>
+            <a
+              href="tel:+917425097293"
+              className="rounded-2xl px-5 py-4 backdrop-blur-xl transition-transform hover:-translate-y-px"
+              style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
+            >
+              <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Phone</div>
+              <div className="mt-1 text-sm font-extrabold">+91-74250-97293</div>
+            </a>
+          </div>
+        </Reveal>
+      )}
+      {view === "pricing" && (
+        <Reveal>
+          <h1 className="text-2xl font-extrabold tracking-tight">Pricing</h1>
+          <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
+            Start free. Paid plans activate over UPI within a day on your registered email — full policy in{" "}
+            <a href="/terms" className="font-bold underline" style={{ color: "var(--accent)" }}>Terms</a>.
+          </p>
+          <div className="mt-4 grid gap-2.5 md:grid-cols-3">
+            <div className="rounded-2xl bg-white px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
+              <div className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Free</div>
+              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "#1e2952" }}>₹0 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>forever</span></div>
+              <ul className="mt-3 space-y-1.5 text-[13px]" style={{ color: "var(--muted)" }}>
+                <li>• Free 12Q sample mock</li>
+                <li>• Solutions + scorecard</li>
+                <li>• No card, no login needed</li>
+              </ul>
+              <button type="button" onClick={() => setView("mock")}
+                className="mt-4 w-full cursor-pointer rounded-xl py-2.5 text-sm font-bold"
+                style={{ border: "1px solid var(--border)" }}>
+                Start free →
+              </button>
+            </div>
+            <div className="rounded-2xl bg-white px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
+              <div className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Monthly</div>
+              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "#1e2952" }}>₹149 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>/month</span></div>
+              <ul className="mt-3 space-y-1.5 text-[13px]" style={{ color: "var(--muted)" }}>
+                <li>• Unlimited mocks</li>
+                <li>• Full section analytics</li>
+                <li>• All PYQ sets</li>
+                <li>• Cancel anytime</li>
+              </ul>
+              <a href="mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Monthly%20plan"
+                className="mt-4 block w-full cursor-pointer rounded-xl py-2.5 text-center text-sm font-bold text-white"
+                style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
+                Choose Monthly →
+              </a>
+            </div>
+            <div className="rounded-2xl bg-white px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
+              <div className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Annual</div>
+              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "#1e2952" }}>₹699 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>/year</span></div>
+              <ul className="mt-3 space-y-1.5 text-[13px]" style={{ color: "var(--muted)" }}>
+                <li>• 12 months full access</li>
+                <li>• Everything in Monthly</li>
+                <li>• Priority support</li>
+              </ul>
+              <a href="mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Annual%20plan"
+                className="mt-4 block w-full cursor-pointer rounded-xl py-2.5 text-center text-sm font-bold text-white"
+                style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
+                Choose Annual →
+              </a>
+            </div>
+          </div>
+        </Reveal>
+      )}
+      {view === "feedback" && (
+        <Reveal>
+          <h1 className="text-2xl font-extrabold tracking-tight">Feedback</h1>
+          <p className="mt-1 max-w-lg text-[13px] leading-6" style={{ color: "var(--muted)" }}>
+            Found a wrong answer, a confusing explanation, or have a feature idea? Write to us — every message is read, and question fixes ship into future mocks.
+          </p>
+          <a
+            href="mailto:abhayincodingworld@gmail.com?subject=NIMCET%20feedback"
+            className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-3 text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
+            style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+          >
+            Send feedback via email →
+          </a>
         </Reveal>
       )}
         </div>

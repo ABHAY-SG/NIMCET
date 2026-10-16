@@ -1,14 +1,15 @@
 "use client";
-import { usePathname } from "next/navigation";
 
-type Item = { label: string; icon: string; href?: string; soon?: boolean };
+export type DashView = "home" | "mock" | "history" | "contact" | "pricing" | "feedback";
+
+type Item = { label: string; icon: string; view?: DashView; href?: string; soon?: boolean };
 
 const GROUPS: Array<{ title: string; items: Item[] }> = [
   {
     title: "Practice",
     items: [
-      { label: "Start mock", icon: "▶", href: "/#demo" },
-      { label: "Test history", icon: "🕘", href: "/dashboard#attempts" },
+      { label: "Start mock", icon: "▶", view: "mock" },
+      { label: "Test history", icon: "🕘", view: "history" },
       { label: "My profile", icon: "👤", href: "/dashboard/profile" },
     ],
   },
@@ -23,18 +24,28 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
   {
     title: "Help",
     items: [
-      { label: "Contact", icon: "✉", href: "/contact" },
-      { label: "Pricing", icon: "$", href: "/#pricing" },
-      { label: "Feedback", icon: "💬", href: "/contact" },
+      { label: "Contact", icon: "✉", view: "contact" },
+      { label: "Pricing", icon: "$", view: "pricing" },
+      { label: "Feedback", icon: "💬", view: "feedback" },
     ],
   },
 ];
 
-function Row({ item, active }: { item: Item; active: boolean }) {
+function Row({
+  item,
+  active,
+  onSelect,
+  onClose,
+}: {
+  item: Item;
+  active: boolean;
+  onSelect: (v: DashView) => void;
+  onClose: () => void;
+}) {
   const cls = `flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm font-bold ${
     active ? "text-white" : ""
   }`;
-  const style = active
+  const activeStyle = active
     ? { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }
     : undefined;
   const inner = (
@@ -50,33 +61,54 @@ function Row({ item, active }: { item: Item; active: boolean }) {
       )}
     </>
   );
-  if (item.soon || !item.href) {
+  if (item.soon) {
     return (
-      <span aria-disabled className={`${cls} cursor-default opacity-70`} style={style} title="Coming soon">
+      <span aria-disabled className={`${cls} cursor-default opacity-70`} title="Coming soon">
         {inner}
       </span>
     );
   }
+  if (item.view) {
+    return (
+      <button
+        type="button"
+        onClick={() => { onSelect(item.view as DashView); onClose(); }}
+        className={`${cls} cursor-pointer transition-transform hover:-translate-y-px`}
+        style={activeStyle}
+      >
+        {inner}
+      </button>
+    );
+  }
   return (
-    <a href={item.href} className={`${cls} transition-transform hover:-translate-y-px`} style={style}>
+    <a href={item.href} className={`${cls} transition-transform hover:-translate-y-px`}>
       {inner}
     </a>
   );
 }
 
-export default function DashSide({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
-  const pathname = usePathname();
+export default function DashSide({
+  mobileOpen,
+  onClose,
+  view,
+  onSelect,
+}: {
+  mobileOpen: boolean;
+  onClose: () => void;
+  view: DashView;
+  onSelect: (v: DashView) => void;
+}) {
   const body = (
     <div className="noscroll flex h-full flex-col gap-5 overflow-y-auto p-4">
       <div>
-        <a
-          href="/dashboard"
-          onClick={onClose}
-          className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm font-extrabold transition-transform hover:-translate-y-px ${
-            pathname === "/dashboard" ? "text-white" : ""
+        <button
+          type="button"
+          onClick={() => { onSelect("home"); onClose(); }}
+          className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm font-extrabold transition-transform hover:-translate-y-px ${
+            view === "home" ? "text-white" : ""
           }`}
           style={
-            pathname === "/dashboard"
+            view === "home"
               ? { background: "linear-gradient(120deg, #0f766e, #115e59)" }
               : { border: "1px solid var(--border)" }
           }
@@ -85,7 +117,7 @@ export default function DashSide({ mobileOpen, onClose }: { mobileOpen: boolean;
             ⌂
           </span>
           Home
-        </a>
+        </button>
       </div>
       {GROUPS.map((g) => (
         <div key={g.title}>
@@ -94,7 +126,7 @@ export default function DashSide({ mobileOpen, onClose }: { mobileOpen: boolean;
           </div>
           <div className="grid gap-0.5">
             {g.items.map((it) => (
-              <Row key={it.label} item={it} active={false} />
+              <Row key={it.label} item={it} active={it.view !== undefined && it.view === view} onSelect={onSelect} onClose={onClose} />
             ))}
           </div>
         </div>
