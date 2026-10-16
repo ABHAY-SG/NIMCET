@@ -400,7 +400,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       </a>
       <div
         className="auth-card relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[560px]"
-        style={{ border: "1px solid transparent", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.45)" }}
+        style={{ border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.22)" }}
       >
         {BG.map(([cls, src, fallback]) => (
           <img
