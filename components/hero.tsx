@@ -1,7 +1,7 @@
 "use client";
 import { useRef } from "react";
 import Reveal from "@/components/reveal";
-import Stars from "@/components/stars";
+import Constellation from "@/components/constellation";
 
 const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERATING SYSTEMS", "DBMS", "NETWORKS", "REASONING"];
 
@@ -18,7 +18,7 @@ export default function Hero() {
   return (
     <section className="relative overflow-hidden" style={{ minHeight: "calc(100svh - 4rem)" }} onMouseMove={onMove}>
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <Stars />
+        <Constellation />
       </div>
       <div ref={spot} aria-hidden className="pointer-events-none absolute inset-0" />
       <div className="relative mx-auto flex w-full max-w-4xl flex-col items-center justify-center px-4 pb-12 pt-16 text-center md:pt-20" style={{ minHeight: "calc(100svh - 4rem)" }}>
@@ -31,7 +31,7 @@ export default function Hero() {
           <h1 className="rise mt-6 leading-[1.04]" style={{ fontSize: "clamp(2.8rem, 7vw, 5.2rem)", animationDelay: "0.1s" }}>
             <span className="serif-it">The quiet way to</span>
             <br />
-            <span className="shine font-bold">top MCA entrances.</span>
+            <span className="headline-warm font-bold">top MCA entrances.</span>
           </h1>
         </Reveal>
         <Reveal>
