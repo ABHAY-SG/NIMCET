@@ -18,6 +18,9 @@ type Attempt = {
   created_at: string;
 };
 
+const RING_C = 2 * Math.PI * 52;
+const MEDALS = ["#f59e0b", "#94a3b8", "#b45309"];
+
 type SeriesTest = {
   id: string;
   exam: string;
@@ -36,14 +39,24 @@ function examLabel(exam: string): string {
   return exam.toUpperCase();
 }
 
-function AttemptRow({ a, cloud = false }: { a: Attempt; cloud?: boolean }) {
+const MEDAL_LABEL = ["#1", "#2", "#3"];
+
+function AttemptRow({ a, cloud = false, best = 0, rank = 0 }: { a: Attempt; cloud?: boolean; best?: number; rank?: number }) {
+  const pct = best > 0 ? Math.min(100, Math.round(((Number(a.score) || 0) / best) * 100)) : 0;
   return (
     <div
-      className="flex flex-wrap items-center justify-between gap-2 rounded-2xl px-5 py-3.5 backdrop-blur-xl"
-      style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
+      className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5"
+      style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
     >
-      <div>
-        <div className="text-sm font-bold">
+      {rank > 0 && rank <= 3 ? (
+        <span title={`Top ${rank} by score`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white" style={{ background: MEDALS[rank - 1] }}>
+          {MEDAL_LABEL[rank - 1]}
+        </span>
+      ) : (
+        <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)" }}>📝</span>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-extrabold" style={{ color: "#1e2952" }}>
           {a.test}{" "}
           {!cloud && (
             <span className="mono rounded px-1.5 py-0.5 text-[10px]" style={{ background: "var(--pill)", color: "var(--muted)" }}>
@@ -51,25 +64,14 @@ function AttemptRow({ a, cloud = false }: { a: Attempt; cloud?: boolean }) {
             </span>
           )}
         </div>
-        <div className="mono text-[11px]" style={{ color: "var(--muted)" }}>
+        <div className="mono mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
           {new Date(a.created_at).toLocaleString("en-IN")} • {a.correct}✔ {a.wrong}✘ {a.skipped}○
         </div>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full" style={{ background: "var(--pill)" }}>
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }} />
+        </div>
       </div>
-      <div className="mono text-xl font-extrabold" style={{ color: "var(--accent)" }}>{a.score}</div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, sub, icon }: { label: string; value: string; sub: string; icon: string }) {
-  return (
-    <div
-      className="rounded-2xl bg-white px-4 py-4 backdrop-blur-xl"
-      style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-    >
-      <span aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)" }}>{icon}</span>
-      <div className="mono mt-2 text-2xl font-extrabold" style={{ color: "var(--accent)" }}>{value}</div>
-      <div className="mt-1 text-[13px] font-bold" style={{ color: "#1e2952" }}>{label}</div>
-      <div className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>{sub}</div>
+      <div className="mono shrink-0 text-xl font-extrabold" style={{ color: "var(--accent)" }}>{a.score}</div>
     </div>
   );
 }
@@ -87,12 +89,12 @@ function TrendChart({ data }: { data: Attempt[] }) {
       style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
     >
       <div className="flex items-baseline justify-between">
-        <div className="text-sm font-extrabold tracking-tight" style={{ color: "#1e2952" }}>Score trend</div>
-        <div className="text-[11px]" style={{ color: "var(--muted)" }}>last {pts.length} mocks • oldest → newest</div>
+        <div className="dash-display text-sm font-extrabold tracking-tight" style={{ color: "#1e2952" }}>Score trend</div>
+        <div className="text-[11px]" style={{ color: "#64748b" }}>last {pts.length} mocks • oldest → newest</div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="Score trend chart">
         {[0.25, 0.5, 0.75].map((f) => (
-          <line key={f} x1={PAD} x2={W - PAD} y1={H * f} y2={H * f} stroke="var(--border)" strokeWidth="1" />
+          <line key={f} x1={PAD} x2={W - PAD} y1={H * f} y2={H * f} stroke="#e2e8f0" strokeWidth="1" />
         ))}
         {pts.map((a, i) => {
           const v = Number(a.score) || 0;
@@ -101,7 +103,7 @@ function TrendChart({ data }: { data: Attempt[] }) {
           return (
             <g key={a.id ?? i}>
               <rect x={x} y={H - 14 - h} width={Math.max(6, bw * 0.56)} height={h} rx="5" fill="var(--accent)" opacity={0.85} />
-              <text x={x + bw * 0.28} y={H - 18 - h} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text)">{v}</text>
+              <text x={x + bw * 0.28} y={H - 18 - h} textAnchor="middle" fontSize="11" fontWeight="700" fill="#1e2952">{v}</text>
             </g>
           );
         })}
@@ -240,6 +242,22 @@ export default function DashboardPage() {
 
   const attemptsForTitle = (title: string) => attempts.filter((a) => a.test === title).length;
 
+  // Best score + top-3 ranks by score (render-safe arithmetic only).
+  const bestScore = useMemo(
+    () => attempts.reduce((m, a) => Math.max(m, Number(a.score) || 0), 0),
+    [attempts]
+  );
+  const localBest = useMemo(
+    () => localAttempts.reduce((m, a) => Math.max(m, Number(a.score) || 0), 0),
+    [localAttempts]
+  );
+  const rankMap = useMemo(() => {
+    const sorted = [...attempts].sort((x, y) => (Number(y.score) || 0) - (Number(x.score) || 0));
+    const m = new Map<string, number>();
+    sorted.slice(0, 3).forEach((a, i) => m.set(a.id, i + 1));
+    return m;
+  }, [attempts]);
+
   const clearLocal = () => {
     try {
       localStorage.removeItem("nimcuet-attempts");
@@ -300,9 +318,16 @@ export default function DashboardPage() {
           <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(600px 220px at 85% 0%, rgba(255,255,255,0.16), transparent 65%), radial-gradient(500px 260px at 0% 100%, rgba(255,255,255,0.08), transparent 60%)" }} />
           <div className="relative flex flex-wrap items-center justify-between gap-6">
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase" style={{ letterSpacing: "0.22em", color: "rgba(255,255,255,0.7)" }}>
-                {todayLine}
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full px-3 py-1 text-[11px] font-extrabold uppercase" style={{ letterSpacing: "0.18em", background: "rgba(255,255,255,0.14)", color: "#fff" }}>
+                  {todayLine}
+                </span>
+                {!loading && (derived?.streak ?? 0) > 0 && (
+                  <span className="rounded-full px-3 py-1 text-[11px] font-extrabold uppercase" style={{ letterSpacing: "0.18em", background: "#fff", color: "#1e2952" }}>
+                    🔥 {formatStreak(derived?.streak ?? 0)}
+                  </span>
+                )}
+              </div>
               <h1 className="dash-display mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
                 {loading ? "Loading…" : displayName ? `Hello ${displayName.trim().split(/\s+/)[0]}` : "Hello"}
               </h1>
@@ -331,30 +356,42 @@ export default function DashboardPage() {
                 </a>
               </div>
             </div>
-            <div className="flex shrink-0 flex-col gap-2.5 rounded-2xl px-5 py-4" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
-              <div className="flex items-center gap-3">
-                <div className="text-4xl font-extrabold">🔥</div>
-                <div>
-                  <div className="text-xl font-extrabold leading-tight text-white">{loading ? "…" : formatStreak(derived?.streak ?? 0)}</div>
-                  <div className="mt-0.5 text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>
-                    {loading ? "warming up" : derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily"}
-                  </div>
+            <div className="flex shrink-0 items-center gap-4 rounded-2xl px-5 py-4" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
+              <div className="relative h-[104px] w-[104px] shrink-0">
+                <svg width="104" height="104" viewBox="0 0 120 120" role="img" aria-label="Streak progress toward best">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="11" />
+                  <circle
+                    cx="60" cy="60" r="52" fill="none" stroke="#fff" strokeWidth="11" strokeLinecap="round"
+                    strokeDasharray={RING_C}
+                    strokeDashoffset={RING_C * (1 - (derived?.bestStreak ? Math.min((derived?.streak ?? 0) / derived.bestStreak, 1) : 0))}
+                    transform="rotate(-90 60 60)" style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.8))" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span aria-hidden className="text-2xl leading-none">🔥</span>
+                  <span className="mono mt-0.5 text-sm font-extrabold text-white">{loading ? "…" : `${derived?.streak ?? 0}d`}</span>
                 </div>
               </div>
-              {!loading && streakSummary.week.length > 0 && (
-                <div className="flex gap-1.5" aria-hidden>
-                  {streakSummary.week.map((d, i) => (
-                    <span
-                      key={i}
-                      title={d.active ? "Mock attempted" : "Rest day"}
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={d.active
-                        ? { background: "#fff", boxShadow: "0 0 10px rgba(255,255,255,0.9)" }
-                        : { background: "rgba(255,255,255,0.25)", outline: d.isToday ? "1.5px solid #fff" : "none" }}
-                    />
-                  ))}
+              <div className="min-w-0">
+                <div className="text-base font-extrabold leading-tight text-white">{loading ? "…" : formatStreak(derived?.streak ?? 0)}</div>
+                <div className="mt-0.5 text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>
+                  {loading ? "warming up" : derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily"}
                 </div>
-              )}
+                {!loading && streakSummary.week.length > 0 && (
+                  <div className="mt-2 flex gap-1.5" aria-hidden>
+                    {streakSummary.week.map((d, i) => (
+                      <span
+                        key={i}
+                        title={d.active ? "Mock attempted" : "Rest day"}
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={d.active
+                          ? { background: "#fff", boxShadow: "0 0 10px rgba(255,255,255,0.9)" }
+                          : { background: "rgba(255,255,255,0.25)", outline: d.isToday ? "1.5px solid #fff" : "none" }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -388,13 +425,29 @@ export default function DashboardPage() {
       </Reveal>
 
       <Reveal>
-        <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-          <StatCard icon="📝" label="Mocks" value={loading ? "…" : (derived?.total ?? "0")} sub={statsLabel} />
-          <StatCard icon="🏆" label="Best score" value={loading ? "…" : (derived?.best ?? "—")} sub={statsLabel} />
-          <StatCard icon="📊" label="Avg score" value={loading ? "…" : (derived?.avg ?? "—")} sub={statsLabel} />
-          <StatCard icon="🎯" label="Accuracy" value={loading ? "…" : (derived?.acc ?? "—")} sub="correct ÷ answered" />
-          <StatCard icon="❓" label="Questions" value={loading ? "…" : (derived?.questions ?? "0")} sub="attempted total" />
-          <StatCard icon="🔥" label="Day streak" value={loading ? "…" : formatStreak(derived?.streak ?? 0)} sub={derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily"} />
+        <div
+          className="mt-4 overflow-hidden rounded-2xl bg-white"
+          style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+        >
+          <div className="grid grid-cols-2 gap-px sm:grid-cols-3 lg:grid-cols-6" style={{ background: "var(--border)" }}>
+            {[
+              { icon: "📝", label: "Mocks", value: loading ? "…" : (derived?.total ?? "0"), sub: statsLabel },
+              { icon: "🏆", label: "Best score", value: loading ? "…" : (derived?.best ?? "—"), sub: statsLabel },
+              { icon: "📊", label: "Avg score", value: loading ? "…" : (derived?.avg ?? "—"), sub: statsLabel },
+              { icon: "🎯", label: "Accuracy", value: loading ? "…" : (derived?.acc ?? "—"), sub: "correct ÷ answered" },
+              { icon: "❓", label: "Questions", value: loading ? "…" : (derived?.questions ?? "0"), sub: "attempted total" },
+              { icon: "🔥", label: "Day streak", value: loading ? "…" : formatStreak(derived?.streak ?? 0), sub: derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily" },
+            ].map((s) => (
+              <div key={s.label} className="bg-white px-4 py-4">
+                <div className="flex items-center gap-2">
+                  <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm" style={{ background: "var(--pill)" }}>{s.icon}</span>
+                  <span className="text-[12px] font-bold" style={{ color: "#1e2952" }}>{s.label}</span>
+                </div>
+                <div className="mono mt-1.5 text-xl font-extrabold" style={{ color: "var(--accent)" }}>{s.value}</div>
+                <div className="mt-0.5 text-[10px] font-semibold" style={{ color: "var(--muted)" }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </Reveal>
 
@@ -435,9 +488,10 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={t.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-5 py-4"
+                    className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl bg-white px-5 py-4 pl-7"
                     style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
                   >
+                    <span aria-hidden className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: "linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }} />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>
@@ -489,7 +543,7 @@ export default function DashboardPage() {
         ) : (
           <div className="mt-3 grid gap-2.5">
             {attempts.map((a) => (
-              <AttemptRow key={a.id} a={a} cloud />
+              <AttemptRow key={a.id} a={a} cloud best={bestScore} rank={rankMap.get(a.id) ?? 0} />
             ))}
           </div>
         )}
@@ -510,7 +564,7 @@ export default function DashboardPage() {
           <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Saved locally — log in to keep them across devices.</p>
           <div className="mt-3 grid gap-2.5">
             {localAttempts.map((a) => (
-              <AttemptRow key={a.id} a={a} />
+              <AttemptRow key={a.id} a={a} best={localBest} />
             ))}
           </div>
         </Reveal>
@@ -541,7 +595,7 @@ export default function DashboardPage() {
                   No cloud attempts yet — finish a mock and it lands here.
                 </div>
               ) : (
-                attempts.map((a) => <AttemptRow key={a.id} a={a} cloud />)
+                attempts.map((a) => <AttemptRow key={a.id} a={a} cloud best={bestScore} rank={rankMap.get(a.id) ?? 0} />)
               )}
             </div>
           </Reveal>

@@ -109,7 +109,7 @@ export default function DashSide({
           }`}
           style={
             view === "home"
-              ? { background: "linear-gradient(120deg, #0f766e, #115e59)" }
+              ? { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }
               : { border: "1px solid var(--border)" }
           }
         >

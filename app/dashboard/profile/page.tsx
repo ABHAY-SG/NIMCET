@@ -67,7 +67,7 @@ function PerformanceLine({ data }: { data: Attempt[] }) {
     <div className="mt-3">
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Test performance over time">
         {[0.25, 0.5, 0.75].map((f) => (
-          <line key={f} x1={PADL} x2={W - PADR} y1={PADT + (H - PADT - PADB) * f} y2={PADT + (H - PADT - PADB) * f} stroke="var(--border)" strokeWidth="1" />
+          <line key={f} x1={PADL} x2={W - PADR} y1={PADT + (H - PADT - PADB) * f} y2={PADT + (H - PADT - PADB) * f} stroke="#e2e8f0" strokeWidth="1" />
         ))}
         <path d={area} fill="var(--accent)" opacity="0.12" />
         <path d={line} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
@@ -77,8 +77,8 @@ function PerformanceLine({ data }: { data: Attempt[] }) {
             <title>{`${a.test}: ${a.score} (${new Date(a.created_at).toLocaleDateString("en-IN")})`}</title>
           </g>
         ))}
-        <text x={PADL} y={H - 8} fontSize="11" fill="var(--muted)">{firstDate}</text>
-        <text x={W - PADR} y={H - 8} fontSize="11" fill="var(--muted)" textAnchor="end">{lastDate}</text>
+        <text x={PADL} y={H - 8} fontSize="11" fill="#64748b">{firstDate}</text>
+        <text x={W - PADR} y={H - 8} fontSize="11" fill="#64748b" textAnchor="end">{lastDate}</text>
       </svg>
     </div>
   );
@@ -339,8 +339,10 @@ export default function ProfilePage() {
   };
 
   const cardStyle: React.CSSProperties = {
-    background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)",
+    background: "#ffffff",
     border: "1px solid var(--border)",
+    boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)",
+    color: "#1e2952",
   };
 
   return (
