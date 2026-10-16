@@ -36,12 +36,14 @@ export default function DashNav({
   avatarUrl = "",
   onLogout,
   streak,
+  onMenuClick,
 }: {
   email: string;
   displayName?: string;
   avatarUrl?: string;
   onLogout: () => void;
   streak?: StreakSummary;
+  onMenuClick?: () => void;
 }) {
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell" | "theme">(null);
@@ -86,9 +88,22 @@ export default function DashNav({
       }}
     >
       <div className="mx-auto flex h-16 w-full items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
-        <a href="/dashboard" className="flex shrink-0 items-center gap-2.5" aria-label="NimCuet dashboard home">
-          <img src="/logo.png" alt="" aria-hidden className="site-logo block h-7 w-auto" />
-        </a>
+        <div className="flex shrink-0 items-center gap-2">
+          {onMenuClick && (
+            <button
+              type="button"
+              onClick={onMenuClick}
+              aria-label="Open menu"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-lg md:hidden"
+              style={{ border: "1px solid var(--border)", color: "var(--text)" }}
+            >
+              ☰
+            </button>
+          )}
+          <a href="/dashboard" className="flex items-center gap-2.5" aria-label="NimCuet dashboard home">
+            <img src="/logo.png" alt="" aria-hidden className="site-logo block h-7 w-auto" />
+          </a>
+        </div>
         <div className="relative flex shrink-0 items-center gap-1.5">
           {streak && (
             <button
@@ -141,8 +156,8 @@ export default function DashNav({
                 </span>
               )}
             </span>
-            <span className="hidden max-w-[140px] truncate text-sm font-bold sm:block">
-              {displayName || email.split("@")[0]}
+            <span className="hidden text-sm font-bold sm:block" title={displayName || email}>
+              {(displayName || "").trim().split(/\s+/)[0] || email.split("@")[0]}
             </span>
           </button>
 
@@ -167,11 +182,11 @@ export default function DashNav({
                   </div>
                 </div>
               </div>
-              <div className="mt-4 flex justify-between gap-1">
+              <div className="mt-4 flex min-w-0 justify-between gap-1">
                 {streak.week.map((d, i) => (
-                  <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
+                  <div key={i} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
                     <span
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-extrabold"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-extrabold"
                       style={d.active
                         ? { background: "linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "#fff", boxShadow: "0 8px 20px -8px var(--accent)" }
                         : { background: "var(--pill)", color: "var(--muted)", border: d.isToday ? "2px solid var(--accent)" : "1px solid transparent" }}

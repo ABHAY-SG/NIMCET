@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
+import DashSide from "@/components/dash-side";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
 import { calcBestStreak, calcStreak, formatStreak, lastWeekActivity } from "@/lib/streak";
 
@@ -120,6 +121,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
   const [todayLine, setTodayLine] = useState("");
+  const [sideOpen, setSideOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -246,9 +248,13 @@ export default function DashboardPage() {
           avatarUrl={avatarUrl}
           onLogout={() => {}}
           streak={streakSummary}
+          onMenuClick={() => setSideOpen(true)}
         />
       )}
-      <main id="attempts" className="mx-auto w-full scroll-mt-24 px-4 pb-20 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full px-4 pb-20 pt-24 sm:px-6 lg:px-8">
+      <div className="flex items-start gap-6">
+        <DashSide mobileOpen={sideOpen} onClose={() => setSideOpen(false)} />
+        <div id="attempts" className="min-w-0 flex-1 scroll-mt-24">
       <Reveal>
         <section
           className="relative overflow-hidden rounded-[26px] px-6 py-8 text-white sm:px-10 sm:py-10"
@@ -261,7 +267,7 @@ export default function DashboardPage() {
                 {todayLine}
               </p>
               <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                {loading ? "Loading…" : displayName ? `Hello ${displayName.split(" ").slice(0, 2).join(" ")}` : "Hello"}
+                {loading ? "Loading…" : displayName ? `Hello ${displayName.trim().split(/\s+/)[0]}` : "Hello"}
               </h1>
               <p className="mt-2 max-w-md text-sm leading-6" style={{ color: "rgba(255,255,255,0.82)" }}>
                 {!loading && derived
@@ -287,12 +293,30 @@ export default function DashboardPage() {
                 </a>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-3 rounded-2xl px-5 py-4" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
-              <div className="text-3xl font-extrabold">🔥</div>
-              <div>
-                <div className="mono text-2xl font-extrabold">{loading ? "…" : `🔥 ${derived?.streak ?? 0}`}</div>
-                <div className="text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>day streak</div>
+            <div className="flex shrink-0 flex-col gap-2.5 rounded-2xl px-5 py-4" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
+              <div className="flex items-center gap-3">
+                <div className="text-4xl font-extrabold">🔥</div>
+                <div>
+                  <div className="text-xl font-extrabold leading-tight text-white">{loading ? "…" : formatStreak(derived?.streak ?? 0)}</div>
+                  <div className="mt-0.5 text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>
+                    {loading ? "warming up" : derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily"}
+                  </div>
+                </div>
               </div>
+              {!loading && streakSummary.week.length > 0 && (
+                <div className="flex gap-1.5" aria-hidden>
+                  {streakSummary.week.map((d, i) => (
+                    <span
+                      key={i}
+                      title={d.active ? "Mock attempted" : "Rest day"}
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={d.active
+                        ? { background: "#fff", boxShadow: "0 0 10px rgba(255,255,255,0.9)" }
+                        : { background: "rgba(255,255,255,0.25)", outline: d.isToday ? "1.5px solid #fff" : "none" }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -448,6 +472,8 @@ export default function DashboardPage() {
           </div>
         </Reveal>
       )}
+        </div>
+      </div>
     </main>
     </>
   );
