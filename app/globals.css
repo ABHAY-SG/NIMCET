@@ -239,23 +239,26 @@ footer .nlink::after { display: none; }
   .auth-lock { font-size: 14px; }
   .auth-lock .auth-card { padding: 0.5rem; }
 }
-/* Signup: fit the tall form into short viewports without any scrolling or
-   clipping. Zoom shrinks layout (unlike transform), so nothing is cut and no
-   scrollbar appears inside or outside. Browsers without zoom fall back to the
-   normal page scroll instead of clipped content. */
-@media (max-height: 780px) {
-  .auth-signup .auth-form-col { padding: 1rem; }
-  .auth-signup .auth-back-link { margin-bottom: 0.25rem; }
+/* Signup: compact density so the tall form fits without page scroll.
+   Shorter boxes/gaps apply always in signup mode (unlayered CSS wins over
+   Tailwind utilities); zoom steps remain only as a backstop for very short
+   viewports. No overflow rules anywhere, so nothing can clip. */
+.auth-signup .auth-form-col { padding: 1.1rem; }
+.auth-signup .auth-form-col input { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+.auth-signup .auth-form-col .mt-4 { margin-top: 0.75rem; }
+.auth-signup .auth-form-col .my-3 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+.auth-signup .auth-form-col .mb-4 { margin-bottom: 0.625rem; }
+.auth-signup .auth-back-link { margin-bottom: 0.25rem; }
+.auth-signup .auth-secure-note { display: none; }
+@media (max-height: 700px) {
+  .auth-signup .auth-form-col h1 + p { display: none; }
+  .auth-signup .auth-card { zoom: 0.94; }
 }
-@media (max-height: 720px) {
-  .auth-signup .auth-secure-note { display: none; }
-  .auth-signup .auth-card { zoom: 0.92; }
+@media (max-height: 620px) {
+  .auth-signup .auth-card { zoom: 0.86; }
 }
-@media (max-height: 640px) {
-  .auth-signup .auth-card { zoom: 0.84; }
-}
-@media (max-height: 560px) {
-  .auth-signup .auth-card { zoom: 0.76; }
+@media (max-height: 540px) {
+  .auth-signup .auth-card { zoom: 0.78; }
 }
 /* black logo file shows on light themes, auto-inverts on dark themes */
 .site-logo { mix-blend-mode: multiply; }
