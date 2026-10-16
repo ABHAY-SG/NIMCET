@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAuthClient } from "@/lib/supabase";
+import { safeNextPath } from "@/lib/admin";
 
 // Minimal verification landing: success message, then the tab tries to
 // close itself. No clicks needed. Same-device confirmations carry a session
@@ -30,6 +31,20 @@ function VerifiedContent() {
         const nextTarget = session ? "/dashboard" : "/login?verified=1";
         setTarget(nextTarget);
         setHasSession(!!session);
+        // OAuth return path (e.g. admin login): honor a fresh stored
+        // redirect instead of the dashboard. Timestamped + validated.
+        if (session) {
+          try {
+            const stored = window.localStorage.getItem("nimcuet-post-login-redirect");
+            window.localStorage.removeItem("nimcuet-post-login-redirect");
+            if (stored) {
+              const sep = stored.indexOf(":");
+              const at = Number(stored.slice(0, sep));
+              const dest = safeNextPath(sep > 0 ? stored.slice(sep + 1) : null);
+              if (dest && Date.now() - at < 15 * 60 * 1000) setTarget(dest);
+            }
+          } catch {}
+        }
         // If this confirmation carried ?challenge=, mark the rendezvous row
         // (authenticated, so RLS passes) and wake the original waiting tab
         // via BroadcastChannel + storage event. Best-effort only.

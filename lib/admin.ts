@@ -10,6 +10,17 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   return adminEmails().includes(email.toLowerCase());
 }
 
+// Allow only same-origin in-app paths as post-login return targets.
+// Rejects absolute URLs, protocol-relative URLs and backslashes so a
+// crafted ?next= can never bounce users off-site (open redirect).
+export function safeNextPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (!value.startsWith("/")) return null;
+  if (value.startsWith("//")) return null;
+  if (value.includes("\\")) return null;
+  return value;
+}
+
 export type QuestionRow = {
   id: string;
   exam: string;

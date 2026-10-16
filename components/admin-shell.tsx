@@ -38,12 +38,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }
 
   if (state === "noauth") {
+    const back = `/login?next=${encodeURIComponent(path || "/admin")}`;
     return (
       <main className="mx-auto max-w-md px-4 pb-20 pt-28 text-center">
         <h1 className="text-2xl font-extrabold">Admins only</h1>
         <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>Log in with an admin account first.</p>
         <div className="mt-5 flex justify-center gap-2">
-          <a href="/login" className="rounded-full px-6 py-2.5 text-sm font-bold" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>Log in →</a>
+          <a href={back} className="rounded-full px-6 py-2.5 text-sm font-bold" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>Log in →</a>
           <button type="button" onClick={() => router.push("/")} className="rounded-full px-6 py-2.5 text-sm font-bold" style={{ border: "1px solid var(--border)" }}>Home</button>
         </div>
       </main>

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { forgetMemorySession, getSupabase, markMemorySessionActive, signOutAll } from "@/lib/supabase";
+import { safeNextPath } from "@/lib/admin";
 import ThemeFab from "@/components/theme-fab";
 
 function EyeIcon({ off = false }: { off?: boolean }) {
@@ -227,7 +228,11 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           if (registryError && registryError.code !== "23505") throw registryError;
         }
         if (!remember) markMemorySessionActive();
-        router.push("/dashboard");
+        try {
+          router.push(safeNextPath(new URLSearchParams(window.location.search).get("next")) ?? "/dashboard");
+        } catch {
+          router.push("/dashboard");
+        }
       }
     } catch (err: unknown) {
       const m = err instanceof Error ? err.message : "Something went wrong.";
@@ -247,6 +252,13 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     // into the OAuth result.
     try { await getSupabase(false).auth.signOut(); } catch {}
     forgetMemorySession();
+    // Remember where to return after the provider round-trip (e.g. /admin).
+    // Timestamped so an abandoned attempt can't hijack a later login.
+    try {
+      const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
+      if (next) window.localStorage.setItem("nimcuet-post-login-redirect", `${Date.now()}:${next}`);
+      else window.localStorage.removeItem("nimcuet-post-login-redirect");
+    } catch {}
     try {
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOAuth({
@@ -310,7 +322,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       </a>
       <div
         className="auth-card relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[560px]"
-        style={{ border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.22)" }}
+        style={{ border: "1px solid var(--border)" }}
       >
         {BG.map(([cls, src, fallback]) => (
           <img
@@ -506,6 +518,11 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
           </button>
           <p className="auth-secure-note mt-3 text-center text-[11px]" style={{ color: "var(--muted)" }}>● Secure & encrypted</p>
+          {mode === "in" && (
+            <a href="/admin" className="mt-2 block text-center text-xs font-bold" style={{ color: "var(--muted)" }}>
+              Admin Login →
+            </a>
+          )}
         </div>
       </div>
     </main>
