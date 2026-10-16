@@ -247,7 +247,6 @@ export default function DashboardPage() {
           displayName={displayName}
           avatarUrl={avatarUrl}
           onLogout={() => {}}
-          onDisplayNameChange={(name) => setDisplayName(name)}
           streak={streakSummary}
         />
       )}
