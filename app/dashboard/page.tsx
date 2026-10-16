@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
 import { getAuthClient, signOutAll } from "@/lib/supabase";
+import { calcBestStreak, calcStreak, lastWeekActivity } from "@/lib/streak";
 
 type Attempt = {
   id: string;
@@ -25,27 +26,6 @@ type SeriesTest = {
   published: boolean;
   question_ids: string[];
 };
-
-function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function calcStreak(all: Attempt[]): number {
-  const days = new Set(all.map((a) => {
-    const d = new Date(a.created_at);
-    return Number.isNaN(d.getTime()) ? "" : dayKey(d);
-  }));
-  days.delete("");
-  let streak = 0;
-  const cursor = new Date();
-  // Allow today to be empty (streak stays alive if yesterday is present).
-  if (!days.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
-  while (days.has(dayKey(cursor))) {
-    streak++;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
 
 function examLabel(exam: string): string {
   const e = exam.toLowerCase();
@@ -194,27 +174,43 @@ export default function DashboardPage() {
     })();
   }, [router]);
 
-  // Stats over cloud history; fall back to this-device history for new users.
-  const statsSource = attempts.length > 0 ? attempts : localAttempts;
-  const statsLabel = attempts.length > 0 ? "saved to cloud" : "on this device";
-  const stats = useMemo(() => {
-    if (statsSource.length === 0) return { total: "0", best: "—", avg: "—", acc: "—", questions: "0", streak: 0 };
-    const scores = statsSource.map((a) => Number(a.score) || 0);
+  // Stats + streak are derived from attempt dates, so they are computed in a
+  // client-only effect (never during prerender).
+  const [derived, setDerived] = useState<{
+    total: string;
+    best: string;
+    avg: string;
+    acc: string;
+    questions: string;
+    streak: number;
+    bestStreak: number;
+    week: Array<{ label: string; active: boolean; isToday: boolean }>;
+  } | null>(null);
+
+  useEffect(() => {
+    if (loading) return;
+    const src = attempts.length > 0 ? attempts : localAttempts;
+    if (src.length === 0) { setDerived(null); return; }
+    const scores = src.map((a) => Number(a.score) || 0);
     const best = Math.max(...scores);
     const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
-    const correct = statsSource.reduce((s, a) => s + (Number(a.correct) || 0), 0);
-    const wrong = statsSource.reduce((s, a) => s + (Number(a.wrong) || 0), 0);
-    const skipped = statsSource.reduce((s, a) => s + (Number(a.skipped) || 0), 0);
+    const correct = src.reduce((s, a) => s + (Number(a.correct) || 0), 0);
+    const wrong = src.reduce((s, a) => s + (Number(a.wrong) || 0), 0);
+    const skipped = src.reduce((s, a) => s + (Number(a.skipped) || 0), 0);
     const answered = correct + wrong;
-    return {
-      total: String(statsSource.length),
+    setDerived({
+      total: String(src.length),
       best: String(Math.round(best * 10) / 10),
       avg: String(Math.round(avg * 10) / 10),
       acc: answered === 0 ? "—" : `${Math.round((correct / answered) * 100)}%`,
       questions: String(correct + wrong + skipped),
-      streak: calcStreak(statsSource),
-    };
-  }, [statsSource]);
+      streak: calcStreak(src),
+      bestStreak: calcBestStreak(src),
+      week: lastWeekActivity(src),
+    });
+  }, [attempts, localAttempts, loading]);
+
+  const statsLabel = attempts.length > 0 ? "saved to cloud" : "on this device";
 
   const exams = useMemo(() => {
     const set = new Set(series.map((t) => t.exam).filter(Boolean));
@@ -232,9 +228,24 @@ export default function DashboardPage() {
     setLocalAttempts([]);
   };
 
+  // Navbar streak panel data (same source as the stat strip).
+  const streakSummary = {
+    current: derived?.streak ?? 0,
+    best: derived?.bestStreak ?? 0,
+    week: derived?.week ?? [],
+  };
+
   return (
     <>
-      {!loading && email && <DashNav email={email} onLogout={() => {}} />}
+      {!loading && email && (
+        <DashNav
+          email={email}
+          displayName={displayName}
+          onLogout={() => {}}
+          onDisplayNameChange={(name) => setDisplayName(name)}
+          streak={streakSummary}
+        />
+      )}
       <main id="attempts" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-20 pt-24">
       <Reveal>
         <section
@@ -251,9 +262,9 @@ export default function DashboardPage() {
                 {loading ? "Loading…" : displayName ? `Hello ${displayName.split(" ").slice(0, 2).join(" ")}` : "Hello"}
               </h1>
               <p className="mt-2 max-w-md text-sm leading-6" style={{ color: "rgba(255,255,255,0.82)" }}>
-                {!loading && statsSource.length > 0
-                  ? stats.streak > 0
-                    ? `🔥 ${stats.streak}-day streak. Your best so far is ${stats.best} — go beat it.`
+                {!loading && derived
+                  ? derived.streak > 0
+                    ? `🔥 ${derived.streak}-day streak. Your best so far is ${derived.best} — go beat it.`
                     : "Your history is warming up — attempt a mock to start your streak."
                   : "Your preparation home: stats, test series and history live here."}
               </p>
@@ -277,7 +288,7 @@ export default function DashboardPage() {
             <div className="flex shrink-0 items-center gap-3 rounded-2xl px-5 py-4" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
               <div className="text-3xl font-extrabold">🔥</div>
               <div>
-                <div className="mono text-2xl font-extrabold">{loading ? "…" : `${stats.streak}d`}</div>
+                <div className="mono text-2xl font-extrabold">{loading ? "…" : `${derived?.streak ?? 0}d`}</div>
                 <div className="text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>day streak</div>
               </div>
             </div>
@@ -314,12 +325,12 @@ export default function DashboardPage() {
 
       <Reveal>
         <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-          <StatCard label="Mocks" value={loading ? "…" : stats.total} sub={statsLabel} />
-          <StatCard label="Best score" value={loading ? "…" : stats.best} sub={statsLabel} />
-          <StatCard label="Avg score" value={loading ? "…" : stats.avg} sub={statsLabel} />
-          <StatCard label="Accuracy" value={loading ? "…" : stats.acc} sub="correct ÷ answered" />
-          <StatCard label="Questions" value={loading ? "…" : stats.questions} sub="attempted total" />
-          <StatCard label="Day streak" value={loading ? "…" : `${stats.streak}d`} sub="consecutive days" />
+          <StatCard label="Mocks" value={loading ? "…" : (derived?.total ?? "0")} sub={statsLabel} />
+          <StatCard label="Best score" value={loading ? "…" : (derived?.best ?? "—")} sub={statsLabel} />
+          <StatCard label="Avg score" value={loading ? "…" : (derived?.avg ?? "—")} sub={statsLabel} />
+          <StatCard label="Accuracy" value={loading ? "…" : (derived?.acc ?? "—")} sub="correct ÷ answered" />
+          <StatCard label="Questions" value={loading ? "…" : (derived?.questions ?? "0")} sub="attempted total" />
+          <StatCard label="Day streak" value={loading ? "…" : `${derived?.streak ?? 0}d`} sub="consecutive days" />
         </div>
       </Reveal>
 

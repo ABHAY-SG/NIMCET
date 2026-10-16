@@ -1,15 +1,126 @@
 "use client";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutAll } from "@/lib/supabase";
+import { getAuthClient, signOutAll } from "@/lib/supabase";
 
-export default function DashNav({ email, onLogout }: { email: string; onLogout: () => void }) {
+export type StreakSummary = {
+  current: number;
+  best: number;
+  week: Array<{ label: string; active: boolean; isToday: boolean }>;
+};
+
+function initialsOf(name: string, email: string): string {
+  const src = (name || "").trim() || email.split("@")[0].replace(/[._-]+/g, " ");
+  const parts = src.split(/\s+/).filter(Boolean).slice(0, 2);
+  if (parts.length === 0) return "?";
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
+}
+
+function MoonIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" />
+    </svg>
+  );
+}
+
+const iconBtn =
+  "relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform hover:-translate-y-px";
+
+export default function DashNav({
+  email,
+  displayName = "",
+  onLogout,
+  onDisplayNameChange,
+  streak,
+}: {
+  email: string;
+  displayName?: string;
+  onLogout: () => void;
+  onDisplayNameChange?: (name: string) => void;
+  streak?: StreakSummary;
+}) {
   const router = useRouter();
+  const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell">(null);
+  const [theme, setTheme] = useState<"light" | "midnight">("light");
+  const [editing, setEditing] = useState(false);
+  const [first, setFirst] = useState("");
+  const [last, setLast] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("mcamock-theme");
+      if (saved === "midnight" || saved === "light") setTheme(saved);
+    } catch {}
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "light" ? "midnight" : "light";
+    setTheme(next);
+    try {
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem("mcamock-theme", next);
+    } catch {}
+  };
+
   const logout = async () => {
     try {
       await signOutAll();
     } catch {}
     onLogout();
     router.push("/login");
+  };
+
+  const openEditor = () => {
+    const parts = displayName.trim().split(/\s+/).filter(Boolean);
+    setFirst(parts[0] ?? "");
+    setLast(parts.slice(1).join(" "));
+    setSaveMsg("");
+    setEditing(true);
+  };
+
+  const saveName = async () => {
+    const f = first.trim();
+    const l = last.trim();
+    if (!f) { setSaveMsg("First name is required."); return; }
+    setSaving(true);
+    setSaveMsg("");
+    try {
+      const sb = getAuthClient();
+      const { error } = await sb.auth.updateUser({ data: { first_name: f, last_name: l } });
+      if (error) throw error;
+      const full = [f, l].filter(Boolean).join(" ");
+      onDisplayNameChange?.(full);
+      setEditing(false);
+    } catch (err: unknown) {
+      setSaveMsg(err instanceof Error ? err.message : "Could not save. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const panelStyle: React.CSSProperties = {
+    background: "var(--bg)",
+    border: "1px solid var(--border)",
+    boxShadow: "0 18px 50px -12px rgba(0,0,0,0.35)",
   };
 
   return (
@@ -36,18 +147,171 @@ export default function DashNav({ email, onLogout }: { email: string; onLogout: 
             My attempts
           </a>
         </nav>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="mono hidden max-w-[180px] truncate text-xs sm:block" style={{ color: "var(--muted)" }} title={email}>
+        <div className="relative flex shrink-0 items-center gap-1.5">
+          <span className="mono hidden max-w-[180px] truncate text-xs lg:block" style={{ color: "var(--muted)" }} title={email}>
             {email}
           </span>
+          {streak && (
+            <button
+              type="button"
+              onClick={() => setOpenMenu((m) => (m === "streak" ? null : "streak"))}
+              aria-label={`Streak ${streak.current} days — view activity`}
+              title="Daily streak"
+              className={iconBtn}
+              style={{ border: "1px solid var(--border)", color: "var(--text)" }}
+            >
+              <span aria-hidden>🔥</span>
+              <span className="mono text-xs font-extrabold">{streak.current}</span>
+            </button>
+          )}
           <button
             type="button"
-            onClick={logout}
-            className="shrink-0 rounded-full px-4 py-2 text-[13px] font-bold transition-transform hover:-translate-y-px"
+            onClick={() => setOpenMenu((m) => (m === "bell" ? null : "bell"))}
+            aria-label="Notifications"
+            title="Notifications"
+            className={iconBtn}
             style={{ border: "1px solid var(--border)", color: "var(--text)" }}
           >
-            Log out
+            <BellIcon />
           </button>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+            title={theme === "light" ? "Dark theme" : "Light theme"}
+            className={iconBtn}
+            style={{ border: "1px solid var(--border)", color: "var(--text)" }}
+          >
+            {theme === "light" ? <MoonIcon /> : <SunIcon />}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setOpenMenu((m) => (m === "profile" ? null : "profile")); setEditing(false); setSaveMsg(""); }}
+            aria-label="Profile menu"
+            title={displayName || email}
+            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
+            style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+          >
+            {initialsOf(displayName, email)}
+          </button>
+
+          {openMenu && (
+            <button type="button" aria-label="Close menu" onClick={() => setOpenMenu(null)} className="fixed inset-0 z-40 cursor-default bg-transparent" />
+          )}
+
+          {openMenu === "streak" && streak && (
+            <div className="menu-in absolute right-0 top-12 z-50 w-64 rounded-2xl p-4" style={panelStyle}>
+              <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Daily streak</div>
+              <div className="mt-2 flex items-end gap-3">
+                <div className="mono text-3xl font-extrabold" style={{ color: "var(--accent)" }}>🔥 {streak.current}</div>
+                <div className="pb-1 text-xs" style={{ color: "var(--muted)" }}>best {streak.best}d</div>
+              </div>
+              <div className="mt-3 flex justify-between gap-1">
+                {streak.week.map((d, i) => (
+                  <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                    <span
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold"
+                      style={d.active
+                        ? { background: "var(--accent)", color: "#fff" }
+                        : { background: "var(--pill)", color: "var(--muted)", border: d.isToday ? "1.5px solid var(--accent)" : "1px solid transparent" }}
+                    >
+                      {d.active ? "✓" : d.label}
+                    </span>
+                    <span className="text-[9px] font-bold" style={{ color: "var(--muted)" }}>{d.label}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] leading-5" style={{ color: "var(--muted)" }}>
+                Attempt any mock to keep the streak alive. Today is ringed.
+              </p>
+            </div>
+          )}
+
+          {openMenu === "bell" && (
+            <div className="menu-in absolute right-0 top-12 z-50 w-72 rounded-2xl p-4" style={panelStyle}>
+              <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Notifications</div>
+              <div className="mt-3 rounded-xl p-4 text-center" style={{ border: "1px dashed var(--border)" }}>
+                <div className="text-2xl" aria-hidden>🔔</div>
+                <p className="mt-2 text-[13px] font-bold">No updates yet</p>
+                <p className="mt-1 text-xs leading-5" style={{ color: "var(--muted)" }}>
+                  There is no announcements feed connected, so nothing is listed here rather than made-up news.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {openMenu === "profile" && (
+            <div className="menu-in absolute right-0 top-12 z-50 w-72 rounded-2xl p-4" style={panelStyle}>
+              <div className="flex items-center gap-3">
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-extrabold text-white"
+                  style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                >
+                  {initialsOf(displayName, email)}
+                </span>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-extrabold">{displayName || email.split("@")[0]}</div>
+                  <div className="truncate text-xs" style={{ color: "var(--muted)" }} title={email}>{email}</div>
+                </div>
+              </div>
+              {!editing ? (
+                <button
+                  type="button"
+                  onClick={openEditor}
+                  className="mt-3 w-full cursor-pointer rounded-xl py-2 text-[13px] font-bold"
+                  style={{ border: "1px solid var(--border)" }}
+                >
+                  Edit display name
+                </button>
+              ) : (
+                <div className="mt-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text" value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First name" autoComplete="given-name"
+                      className="min-w-0 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2"
+                      style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
+                    />
+                    <input
+                      type="text" value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last name" autoComplete="family-name"
+                      className="min-w-0 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2"
+                      style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
+                    />
+                  </div>
+                  {saveMsg && <p className="mt-2 text-xs font-semibold" style={{ color: "#dc2626" }}>{saveMsg}</p>}
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button
+                      type="button" onClick={saveName} disabled={saving}
+                      className="cursor-pointer rounded-xl py-2 text-[13px] font-bold text-white disabled:opacity-50"
+                      style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+                    >
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      type="button" onClick={() => setEditing(false)}
+                      className="cursor-pointer rounded-xl py-2 text-[13px] font-bold"
+                      style={{ border: "1px solid var(--border)" }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5" style={{ background: "var(--pill)" }}>
+                <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>Profile photo</span>
+                <span className="text-[11px] font-bold" style={{ color: "var(--muted)" }} title="Photo uploads need a Supabase storage bucket, which is not set up yet">
+                  Coming soon
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={logout}
+                className="mt-2 w-full cursor-pointer rounded-xl py-2.5 text-sm font-bold transition-transform hover:-translate-y-px"
+                style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+              >
+                Log out
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
