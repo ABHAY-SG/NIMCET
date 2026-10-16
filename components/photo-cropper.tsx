@@ -94,7 +94,8 @@ export default function PhotoCropper({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Crop profile photo">
-      <button type="button" aria-label="Close crop editor" onClick={onCancel} className="absolute inset-0 cursor-default" style={{ background: "rgba(0,0,0,0.6)" }} />
+      <button type="button" aria-label="Close crop editor" onClick={onCancel} className="absolute inset-0 cursor-default"
+        style={{ background: "linear-gradient(180deg, rgba(10,14,28,0.55), rgba(10,14,28,0.75))", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }} />
       <div className="relative w-full max-w-sm rounded-3xl p-6 text-center" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
         <h2 className="text-lg font-extrabold tracking-tight">Crop photo</h2>
         <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Drag to reposition • zoom to fit the square</p>
