@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthClient, signOutAll } from "@/lib/supabase";
+import { signOutAll } from "@/lib/supabase";
 import { THEMES, applyTheme, readTheme, type ThemeId } from "@/lib/theme";
 
 export type StreakSummary = {
@@ -33,24 +33,17 @@ export default function DashNav({
   displayName = "",
   avatarUrl = "",
   onLogout,
-  onDisplayNameChange,
   streak,
 }: {
   email: string;
   displayName?: string;
   avatarUrl?: string;
   onLogout: () => void;
-  onDisplayNameChange?: (name: string) => void;
   streak?: StreakSummary;
 }) {
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell" | "theme">(null);
   const [theme, setTheme] = useState<ThemeId>("light");
-  const [editing, setEditing] = useState(false);
-  const [first, setFirst] = useState("");
-  const [last, setLast] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState("");
   const [imgOk, setImgOk] = useState(true);
 
   useEffect(() => {
@@ -73,34 +66,6 @@ export default function DashNav({
     } catch {}
     onLogout();
     router.push("/login");
-  };
-
-  const openEditor = () => {
-    const parts = displayName.trim().split(/\s+/).filter(Boolean);
-    setFirst(parts[0] ?? "");
-    setLast(parts.slice(1).join(" "));
-    setSaveMsg("");
-    setEditing(true);
-  };
-
-  const saveName = async () => {
-    const f = first.trim();
-    const l = last.trim();
-    if (!f) { setSaveMsg("First name is required."); return; }
-    setSaving(true);
-    setSaveMsg("");
-    try {
-      const sb = getAuthClient();
-      const { error } = await sb.auth.updateUser({ data: { first_name: f, last_name: l } });
-      if (error) throw error;
-      const full = [f, l].filter(Boolean).join(" ");
-      onDisplayNameChange?.(full);
-      setEditing(false);
-    } catch (err: unknown) {
-      setSaveMsg(err instanceof Error ? err.message : "Could not save. Try again.");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const panelStyle: React.CSSProperties = {
@@ -161,7 +126,7 @@ export default function DashNav({
           </button>
           <button
             type="button"
-            onClick={() => { setOpenMenu((m) => (m === "profile" ? null : "profile")); setEditing(false); setSaveMsg(""); }}
+            onClick={() => setOpenMenu((m) => (m === "profile" ? null : "profile"))}
             aria-label="Profile menu"
             title={displayName || email}
             className="h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-full transition-transform hover:-translate-y-px"
@@ -243,80 +208,27 @@ export default function DashNav({
           )}
 
           {openMenu === "profile" && (
-            <div className="menu-in absolute right-0 top-12 z-50 w-72 rounded-2xl p-4" style={panelStyle}>
-              <div className="flex items-center gap-3">
-                <span className="block h-11 w-11 shrink-0 overflow-hidden rounded-full">
-                  {avatarUrl && imgOk ? (
-                    <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
-                  ) : (
-                    <span
-                      className="flex h-full w-full items-center justify-center text-base font-extrabold text-white"
-                      style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
-                    >
-                      {initialsOf(displayName, email)}
-                    </span>
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-extrabold">{displayName || email.split("@")[0]}</div>
-                  <div className="truncate text-xs" style={{ color: "var(--muted)" }} title={email}>{email}</div>
-                </div>
-              </div>
-              {!editing ? (
-                <button
-                  type="button"
-                  onClick={openEditor}
-                  className="mt-3 w-full cursor-pointer rounded-xl py-2 text-[13px] font-bold"
-                  style={{ border: "1px solid var(--border)" }}
-                >
-                  Edit display name
-                </button>
-              ) : (
-                <div className="mt-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text" value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First name" autoComplete="given-name"
-                      className="min-w-0 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2"
-                      style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
-                    />
-                    <input
-                      type="text" value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last name" autoComplete="family-name"
-                      className="min-w-0 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2"
-                      style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
-                    />
-                  </div>
-                  {saveMsg && <p className="mt-2 text-xs font-semibold" style={{ color: "#dc2626" }}>{saveMsg}</p>}
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <button
-                      type="button" onClick={saveName} disabled={saving}
-                      className="cursor-pointer rounded-xl py-2 text-[13px] font-bold text-white disabled:opacity-50"
-                      style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
-                    >
-                      {saving ? "Saving…" : "Save"}
-                    </button>
-                    <button
-                      type="button" onClick={() => setEditing(false)}
-                      className="cursor-pointer rounded-xl py-2 text-[13px] font-bold"
-                      style={{ border: "1px solid var(--border)" }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-              <div className="mt-2 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5" style={{ background: "var(--pill)" }}>
-                <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>Profile photo</span>
-                <span className="text-[11px] font-bold" style={{ color: "var(--muted)" }} title="Photo uploads need a Supabase storage bucket, which is not set up yet">
-                  Coming soon
-                </span>
-              </div>
+            <div className="menu-in absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-2xl p-1.5" style={panelStyle}>
+              <a
+                href="/dashboard/profile"
+                onClick={() => setOpenMenu(null)}
+                className="tmenu flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-bold"
+              >
+                <span aria-hidden>👤</span> Profile
+              </a>
+              <a
+                href="/dashboard#attempts"
+                onClick={() => setOpenMenu(null)}
+                className="tmenu flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-bold"
+              >
+                <span aria-hidden>🕘</span> Test history
+              </a>
               <button
                 type="button"
                 onClick={logout}
-                className="mt-2 w-full cursor-pointer rounded-xl py-2.5 text-sm font-bold transition-transform hover:-translate-y-px"
-                style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+                className="tmenu flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-bold"
               >
-                Log out
+                <span aria-hidden>↩</span> Log out
               </button>
             </div>
           )}
