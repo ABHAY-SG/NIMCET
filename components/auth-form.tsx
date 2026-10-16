@@ -335,26 +335,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             style={{ background: fallback }}
           />
         ))}
-        {mode === "in" ? (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{ background: "linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.22) 36%, color-mix(in srgb, var(--nav-bg) 88%, transparent) 58%, color-mix(in srgb, var(--nav-bg) 96%, transparent) 100%)" }}
-          />
-        ) : (
-          <>
-            <div
-              aria-hidden
-              className="auth-card-shade pointer-events-none absolute inset-0 hidden md:block"
-              style={{ background: "linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.22) 36%, color-mix(in srgb, var(--nav-bg) 88%, transparent) 58%, color-mix(in srgb, var(--nav-bg) 96%, transparent) 100%)" }}
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 md:hidden"
-              style={{ background: "color-mix(in srgb, var(--nav-bg) 84%, transparent)" }}
-            />
-          </>
-        )}
         <div className="auth-photo relative z-10 hidden flex-col justify-end p-8 md:flex">
           <span className="inline-flex w-fit items-center rounded-2xl bg-white/95 px-4 py-2.5" style={{ boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)" }}>
             <img src="/logo.png" alt="NimCuet" className="block h-7 w-auto" />
