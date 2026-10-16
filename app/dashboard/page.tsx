@@ -60,13 +60,14 @@ function AttemptRow({ a, cloud = false }: { a: Attempt; cloud?: boolean }) {
   );
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+function StatCard({ label, value, sub, icon }: { label: string; value: string; sub: string; icon: string }) {
   return (
     <div
       className="rounded-2xl bg-white px-4 py-4 backdrop-blur-xl"
       style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
     >
-      <div className="mono text-2xl font-extrabold" style={{ color: "var(--accent)" }}>{value}</div>
+      <span aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)" }}>{icon}</span>
+      <div className="mono mt-2 text-2xl font-extrabold" style={{ color: "var(--accent)" }}>{value}</div>
       <div className="mt-1 text-[13px] font-bold" style={{ color: "#1e2952" }}>{label}</div>
       <div className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>{sub}</div>
     </div>
@@ -302,7 +303,7 @@ export default function DashboardPage() {
               <p className="text-[11px] font-bold uppercase" style={{ letterSpacing: "0.22em", color: "rgba(255,255,255,0.7)" }}>
                 {todayLine}
               </p>
-              <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
+              <h1 className="dash-display mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
                 {loading ? "Loading…" : displayName ? `Hello ${displayName.trim().split(/\s+/)[0]}` : "Hello"}
               </h1>
               <p className="mt-2 max-w-md text-sm leading-6" style={{ color: "rgba(255,255,255,0.82)" }}>
@@ -388,12 +389,12 @@ export default function DashboardPage() {
 
       <Reveal>
         <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-          <StatCard label="Mocks" value={loading ? "…" : (derived?.total ?? "0")} sub={statsLabel} />
-          <StatCard label="Best score" value={loading ? "…" : (derived?.best ?? "—")} sub={statsLabel} />
-          <StatCard label="Avg score" value={loading ? "…" : (derived?.avg ?? "—")} sub={statsLabel} />
-          <StatCard label="Accuracy" value={loading ? "…" : (derived?.acc ?? "—")} sub="correct ÷ answered" />
-          <StatCard label="Questions" value={loading ? "…" : (derived?.questions ?? "0")} sub="attempted total" />
-          <StatCard label="Day streak" value={loading ? "…" : formatStreak(derived?.streak ?? 0)} sub={derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily"} />
+          <StatCard icon="📝" label="Mocks" value={loading ? "…" : (derived?.total ?? "0")} sub={statsLabel} />
+          <StatCard icon="🏆" label="Best score" value={loading ? "…" : (derived?.best ?? "—")} sub={statsLabel} />
+          <StatCard icon="📊" label="Avg score" value={loading ? "…" : (derived?.avg ?? "—")} sub={statsLabel} />
+          <StatCard icon="🎯" label="Accuracy" value={loading ? "…" : (derived?.acc ?? "—")} sub="correct ÷ answered" />
+          <StatCard icon="❓" label="Questions" value={loading ? "…" : (derived?.questions ?? "0")} sub="attempted total" />
+          <StatCard icon="🔥" label="Day streak" value={loading ? "…" : formatStreak(derived?.streak ?? 0)} sub={derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily"} />
         </div>
       </Reveal>
 
@@ -405,10 +406,10 @@ export default function DashboardPage() {
 
       {seriesReady && series.length > 0 && (
         <Reveal>
-          <div id="series" className="mt-8 scroll-mt-24">
+          <div id="series" className="mt-10 scroll-mt-24">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="text-lg font-extrabold tracking-tight">Test series</h2>
+                <h2 className="dash-display text-lg font-extrabold tracking-tight">Test series</h2>
                 <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Published by admin • practice opens the demo mock.</p>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -473,7 +474,7 @@ export default function DashboardPage() {
       )}
 
       <Reveal>
-        <h2 className="mt-8 text-lg font-extrabold tracking-tight">Recent attempts</h2>
+        <h2 className="dash-display mt-10 text-lg font-extrabold tracking-tight">Recent attempts</h2>
         {attempts.length === 0 && !loading ? (
           <div
             className="mt-3 rounded-2xl bg-white p-6 text-center text-sm"
@@ -495,8 +496,8 @@ export default function DashboardPage() {
       </Reveal>
       {localAttempts.length > 0 && (
         <Reveal>
-          <div className="mt-8 flex items-center justify-between gap-2">
-            <h2 className="text-lg font-extrabold tracking-tight">On this device</h2>
+          <div className="mt-10 flex items-center justify-between gap-2">
+            <h2 className="dash-display text-lg font-extrabold tracking-tight">On this device</h2>
             <button
               type="button"
               onClick={clearLocal}

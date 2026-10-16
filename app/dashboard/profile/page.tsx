@@ -33,10 +33,11 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function MiniStat({ value, label }: { value: string; label: string }) {
+function MiniStat({ value, label, icon }: { value: string; label: string; icon: string }) {
   return (
     <div className="rounded-2xl px-3 py-4 text-center" style={{ background: "var(--pill)" }}>
-      <div className="mono text-2xl font-extrabold" style={{ color: "var(--accent)" }}>{value}</div>
+      <div aria-hidden className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)" }}>{icon}</div>
+      <div className="mono mt-2 text-2xl font-extrabold" style={{ color: "var(--accent)" }}>{value}</div>
       <div className="mono mt-1 text-[10px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.12em" }}>{label}</div>
     </div>
   );
@@ -375,7 +376,7 @@ export default function ProfilePage() {
                 )}
               </span>
               <div className="min-w-0">
-                <h1 className="truncate text-2xl font-extrabold tracking-tight sm:text-[28px]">
+                <h1 className="dash-display truncate text-2xl font-extrabold tracking-tight sm:text-[28px]">
                   {loading ? "Loading…" : displayName || "Profile"}
                 </h1>
                 <p className="mt-0.5 truncate text-sm" style={{ color: "rgba(255,255,255,0.8)" }}>{email}</p>
@@ -547,7 +548,7 @@ export default function ProfilePage() {
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <Reveal>
             <section className="h-full rounded-[22px] p-6 backdrop-blur-2xl" style={cardStyle}>
-              <h2 className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+              <h2 className="dash-display flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
                 <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>👤</span> Personal Details
               </h2>
               <div className="mt-2">
@@ -565,20 +566,20 @@ export default function ProfilePage() {
           </Reveal>
           <Reveal>
             <section className="h-full rounded-[22px] p-6 backdrop-blur-2xl" style={cardStyle}>
-              <h2 className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+              <h2 className="dash-display flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
                 <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>📊</span> Overview
               </h2>
               <div className="mt-4 grid grid-cols-2 gap-2.5">
-                <MiniStat value={loading ? "…" : overview.tests} label="TESTS" />
-                <MiniStat value={loading ? "…" : overview.questions} label="QUESTIONS" />
-                <MiniStat value={loading ? "…" : overview.best} label="BEST SCORE" />
-                <MiniStat value={loading ? "…" : overview.acc} label="ACCURACY" />
+                <MiniStat icon="📝" value={loading ? "…" : overview.tests} label="TESTS" />
+                <MiniStat icon="❓" value={loading ? "…" : overview.questions} label="QUESTIONS" />
+                <MiniStat icon="🏆" value={loading ? "…" : overview.best} label="BEST SCORE" />
+                <MiniStat icon="🎯" value={loading ? "…" : overview.acc} label="ACCURACY" />
               </div>
             </section>
           </Reveal>
           <Reveal>
             <section className="h-full rounded-[22px] p-6 backdrop-blur-2xl" style={cardStyle}>
-              <h2 className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+              <h2 className="dash-display flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
                 <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>🔥</span> Streak
               </h2>
               <div className="mono mt-4 text-2xl font-extrabold" style={{ color: "var(--accent)" }}>
@@ -626,7 +627,7 @@ export default function ProfilePage() {
 
         <Reveal>
           <section className="mt-4 rounded-[22px] p-6 backdrop-blur-2xl sm:p-7" style={cardStyle}>
-            <h2 className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+            <h2 className="dash-display flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
               <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>📈</span> Performance Analysis
             </h2>
             <h3 className="mt-4 text-center text-sm font-extrabold" style={{ color: "var(--muted)" }}>Test Performance Over Time</h3>
