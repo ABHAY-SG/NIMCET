@@ -260,6 +260,24 @@ footer .nlink::after { display: none; }
 @media (max-height: 540px) {
   .auth-signup .auth-card { zoom: 0.78; }
 }
+/* Mobile: flat card background — no photo layers or gradient bands inside
+   the card, so no seam lines can render at the edges. */
+@media (max-width: 767px) {
+  .auth-card { background: var(--card); }
+  .auth-card img.authbg,
+  .auth-card .auth-card-shade { display: none; }
+}
+/* Login is viewport-locked: shrink the card on short screens instead of
+   clipping it (a clipped edge reads as a stray line). */
+@media (max-height: 700px) {
+  .auth-lock .auth-card { zoom: 0.94; }
+}
+@media (max-height: 620px) {
+  .auth-lock .auth-card { zoom: 0.86; }
+}
+@media (max-height: 540px) {
+  .auth-lock .auth-card { zoom: 0.78; }
+}
 /* black logo file shows on light themes, auto-inverts on dark themes */
 .site-logo { mix-blend-mode: multiply; }
 [data-theme="midnight"] .site-logo,
