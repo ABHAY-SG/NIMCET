@@ -67,28 +67,3 @@ export async function signOutAll(): Promise<void> {
   } catch {}
   memoryActive = false;
 }
-
-export async function saveAttempt(input: {
-  test: string;
-  score: number;
-  correct: number;
-  wrong: number;
-  skipped: number;
-}) {
-  try {
-    const sb = getAuthClient();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return false;
-    const { error } = await sb.from("attempts").insert({
-      user_id: user.id,
-      test: input.test,
-      score: input.score,
-      correct: input.correct,
-      wrong: input.wrong,
-      skipped: input.skipped,
-    });
-    return !error;
-  } catch {
-    return false;
-  }
-}
