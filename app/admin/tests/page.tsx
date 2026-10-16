@@ -20,15 +20,16 @@ export default function TestsAdmin() {
 
   const load = async () => {
     try {
-      const sb = getSupabase();
-      const [{ data: t, error: e1 }, { data: q, error: e2 }] = await Promise.all([
-        sb.from("tests").select("*").order("created_at", { ascending: false }).limit(50),
-        sb.from("questions").select("id,exam,section,topic,stem").order("created_at", { ascending: false }).limit(300),
+      const [tRes, qRes] = await Promise.all([
+        fetch("/api/admin/tests?limit=50", { credentials: "same-origin" }),
+        fetch("/api/admin/questions?limit=300", { credentials: "same-origin" }),
       ]);
-      if (e1) throw e1;
-      if (e2) throw e2;
-      setTests((t ?? []) as TestRow[]);
-      setBank((q ?? []) as QuestionRow[]);
+      const tj = (await tRes.json()) as { error?: string; rows?: TestRow[] };
+      const qj = (await qRes.json()) as { error?: string; rows?: QuestionRow[] };
+      if (!tRes.ok) throw new Error(tj.error || "Load failed.");
+      if (!qRes.ok) throw new Error(qj.error || "Load failed.");
+      setTests(tj.rows ?? []);
+      setBank((qj.rows ?? []) as QuestionRow[]);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Load failed — is the tests table created?");
     }
@@ -44,14 +45,16 @@ export default function TestsAdmin() {
     setBusy(true);
     setMsg("");
     try {
-      if (!title.trim()) throw new Error("Title is required.");
-      if (!minutes || minutes < 5 || minutes > 180) throw new Error("Duration must be 5–180 minutes.");
-      if (picked.length === 0) throw new Error("Pick at least one question.");
-      const sb = getSupabase();
-      const { error } = await sb.from("tests").insert({
-        exam, title: title.trim(), tag: `${picked.length}Q demo`, minutes, free, published, question_ids: picked,
+      const r = await fetch("/api/admin/tests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          exam, title: title.trim(), tag: `${picked.length}Q demo`, minutes, free, published, question_ids: picked,
+        }),
       });
-      if (error) throw error;
+      const j = (await r.json()) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "Create failed.");
       setMsg(`Mock created with ${picked.length} questions.`);
       setTitle("");
       setPicked([]);
@@ -65,9 +68,14 @@ export default function TestsAdmin() {
 
   const flip = async (t: TestRow, field: "published" | "free") => {
     try {
-      const sb = getSupabase();
-      const { error } = await sb.from("tests").update({ [field]: !t[field] }).eq("id", t.id);
-      if (error) throw error;
+      const r = await fetch(`/api/admin/tests/${t.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ [field]: !t[field] }),
+      });
+      const j = (await r.json()) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "Update failed.");
       await load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Update failed.");
@@ -78,17 +86,22 @@ export default function TestsAdmin() {
     setBusy(true);
     setMsg("");
     try {
-      const sb = getSupabase();
-      const { error } = await sb.from("tests").insert({
-        exam: t.exam,
-        title: `${t.title} (copy)`,
-        tag: t.tag,
-        minutes: t.minutes,
-        free: t.free,
-        published: false,
-        question_ids: t.question_ids,
+      const r = await fetch("/api/admin/tests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          exam: t.exam,
+          title: `${t.title} (copy)`,
+          tag: t.tag,
+          minutes: t.minutes,
+          free: t.free,
+          published: false,
+          question_ids: t.question_ids,
+        }),
       });
-      if (error) throw error;
+      const j = (await r.json()) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "Duplicate failed.");
       setMsg(`Duplicated as draft — attempts never copy over.`);
       await load();
     } catch (e) {
@@ -99,23 +112,12 @@ export default function TestsAdmin() {
   };
 
   const remove = async (id: string, title: string) => {
-    try {
-      const sb = getSupabase();
-      // Attempts reference tests by title string: never destroy history.
-      const { count } = await sb.from("attempts").select("id", { count: "exact", head: true }).eq("test", title);
-      if ((count ?? 0) > 0) {
-        setMsg(`Cannot delete — ${count} recorded attempt(s) reference this mock. Unpublish instead to preserve history.`);
-        return;
-      }
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Delete check failed.");
-      return;
-    }
     if (!confirm("Delete this mock test?")) return;
     try {
-      const sb = getSupabase();
-      const { error } = await sb.from("tests").delete().eq("id", id);
-      if (error) throw error;
+      // Server blocks the delete while attempts reference the title.
+      const r = await fetch(`/api/admin/tests/${id}`, { method: "DELETE", credentials: "same-origin" });
+      const j = (await r.json()) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "Delete failed.");
       await load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Delete failed.");

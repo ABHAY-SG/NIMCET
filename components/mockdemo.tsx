@@ -1,10 +1,18 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { saveAttempt } from "@/lib/supabase";
 
 export type MockQuestion = {
-  tag: string; stem: string; opts: string[]; ans: number;
-  plus: number; minus: number; exp: string;
+  tag: string; stem: string; opts: string[]; ans?: number;
+  plus: number; minus: number; exp?: string;
+  qid?: string;
+};
+
+export type SubmitResult = {
+  score: number;
+  correct: number;
+  wrong: number;
+  skipped: number;
+  details: Array<{ stem: string; opts: string[]; picked: number | null; correct: number; exp: string; ok?: boolean }>;
 };
 
 type Q = MockQuestion;
@@ -38,12 +46,14 @@ export default function MockDemo({
   minutes,
   testName,
   autoStart = false,
+  onSubmit,
 }: {
   questions?: MockQuestion[];
   title?: string;
   minutes?: number;
   testName?: string;
   autoStart?: boolean;
+  onSubmit?: (picks: Record<number, number>) => Promise<SubmitResult>;
 } = {}) {
   const list = questions && questions.length > 0 ? questions : QS;
   const MAX = list.reduce((a, q) => a + q.plus, 0);
@@ -53,7 +63,11 @@ export default function MockDemo({
   const [left, setLeft] = useState(mins * 60);
   const [done, setDone] = useState(false);
   const [started, setStarted] = useState(autoStart);
+  const [serverResult, setServerResult] = useState<SubmitResult | null>(null);
+  const [submitError, setSubmitError] = useState("");
+  const [retryTick, setRetryTick] = useState(0);
   const savedRef = useRef(false);
+  const localSavedRef = useRef(false);
 
   useEffect(() => {
     if (!started || done) return;
@@ -63,23 +77,53 @@ export default function MockDemo({
   }, [left, done, started]);
 
   useEffect(() => {
-    if (!done || savedRef.current) return;
+    if (!done) return;
+    if (savedRef.current) return;
     savedRef.current = true;
-    const s = summarize();
     const record = {
       test: testName ?? "Free sample mock (12Q)",
-      score: s.score, correct: s.correct, wrong: s.wrong, skipped: s.skip,
       created_at: new Date().toISOString(),
     };
-    try {
-      const raw = localStorage.getItem("nimcuet-attempts");
-      const arr = raw ? JSON.parse(raw) : [];
-      arr.unshift({ ...record, id: `local-${Date.now()}` });
-      localStorage.setItem("nimcuet-attempts", JSON.stringify(arr.slice(0, 20)));
-    } catch {}
-    saveAttempt({ test: record.test, score: s.score, correct: s.correct, wrong: s.wrong, skipped: s.skip });
+    // Local history always (works offline and logged-out).
+    if (!localSavedRef.current) {
+      localSavedRef.current = true;
+      try {
+        const s = summarize();
+        const raw = localStorage.getItem("nimcuet-attempts");
+        const arr = raw ? JSON.parse(raw) : [];
+        arr.unshift({ ...record, id: `local-${Date.now()}`, score: s.score, correct: s.correct, wrong: s.wrong, skipped: s.skip });
+        localStorage.setItem("nimcuet-attempts", JSON.stringify(arr.slice(0, 20)));
+      } catch {}
+    }
+    if (onSubmit) {
+      // Server scores from the answer key and records the attempt — the
+      // browser never sees correct answers before submitting.
+      onSubmit(answers)
+        .then((r) => {
+          setServerResult(r);
+          setSubmitError("");
+        })
+        .catch((e) => setSubmitError(e instanceof Error ? e.message : "Submit failed."));
+    } else {
+      // Homepage sample mock: self-contained local scoring.
+      const s = summarize();
+      setServerResult({
+        score: s.score,
+        correct: s.correct,
+        wrong: s.wrong,
+        skipped: s.skip,
+        details: list.map((q, i) => ({
+          stem: q.stem,
+          opts: q.opts,
+          picked: answers[i] ?? null,
+          correct: q.ans ?? -1,
+          exp: q.exp ?? "",
+          ok: answers[i] != null && answers[i] === (q.ans ?? -1),
+        })),
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [done]);
+  }, [done, retryTick]);
 
   function summarize(): Summary {
     let score = 0, correct = 0, wrong = 0, skip = 0;
@@ -94,10 +138,19 @@ export default function MockDemo({
 
   const reset = () => {
     savedRef.current = false;
+    localSavedRef.current = false;
+    setServerResult(null);
+    setSubmitError("");
     setAnswers({});
     setIdx(0);
     setLeft(mins * 60);
     setDone(false);
+  };
+
+  const retrySubmit = () => {
+    savedRef.current = false;
+    setSubmitError("");
+    setRetryTick((t) => t + 1);
   };
 
   if (!started) {
@@ -126,20 +179,62 @@ export default function MockDemo({
   }
 
   if (done) {
-    const s = summarize();
-    const pct = Math.max(0, Math.round((s.score / MAX) * 100));
+    if (onSubmit && !serverResult && !submitError) {
+      return (
+        <div className="overflow-hidden rounded-2xl p-10 text-center backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full" style={{ border: "3px solid var(--border)", borderTopColor: "var(--accent)" }} />
+          <p className="mt-4 text-sm font-bold">Scoring on the server…</p>
+        </div>
+      );
+    }
+    if (onSubmit && !serverResult && submitError) {
+      return (
+        <div className="overflow-hidden rounded-2xl p-10 text-center backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
+          <p className="text-sm font-bold">Could not submit: {submitError}</p>
+          <p className="mx-auto mt-2 max-w-sm text-[13px]" style={{ color: "var(--muted)" }}>
+            Your answers are kept — nothing was recorded. Check your connection and retry.
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <button type="button" onClick={retrySubmit} className="rounded-full px-5 py-2 text-sm font-bold text-white" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
+              Retry submit →
+            </button>
+            <button type="button" onClick={() => setDone(false)} className="rounded-full px-5 py-2 text-sm font-bold" style={{ border: "1px solid var(--border)" }}>
+              Back to test
+            </button>
+          </div>
+        </div>
+      );
+    }
+    const r = serverResult ?? (() => {
+      const s = summarize();
+      return {
+        score: s.score,
+        correct: s.correct,
+        wrong: s.wrong,
+        skipped: s.skip,
+        details: list.map((q, i) => ({
+          stem: q.stem,
+          opts: q.opts,
+          picked: answers[i] ?? null,
+          correct: q.ans ?? -1,
+          exp: q.exp ?? "",
+          ok: answers[i] != null && answers[i] === (q.ans ?? -1),
+        })),
+      };
+    })();
+    const pct = Math.max(0, Math.round((r.score / MAX) * 100));
     return (
       <div className="overflow-hidden rounded-2xl backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
         <div className="p-5 text-center sm:p-6" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="mono text-[11px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.16em" }}>SCORECARD • {title}</p>
           <div className="mono mt-2 text-5xl font-extrabold">
-            {s.score}<span className="text-lg font-medium" style={{ color: "var(--muted)" }}>/{MAX}</span>
+            {r.score}<span className="text-lg font-medium" style={{ color: "var(--muted)" }}>/{MAX}</span>
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full" style={{ background: "var(--pill)" }}>
             <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--accent)" }} />
           </div>
           <p className="mono mt-2 text-xs" style={{ color: "var(--muted)" }}>
-            {s.correct} CORRECT • {s.wrong} WRONG • {s.skip} SKIPPED • +{list[0].plus}/−{Math.abs(list[0].minus)} MARKING APPLIED
+            {r.correct} CORRECT • {r.wrong} WRONG • {r.skipped} SKIPPED • +{list[0].plus}/−{Math.abs(list[0].minus)} MARKING APPLIED
           </p>
           <div className="mt-4 flex justify-center gap-2">
             <button type="button" onClick={reset} className="rounded-full px-5 py-2 text-sm font-bold" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
@@ -153,16 +248,15 @@ export default function MockDemo({
         <div className="max-h-96 overflow-y-auto p-4 sm:p-5">
           <p className="mono text-[11px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>SOLUTIONS</p>
           <div className="mt-2 space-y-3">
-            {list.map((q, i) => {
-              const a = answers[i];
-              const ok = a === q.ans;
+                        {r.details.map((d, i) => {
+              const ok = d.ok ?? (d.picked != null && d.picked === d.correct);
               return (
                 <div key={i} className="rounded-xl p-3.5 text-sm" style={{ border: "1px solid var(--border)" }}>
-                  <p className="font-bold">Q{i + 1}. {q.stem}</p>
-                  <p className="mt-1" style={{ color: ok ? "#16a34a" : a == null ? "var(--muted)" : "#dc2626" }}>
-                    {a == null ? `Skipped — answer: ${q.opts[q.ans]}` : ok ? `Your answer: ${q.opts[a]} ✓` : `Your answer: ${q.opts[a]} ✘ (correct: ${q.opts[q.ans]})`}
+                  <p className="font-bold">Q{i + 1}. {d.stem}</p>
+                  <p className="mt-1" style={{ color: ok ? "#16a34a" : d.picked == null ? "var(--muted)" : "#dc2626" }}>
+                    {d.picked == null ? `Skipped — answer: ${d.opts[d.correct] ?? d.correct}` : ok ? `Your answer: ${d.opts[d.picked]} ✓` : `Your answer: ${d.opts[d.picked]} ✘ (correct: ${d.opts[d.correct] ?? d.correct})`}
                   </p>
-                  <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>Why: {q.exp}</p>
+                  <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>Why: {d.exp}</p>
                 </div>
               );
             })}

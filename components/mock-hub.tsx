@@ -10,10 +10,8 @@ type BankRow = {
   difficulty: string;
   stem: string;
   options: string[];
-  answer: number;
   plus: number;
   minus: number;
-  explanation: string;
 };
 
 type Test = {
@@ -31,13 +29,12 @@ type Run = { qs: MockQuestion[]; title: string; testName: string; minutes: numbe
 
 function toMock(q: BankRow): MockQuestion {
   return {
+    qid: q.id,
     tag: `${q.section.toUpperCase()} • +${q.plus} / ${q.minus}`,
     stem: q.stem,
     opts: q.options,
-    ans: q.answer,
     plus: q.plus,
     minus: q.minus,
-    exp: q.explanation,
   };
 }
 
@@ -73,7 +70,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
         const sb = getSupabase();
         const [{ data: tdata }, { data: qdata }] = await Promise.all([
           sb.from("tests").select("id,exam,title,tag,minutes,free,published,question_ids").eq("published", true).limit(30),
-          sb.from("questions").select("id,exam,section,difficulty,stem,options,answer,plus,minus,explanation").limit(300),
+          sb.from("question_bank_public").select("id,exam,section,difficulty,stem,options,plus,minus").limit(300),
         ]);
         if (tdata) setTests(tdata as Test[]);
         if (qdata) setBank(qdata as BankRow[]);
@@ -117,8 +114,8 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
       try {
         const sb = getSupabase();
         const { data } = await sb
-          .from("questions")
-          .select("id,exam,section,difficulty,stem,options,answer,plus,minus,explanation")
+          .from("question_bank_public")
+          .select("id,exam,section,difficulty,stem,options,plus,minus")
           .in("id", missing.slice(0, 200));
         for (const q of (data ?? []) as BankRow[]) {
           byId.set(q.id, q);
@@ -148,6 +145,21 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
     window.scrollTo({ top: 0 });
   };
 
+  const submitRun = async (qs: MockQuestion[], testName: string, picks: Record<number, number>) => {
+    const r = await fetch("/api/student/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        test: testName,
+        answers: qs.map((q, i) => ({ id: q.qid ?? "", answer: picks[i] ?? null })),
+      }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error((j as { error?: string }).error || "Submit failed.");
+    return j as { score: number; correct: number; wrong: number; skipped: number; details: Array<{ stem: string; opts: string[]; picked: number | null; correct: number; exp: string; ok?: boolean }> };
+  };
+
   if (run) {
     return (
       <div>
@@ -166,6 +178,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
           minutes={run.minutes}
           testName={run.testName}
           autoStart
+          onSubmit={(picks) => submitRun(run.qs, run.testName, picks)}
         />
       </div>
     );

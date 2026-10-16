@@ -31,6 +31,8 @@ export type QuestionRow = {
   options: string[];
   answer: number;
   explanation: string;
+  plus: number;
+  minus: number;
   created_at?: string;
 };
 

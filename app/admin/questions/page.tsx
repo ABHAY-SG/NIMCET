@@ -2,20 +2,21 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import { getSupabase } from "@/lib/supabase";
-import type { QuestionRow } from "@/lib/admin";
+import type { QuestionRow, TestRow } from "@/lib/admin";
 
 const EMPTY: Omit<QuestionRow, "id"> = {
   exam: "nimcet", section: "maths", topic: "", difficulty: "Medium",
   stem: "", options: ["", "", "", ""], answer: 0, explanation: "",
+  plus: 4, minus: -1,
 };
 
 const SEED: Array<Omit<QuestionRow, "id">> = [
-  { exam: "nimcet", section: "maths", topic: "Matrices", difficulty: "Easy", stem: "If A is 3×3 with det(A)=4, det(2A) = ?", options: ["8", "16", "32", "64"], answer: 2, explanation: "det(kA) = k³·det(A) = 8×4 = 32." },
-  { exam: "nimcet", section: "maths", topic: "Probability", difficulty: "Medium", stem: "Two fair dice are thrown. P(sum = 9) = ?", options: ["1/9", "5/36", "1/6", "7/36"], answer: 0, explanation: "(3,6),(4,5),(5,4),(6,3) = 4/36 = 1/9." },
-  { exam: "nimcet", section: "maths", topic: "Calculus", difficulty: "Medium", stem: "∫₀¹ x² dx = ?", options: ["1/3", "1/2", "1", "2"], answer: 0, explanation: "x³/3 from 0 to 1 = 1/3." },
-  { exam: "nimcet", section: "reasoning", topic: "Series", difficulty: "Easy", stem: "2, 6, 12, 20, 30, ?", options: ["40", "42", "44", "36"], answer: 1, explanation: "n(n+1): 6×7 = 42." },
-  { exam: "nimcet", section: "computer", topic: "DSA", difficulty: "Easy", stem: "Which discipline does a stack follow?", options: ["FIFO", "LIFO", "LILO", "Random"], answer: 1, explanation: "Stack = Last In, First Out." },
-  { exam: "cuet-pg-mca", section: "cs", topic: "DSA", difficulty: "Medium", stem: "Time complexity of binary search?", options: ["O(n)", "O(log n)", "O(n log n)", "O(1)"], answer: 1, explanation: "Halving each step → O(log n)." },
+  { exam: "nimcet", section: "maths", topic: "Matrices", difficulty: "Easy", stem: "If A is 3×3 with det(A)=4, det(2A) = ?", options: ["8", "16", "32", "64"], answer: 2, explanation: "det(kA) = k³·det(A) = 8×4 = 32.", plus: 12, minus: -3 },
+  { exam: "nimcet", section: "maths", topic: "Probability", difficulty: "Medium", stem: "Two fair dice are thrown. P(sum = 9) = ?", options: ["1/9", "5/36", "1/6", "7/36"], answer: 0, explanation: "(3,6),(4,5),(5,4),(6,3) = 4/36 = 1/9.", plus: 12, minus: -3 },
+  { exam: "nimcet", section: "maths", topic: "Calculus", difficulty: "Medium", stem: "∫₀¹ x² dx = ?", options: ["1/3", "1/2", "1", "2"], answer: 0, explanation: "x³/3 from 0 to 1 = 1/3.", plus: 12, minus: -3 },
+  { exam: "nimcet", section: "reasoning", topic: "Series", difficulty: "Easy", stem: "2, 6, 12, 20, 30, ?", options: ["40", "42", "44", "36"], answer: 1, explanation: "n(n+1): 6×7 = 42.", plus: 6, minus: -1.5 },
+  { exam: "nimcet", section: "computer", topic: "DSA", difficulty: "Easy", stem: "Which discipline does a stack follow?", options: ["FIFO", "LIFO", "LILO", "Random"], answer: 1, explanation: "Stack = Last In, First Out.", plus: 6, minus: -1.5 },
+  { exam: "cuet-pg-mca", section: "cs", topic: "DSA", difficulty: "Medium", stem: "Time complexity of binary search?", options: ["O(n)", "O(log n)", "O(n log n)", "O(1)"], answer: 1, explanation: "Halving each step → O(log n).", plus: 4, minus: -1 },
 ];
 
 export default function QuestionsAdmin() {
@@ -30,10 +31,10 @@ export default function QuestionsAdmin() {
 
   const load = async () => {
     try {
-      const sb = getSupabase();
-      const { data, error } = await sb.from("questions").select("*").order("created_at", { ascending: false }).limit(200);
-      if (error) throw error;
-      setRows((data ?? []) as QuestionRow[]);
+      const r = await fetch("/api/admin/questions?limit=200", { credentials: "same-origin" });
+      const j = (await r.json()) as { error?: string; rows?: QuestionRow[] };
+      if (!r.ok) throw new Error(j.error || "Load failed.");
+      setRows(j.rows ?? []);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Load failed — is the questions table created?");
     }
@@ -46,18 +47,16 @@ export default function QuestionsAdmin() {
     setBusy(true);
     setMsg("");
     try {
-      const sb = getSupabase();
-      if (form.options.some((o) => !o.trim())) throw new Error("All 4 options are required.");
-      if (!form.stem.trim() || !form.topic.trim()) throw new Error("Topic and question text are required.");
-      if (editing) {
-        const { error } = await sb.from("questions").update({ ...form }).eq("id", editing);
-        if (error) throw error;
-        setMsg("Question updated.");
-      } else {
-        const { error } = await sb.from("questions").insert({ ...form });
-        if (error) throw error;
-        setMsg("Question added.");
-      }
+      const url = editing ? `/api/admin/questions/${editing}` : "/api/admin/questions";
+      const r = await fetch(url, {
+        method: editing ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(form),
+      });
+      const j = (await r.json()) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "Save failed.");
+      setMsg(editing ? "Question updated." : "Question added.");
       setForm(EMPTY);
       setEditing(null);
       await load();
@@ -71,15 +70,10 @@ export default function QuestionsAdmin() {
   const remove = async (id: string) => {
     if (!confirm("Delete this question?")) return;
     try {
-      const sb = getSupabase();
-      // Dangling references would corrupt tests: block while any test uses it.
-      const { count } = await sb.from("tests").select("id", { count: "exact", head: true }).filter("question_ids", "cs", `{${id}}`);
-      if ((count ?? 0) > 0) {
-        setMsg(`Cannot delete — ${count} test(s) still reference this question. Remove it from those tests first.`);
-        return;
-      }
-      const { error } = await sb.from("questions").delete().eq("id", id);
-      if (error) throw error;
+      // Server blocks the delete while any test references the id.
+      const r = await fetch(`/api/admin/questions/${id}`, { method: "DELETE", credentials: "same-origin" });
+      const j = (await r.json()) as { error?: string };
+      if (!r.ok) throw new Error(j.error || "Delete failed.");
       await load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Delete failed.");
@@ -90,18 +84,25 @@ export default function QuestionsAdmin() {
     setBusy(true);
     setMsg("");
     try {
-      const sb = getSupabase();
-      const { error } = await sb.from("questions").insert({
-        exam: r.exam,
-        section: r.section,
-        topic: r.topic,
-        difficulty: r.difficulty,
-        stem: `${r.stem} (copy)`,
-        options: r.options,
-        answer: r.answer,
-        explanation: r.explanation,
+      const res = await fetch("/api/admin/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          exam: r.exam,
+          section: r.section,
+          topic: r.topic,
+          difficulty: r.difficulty,
+          stem: `${r.stem} (copy)`,
+          options: r.options,
+          answer: r.answer,
+          explanation: r.explanation,
+          plus: r.plus ?? 4,
+          minus: r.minus ?? -1,
+        }),
       });
-      if (error) throw error;
+      const j = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(j.error || "Duplicate failed.");
       setMsg("Question duplicated — edit the copy.");
       await load();
     } catch (e) {
@@ -115,21 +116,28 @@ export default function QuestionsAdmin() {
     // Attempts store only totals, so recorded scores can never change — but
     // the question text itself goes live wherever it is used. Warn first.
     try {
-      const sb = getSupabase();
-      const { data, error } = await sb.from("tests").select("id,title,published").filter("question_ids", "cs", `{${r.id}}`).limit(6);
-      if (!error && data && data.length > 0) {
-        const live = (data as Array<{ title: string; published: boolean }>).filter((t) => t.published);
-        setMsg(
-          live.length > 0
-            ? `Heads up: used in ${data.length} test(s), ${live.length} published (${live.slice(0, 3).map((t) => t.title).join(", ")}). Edits go live immediately; recorded scores store only totals and stay unchanged.`
-            : `Used in ${data.length} draft test(s). Recorded scores store only totals and stay unchanged.`
-        );
-      } else {
-        setMsg("");
+      const res = await fetch("/api/admin/tests?limit=200", { credentials: "same-origin" });
+      const j = (await res.json()) as { error?: string; rows?: TestRow[] };
+      if (res.ok && j.rows) {
+        const used = j.rows.filter((t) => Array.isArray(t.question_ids) && t.question_ids.includes(r.id));
+        if (used.length > 0) {
+          const live = used.filter((t) => t.published);
+          setMsg(
+            live.length > 0
+              ? `Heads up: used in ${used.length} test(s), ${live.length} published (${live.slice(0, 3).map((t) => t.title).join(", ")}). Edits go live immediately; recorded scores store only totals and stay unchanged.`
+              : `Used in ${used.length} draft test(s). Recorded scores store only totals and stay unchanged.`
+          );
+        } else {
+          setMsg("");
+        }
       }
     } catch {}
     setEditing(r.id);
-    setForm({ exam: r.exam, section: r.section, topic: r.topic, difficulty: r.difficulty, stem: r.stem, options: r.options, answer: r.answer, explanation: r.explanation });
+    setForm({
+      exam: r.exam, section: r.section, topic: r.topic, difficulty: r.difficulty,
+      stem: r.stem, options: r.options, answer: r.answer, explanation: r.explanation,
+      plus: r.plus ?? 4, minus: r.minus ?? -1,
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -137,13 +145,23 @@ export default function QuestionsAdmin() {
     setBusy(true);
     setMsg("");
     try {
-      const sb = getSupabase();
-      const { error } = await sb.from("questions").insert(SEED);
-      if (error) throw error;
-      setMsg(`${SEED.length} starter questions added.`);
+      let added = 0;
+      for (const s of SEED) {
+        const r = await fetch("/api/admin/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ ...s, plus: 4, minus: -1 }),
+        });
+        const j = (await r.json()) as { error?: string };
+        if (!r.ok) throw new Error(j.error || `Seed stopped after ${added} of ${SEED.length} — fix the error, then retry (no partial batch is hidden: ${added} were added).`);
+        added++;
+      }
+      setMsg(`${added} starter questions added.`);
       await load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Seed failed.");
+      await load();
     } finally {
       setBusy(false);
     }
@@ -187,9 +205,11 @@ export default function QuestionsAdmin() {
           <input value={form.exam} onChange={(e) => setForm({ ...form, exam: e.target.value })} placeholder="exam: nimcet" className={input} style={istyle} />
           <input value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value })} placeholder="section: maths" className={input} style={istyle} />
           <input value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} placeholder="Topic" className={input} style={istyle} />
-          <select value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value })} className={input} style={istyle}>
+          <select value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value })} className={input} style={istyle} aria-label="Difficulty">
             <option>Easy</option><option>Medium</option><option>Hard</option>
           </select>
+          <input type="number" step="0.5" min={0} value={form.plus} onChange={(e) => setForm({ ...form, plus: Number(e.target.value) })} aria-label="Marks for correct answer" title="Marks for a correct answer" className={input} style={istyle} />
+          <input type="number" step="0.5" max={0} value={form.minus} onChange={(e) => setForm({ ...form, minus: Number(e.target.value) })} aria-label="Negative marks" title="Negative marks (zero or negative)" className={input} style={istyle} />
         </div>
         <textarea value={form.stem} onChange={(e) => setForm({ ...form, stem: e.target.value })} placeholder="Question stem…" rows={2} className={`${input} mt-2.5`} style={istyle} />
         <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">

@@ -12,10 +12,10 @@ export default function AttemptsAdmin() {
   useEffect(() => {
     (async () => {
       try {
-        const sb = getSupabase();
-        const { data, error } = await sb.from("attempts").select("*").order("created_at", { ascending: false }).limit(100);
-        if (error) throw error;
-        setRows((data ?? []) as AttemptRow[]);
+        const r = await fetch("/api/admin/attempts?limit=100", { credentials: "same-origin" });
+        const j = (await r.json()) as { error?: string; rows?: AttemptRow[] };
+        if (!r.ok) throw new Error(j.error || "Load failed.");
+        setRows(j.rows ?? []);
       } catch (e) {
         setMsg(e instanceof Error ? e.message : "Load failed — admin read policy may be missing (see setup SQL).");
       }

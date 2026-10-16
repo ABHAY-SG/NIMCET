@@ -13,9 +13,10 @@ export default function UsersAdmin() {
   useEffect(() => {
     (async () => {
       try {
-        const sb = getSupabase();
-        const { data, error } = await sb.from("attempts").select("user_id,score,created_at").order("created_at", { ascending: false }).limit(1000);
-        if (error) throw error;
+        const r = await fetch("/api/admin/attempts?limit=1000", { credentials: "same-origin" });
+        const j = (await r.json()) as { error?: string; rows?: Array<{ user_id: string; score: number; created_at: string }> };
+        if (!r.ok) throw new Error(j.error || "Load failed.");
+        const data = j.rows ?? [];
         const map = new Map<string, UserStat>();
         for (const r of (data ?? []) as Array<{ user_id: string; score: number; created_at: string }>) {
           const cur = map.get(r.user_id);

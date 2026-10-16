@@ -42,6 +42,8 @@ create table if not exists public.questions (
   options jsonb not null default '[]',
   answer integer not null default 0,
   explanation text not null default '',
+  plus numeric not null default 4,
+  minus numeric not null default -1,
   created_at timestamptz not null default now()
 );
 

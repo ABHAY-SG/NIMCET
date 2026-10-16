@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
-import { getSupabase } from "@/lib/supabase";
 
 type AttemptRow = { user_id: string; test: string; score: number; created_at: string };
 type TestRow = { id: string; title: string; published: boolean; created_at: string; question_ids: string[] };
@@ -71,20 +70,21 @@ export default function AdminHome() {
   useEffect(() => {
     (async () => {
       try {
-        const sb = getSupabase();
-        const [attRows, tRows, qHead, aHead] = await Promise.all([
-          sb.from("attempts").select("user_id,test,score,created_at").order("created_at", { ascending: false }).limit(1000),
-          sb.from("tests").select("id,title,published,created_at,question_ids").order("created_at", { ascending: false }).limit(100),
-          sb.from("questions").select("id", { count: "exact", head: true }),
-          sb.from("attempts").select("id", { count: "exact", head: true }),
-        ]);
-        if (attRows.error || tRows.error || qHead.error || aHead.error) {
-          setNote("Some tables are missing — run the admin SQL from setup to create questions/tests and enable full stats.");
-        }
-        setAttempts((attRows.data ?? []) as AttemptRow[]);
-        setTests((tRows.data ?? []) as TestRow[]);
-        setQCount(qHead.count ?? 0);
-        setAttCount(aHead.count ?? 0);
+        // Aggregates + capped lists come from the service-role overview
+        // endpoint (server-side allowlist); the browser never queries raw
+        // cross-user rows directly.
+        const r = await fetch("/api/admin/overview", { credentials: "same-origin" });
+        const j = (await r.json()) as {
+          error?: string;
+          counts?: { questions: number; attempts: number };
+          tests?: TestRow[];
+          attempts?: AttemptRow[];
+        };
+        if (!r.ok) throw new Error(j.error || "Load failed.");
+        setAttempts((j.attempts ?? []) as AttemptRow[]);
+        setTests((j.tests ?? []) as TestRow[]);
+        setQCount(j.counts?.questions ?? 0);
+        setAttCount(j.counts?.attempts ?? 0);
       } catch (e) {
         setNote(e instanceof Error ? e.message : "Could not load stats.");
       } finally {
