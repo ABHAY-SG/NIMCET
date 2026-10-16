@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
@@ -35,6 +35,19 @@ function AttemptRow({ a, cloud = false }: { a: Attempt; cloud?: boolean }) {
         </div>
       </div>
       <div className="mono text-xl font-extrabold" style={{ color: "var(--accent)" }}>{a.score}</div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div
+      className="rounded-2xl px-4 py-4 backdrop-blur-xl"
+      style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
+    >
+      <div className="mono text-2xl font-extrabold" style={{ color: "var(--accent)" }}>{value}</div>
+      <div className="mt-1 text-[13px] font-bold">{label}</div>
+      <div className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>{sub}</div>
     </div>
   );
 }
@@ -85,6 +98,32 @@ export default function DashboardPage() {
     })();
   }, [router]);
 
+  // Stats over cloud history; fall back to this-device history for new users.
+  const statsSource = attempts.length > 0 ? attempts : localAttempts;
+  const statsLabel = attempts.length > 0 ? "saved to cloud" : "on this device";
+  const stats = useMemo(() => {
+    if (statsSource.length === 0) return { total: "0", best: "—", avg: "—", acc: "—" };
+    const scores = statsSource.map((a) => Number(a.score) || 0);
+    const best = Math.max(...scores);
+    const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
+    const correct = statsSource.reduce((s, a) => s + (Number(a.correct) || 0), 0);
+    const wrong = statsSource.reduce((s, a) => s + (Number(a.wrong) || 0), 0);
+    const answered = correct + wrong;
+    return {
+      total: String(statsSource.length),
+      best: String(Math.round(best * 10) / 10),
+      avg: String(Math.round(avg * 10) / 10),
+      acc: answered === 0 ? "—" : `${Math.round((correct / answered) * 100)}%`,
+    };
+  }, [statsSource]);
+
+  const clearLocal = () => {
+    try {
+      localStorage.removeItem("nimcuet-attempts");
+    } catch {}
+    setLocalAttempts([]);
+  };
+
   return (
     <>
       {!loading && email && <DashNav email={email} onLogout={() => {}} />}
@@ -100,6 +139,32 @@ export default function DashboardPage() {
       {note && (
         <p className="mt-4 rounded-xl px-4 py-3 text-[13px]" style={{ background: "var(--pill)" }}>{note}</p>
       )}
+      <Reveal>
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <StatCard label="Mocks" value={loading ? "…" : stats.total} sub={statsLabel} />
+          <StatCard label="Best score" value={loading ? "…" : stats.best} sub={statsLabel} />
+          <StatCard label="Avg score" value={loading ? "…" : stats.avg} sub={statsLabel} />
+          <StatCard label="Accuracy" value={loading ? "…" : stats.acc} sub="correct ÷ answered" />
+        </div>
+      </Reveal>
+      <Reveal>
+        <div
+          className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4 backdrop-blur-xl"
+          style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
+        >
+          <div>
+            <div className="text-sm font-extrabold tracking-tight">Ready for the next one?</div>
+            <div className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>12 questions • 12 minutes • instant solutions. Scores save here automatically.</div>
+          </div>
+          <a
+            href="/#demo"
+            className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
+            style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+          >
+            Start practice mock →
+          </a>
+        </div>
+      </Reveal>
       <Reveal>
         <h2 className="mt-8 text-lg font-extrabold tracking-tight">Saved attempts</h2>
         {attempts.length === 0 && !loading ? (
@@ -119,7 +184,17 @@ export default function DashboardPage() {
       </Reveal>
       {localAttempts.length > 0 && (
         <Reveal>
-          <h2 className="mt-8 text-lg font-extrabold tracking-tight">On this device</h2>
+          <div className="mt-8 flex items-center justify-between gap-2">
+            <h2 className="text-lg font-extrabold tracking-tight">On this device</h2>
+            <button
+              type="button"
+              onClick={clearLocal}
+              className="cursor-pointer rounded-xl px-3.5 py-1.5 text-xs font-bold"
+              style={{ border: "1px solid var(--border)", color: "var(--muted)" }}
+            >
+              Clear
+            </button>
+          </div>
           <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Saved locally — log in to keep them across devices.</p>
           <div className="mt-3 grid gap-2.5">
             {localAttempts.map((a) => (
