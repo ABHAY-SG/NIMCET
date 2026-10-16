@@ -149,7 +149,7 @@ export default function DashNav({
               style={avatarUrl && imgOk ? undefined : { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
             >
               {avatarUrl && imgOk ? (
-                <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
+                <img src={`/api/avatar?src=${encodeURIComponent(avatarUrl)}`} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
               ) : (
                 <span className="flex h-full w-full items-center justify-center text-sm font-extrabold text-white">
                   {initialsOf(displayName, email)}
@@ -250,7 +250,7 @@ export default function DashNav({
               >
                 <span className="block h-11 w-11 shrink-0 overflow-hidden rounded-full" style={{ border: "2px solid rgba(255,255,255,0.6)" }}>
                   {avatarUrl && imgOk ? (
-                    <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
+                    <img src={`/api/avatar?src=${encodeURIComponent(avatarUrl)}`} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
                   ) : (
                     <span className="flex h-full w-full items-center justify-center bg-white/20 text-base font-extrabold text-white">
                       {initialsOf(displayName, email)}

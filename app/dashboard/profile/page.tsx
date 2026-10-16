@@ -264,11 +264,13 @@ export default function ProfilePage() {
         contentType: "image/jpeg",
       });
       if (upErr) throw upErr;
-      const { data: pub } = sb.storage.from("avatars").getPublicUrl(path);
-      const url = `${pub.publicUrl}?t=${Date.now()}`;
-      const { error: metaErr } = await sb.auth.updateUser({ data: { custom_avatar: url } });
+      // Store the STORAGE PATH (not a public URL): display goes through
+      // GET /api/avatar, which mints owner-only signed URLs. Works once the
+      // bucket is private; legacy full-URL values keep working via the same
+      // endpoint (path is extracted from them).
+      const { error: metaErr } = await sb.auth.updateUser({ data: { custom_avatar: path } });
       if (metaErr) throw metaErr;
-      setAvatarUrl(url);
+      setAvatarUrl(path);
     } catch (err: unknown) {
       const raw = err instanceof Error ? err.message : "Upload failed.";
       setPhotoMsg(/bucket|not found|row-level|policy|permission/i.test(raw)
@@ -367,7 +369,7 @@ export default function ProfilePage() {
             <div className="flex min-w-0 items-center gap-4">
               <span className="relative block h-20 w-20 shrink-0 overflow-hidden rounded-3xl" style={{ border: "2px solid rgba(255,255,255,0.55)", boxShadow: "0 14px 36px -12px rgba(0,0,0,0.55)" }}>
                 {avatarUrl && imgOk ? (
-                  <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
+                  <img src={`/api/avatar?src=${encodeURIComponent(avatarUrl)}`} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
                 ) : (
                   <span
                     className="flex h-full w-full items-center justify-center text-3xl font-extrabold text-white"
