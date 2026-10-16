@@ -125,31 +125,32 @@ export default function DashSide({
   view: DashView;
   onSelect: (v: DashView) => void;
 }) {
-  const body = (
-    <div className="noscroll flex h-full flex-col gap-5 overflow-y-auto overscroll-contain p-4">
-      <div className="sticky top-0 z-10 -mx-4 -mt-4 px-4 pb-2.5 pt-4 backdrop-blur-2xl" style={{ background: "rgba(20, 27, 52, 0.72)" }}>
-        <button
-          type="button"
-          onClick={() => { onSelect("home"); onClose(); }}
-          className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-extrabold transition-transform hover:-translate-y-px ${
-            view === "home" ? "" : "hover:bg-white/10"
-          }`}
-          style={
-            view === "home"
-              ? { background: "#ffffff", color: "#1e2952", boxShadow: "0 12px 28px -12px rgba(0,0,0,0.5)" }
-              : { color: "rgba(255,255,255,0.85)" }
-          }
-        >
-          <span
-            aria-hidden
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-            style={view === "home" ? { background: "rgba(30,41,82,0.08)" } : { background: "rgba(255,255,255,0.1)" }}
-          >
-            {ICONS.home}
-          </span>
-          Home
-        </button>
-      </div>
+  const homeBtn = (
+    <button
+      type="button"
+      onClick={() => { onSelect("home"); onClose(); }}
+      className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-extrabold transition-transform hover:-translate-y-px ${
+        view === "home" ? "" : "hover:bg-white/10"
+      }`}
+      style={
+        view === "home"
+          ? { background: "#ffffff", color: "#1e2952", boxShadow: "0 12px 28px -12px rgba(0,0,0,0.5)" }
+          : { color: "rgba(255,255,255,0.85)" }
+      }
+    >
+      <span
+        aria-hidden
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+        style={view === "home" ? { background: "rgba(30,41,82,0.08)" } : { background: "rgba(255,255,255,0.1)" }}
+      >
+        {ICONS.home}
+      </span>
+      Home
+    </button>
+  );
+
+  const list = (
+    <div className="noscroll flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain p-4">
       {GROUPS.map((g) => (
         <div key={g.title}>
           <div className="px-3 pb-1.5 text-[11px] font-extrabold uppercase" style={{ color: "rgba(255,255,255,0.5)", letterSpacing: "0.18em" }}>
@@ -181,20 +182,26 @@ export default function DashSide({
 
   return (
     <>
-      <aside className="fixed bottom-4 left-4 top-20 z-40 hidden w-64 overflow-hidden rounded-[22px] md:block" style={PANEL_STYLE}>
-        {body}
+      <aside className="fixed bottom-4 left-4 top-20 z-40 hidden w-64 flex-col overflow-hidden rounded-[22px] md:flex" style={PANEL_STYLE}>
+        <div className="shrink-0 p-4 pb-3 backdrop-blur-2xl" style={{ background: "rgba(20, 27, 52, 0.6)" }}>
+          {homeBtn}
+        </div>
+        {list}
       </aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] md:hidden">
           <button type="button" aria-label="Close menu" onClick={onClose} className="absolute inset-0 cursor-default" style={{ background: "rgba(0,0,0,0.45)" }} />
-          <aside className="absolute bottom-0 left-0 top-0 w-72 max-w-[85vw] overflow-hidden" style={PANEL_STYLE}>
-            <div className="flex items-center justify-between p-4 pb-0">
+          <aside className="absolute bottom-0 left-0 top-0 flex w-72 max-w-[85vw] flex-col overflow-hidden" style={PANEL_STYLE}>
+            <div className="flex shrink-0 items-center justify-between p-4 pb-0">
               <span className="text-sm font-extrabold text-white">Menu</span>
               <button type="button" onClick={onClose} aria-label="Close menu"
                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-base text-white"
                 style={{ border: "1px solid rgba(255,255,255,0.2)" }}>✕</button>
             </div>
-            {body}
+            <div className="shrink-0 p-4 pb-3 backdrop-blur-2xl" style={{ background: "rgba(20, 27, 52, 0.6)" }}>
+              {homeBtn}
+            </div>
+            {list}
           </aside>
         </div>
       )}
