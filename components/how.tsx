@@ -9,7 +9,7 @@ const STEPS: Array<[string, string, string]> = [
 
 export default function How() {
   return (
-    <section id="how" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-12">
+    <section id="how" className="mx-auto w-full scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8">
       <div className="grid gap-8 md:grid-cols-[1fr_1.5fr] md:items-start">
         <Reveal className="text-center md:sticky md:top-24 md:text-left">
           <p

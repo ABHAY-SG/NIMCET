@@ -19,7 +19,7 @@ function PhoneIcon() {
 
 export default function ContactStrip() {
   return (
-    <section id="contact" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-12">
+    <section id="contact" className="mx-auto w-full scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8">
       <Reveal>
         <div
           className="relative overflow-hidden rounded-[28px] px-6 py-10 text-center backdrop-blur-2xl backdrop-saturate-150 sm:px-10"

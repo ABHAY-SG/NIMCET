@@ -34,7 +34,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }, []);
 
   if (state === "loading") {
-    return <main className="mx-auto max-w-6xl px-4 pb-20 pt-28 text-sm" style={{ color: "var(--muted)" }}>Checking admin access…</main>;
+    return <main className="mx-auto px-4 pb-20 pt-28 text-sm sm:px-6 lg:px-8" style={{ color: "var(--muted)" }}>Checking admin access…</main>;
   }
 
   if (state === "noauth") {
@@ -65,7 +65,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 pb-20 pt-24">
+    <main className="mx-auto w-full px-4 pb-20 pt-24 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="mono text-[11px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.2em" }}>ADMIN PANEL</p>

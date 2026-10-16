@@ -100,7 +100,7 @@ const COLS: Array<{ title: string; links: Array<[string, string]> }> = [
 export default function Footer() {
   return (
     <footer style={{ borderTop: "1px solid var(--border)", background: "color-mix(in srgb, var(--nav-bg) 80%, transparent)" }}>
-      <div className="mx-auto w-full max-w-6xl px-4">
+      <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="flex flex-col items-center justify-between gap-4 py-7 sm:flex-row">
             <div className="flex items-center gap-3">

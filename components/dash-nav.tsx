@@ -85,7 +85,7 @@ export default function DashNav({
         boxShadow: "0 18px 48px -20px rgba(0,0,0,0.35), inset 0 1px 0 0 rgba(255,255,255,0.18)",
       }}
     >
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-2 px-4">
+      <div className="mx-auto flex h-16 w-full items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         <a href="/dashboard" className="flex shrink-0 items-center gap-2.5" aria-label="NimCuet dashboard home">
           <img src="/logo.png" alt="" aria-hidden className="site-logo block h-7 w-auto" />
         </a>

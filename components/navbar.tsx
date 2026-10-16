@@ -165,7 +165,7 @@ export default function Navbar() {
           : "inset 0 1px 0 0 rgba(255,255,255,0.12)",
       }}
     >
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-4">
+      <div className="mx-auto flex h-16 w-full items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         <div className="flex shrink-0 items-center gap-1">
           {!wide && (
             <button type="button" onClick={() => setOpen((v) => !v)} aria-label="menu" className={plainCls}>
@@ -246,7 +246,7 @@ export default function Navbar() {
       </div>
 
       {open && !wide && (
-        <nav className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-3">
+        <nav className="mx-auto flex w-full flex-col px-4 pb-3 sm:px-6 lg:px-8">
           {[
             ["home", "Home"],
             ["exams", "Exams"],

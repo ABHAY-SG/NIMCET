@@ -248,7 +248,7 @@ export default function DashboardPage() {
           streak={streakSummary}
         />
       )}
-      <main id="attempts" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-20 pt-24">
+      <main id="attempts" className="mx-auto w-full scroll-mt-24 px-4 pb-20 pt-24 sm:px-6 lg:px-8">
       <Reveal>
         <section
           className="relative overflow-hidden rounded-[26px] px-6 py-8 text-white sm:px-10 sm:py-10"

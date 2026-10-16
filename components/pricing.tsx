@@ -20,7 +20,7 @@ const PLANS = [
 
 export default function Pricing() {
   return (
-    <section id="pricing" className="mx-auto w-full max-w-5xl scroll-mt-24 px-4 pb-12">
+    <section id="pricing" className="mx-auto w-full scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8">
       <Reveal className="text-center">
         <p
           className="text-[11px] font-semibold uppercase"
