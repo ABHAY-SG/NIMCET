@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAuthClient, signOutAll } from "@/lib/supabase";
+import { THEMES, applyTheme, readTheme, type ThemeId } from "@/lib/theme";
 
 export type StreakSummary = {
   current: number;
@@ -14,22 +15,6 @@ function initialsOf(name: string, email: string): string {
   const parts = src.split(/\s+/).filter(Boolean).slice(0, 2);
   if (parts.length === 0) return "?";
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
-}
-
-function MoonIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-    </svg>
-  );
 }
 
 function BellIcon() {
@@ -46,39 +31,40 @@ const iconBtn =
 export default function DashNav({
   email,
   displayName = "",
+  avatarUrl = "",
   onLogout,
   onDisplayNameChange,
   streak,
 }: {
   email: string;
   displayName?: string;
+  avatarUrl?: string;
   onLogout: () => void;
   onDisplayNameChange?: (name: string) => void;
   streak?: StreakSummary;
 }) {
   const router = useRouter();
-  const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell">(null);
-  const [theme, setTheme] = useState<"light" | "midnight">("light");
+  const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell" | "theme">(null);
+  const [theme, setTheme] = useState<ThemeId>("light");
   const [editing, setEditing] = useState(false);
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [imgOk, setImgOk] = useState(true);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("mcamock-theme");
-      if (saved === "midnight" || saved === "light") setTheme(saved);
-    } catch {}
+    setTheme(readTheme());
   }, []);
 
-  const toggleTheme = () => {
-    const next = theme === "light" ? "midnight" : "light";
-    setTheme(next);
-    try {
-      document.documentElement.dataset.theme = next;
-      localStorage.setItem("mcamock-theme", next);
-    } catch {}
+  useEffect(() => {
+    setImgOk(true);
+  }, [avatarUrl]);
+
+  const pickTheme = (t: ThemeId) => {
+    setTheme(t);
+    applyTheme(t);
+    setOpenMenu(null);
   };
 
   const logout = async () => {
@@ -139,18 +125,7 @@ export default function DashNav({
             DASHBOARD
           </span>
         </a>
-        <nav className="hidden items-center gap-1 sm:flex">
-          <a href="/dashboard" className="rounded-full px-3.5 py-2 text-sm font-bold" style={{ background: "var(--pill)", color: "var(--text)" }}>
-            Home
-          </a>
-          <a href="/dashboard#attempts" className="rounded-full px-3.5 py-2 text-sm font-medium" style={{ color: "var(--muted)" }}>
-            My attempts
-          </a>
-        </nav>
         <div className="relative flex shrink-0 items-center gap-1.5">
-          <span className="mono hidden max-w-[180px] truncate text-xs lg:block" style={{ color: "var(--muted)" }} title={email}>
-            {email}
-          </span>
           {streak && (
             <button
               type="button"
@@ -176,23 +151,29 @@ export default function DashNav({
           </button>
           <button
             type="button"
-            onClick={toggleTheme}
-            aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-            title={theme === "light" ? "Dark theme" : "Light theme"}
+            onClick={() => setOpenMenu((m) => (m === "theme" ? null : "theme"))}
+            aria-label={`Change theme (current: ${theme})`}
+            title="Theme"
             className={iconBtn}
             style={{ border: "1px solid var(--border)", color: "var(--text)" }}
           >
-            {theme === "light" ? <MoonIcon /> : <SunIcon />}
+            <span aria-hidden className="inline-block h-4 w-4 rounded-full" style={{ background: THEMES.find((t) => t.id === theme)?.dot, border: "1px solid var(--border)" }} />
           </button>
           <button
             type="button"
             onClick={() => { setOpenMenu((m) => (m === "profile" ? null : "profile")); setEditing(false); setSaveMsg(""); }}
             aria-label="Profile menu"
             title={displayName || email}
-            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
-            style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+            className="h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-full transition-transform hover:-translate-y-px"
+            style={avatarUrl && imgOk ? { border: "2px solid var(--accent)" } : { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
           >
-            {initialsOf(displayName, email)}
+            {avatarUrl && imgOk ? (
+              <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center text-sm font-extrabold text-white">
+                {initialsOf(displayName, email)}
+              </span>
+            )}
           </button>
 
           {openMenu && (
@@ -240,14 +221,41 @@ export default function DashNav({
             </div>
           )}
 
+          {openMenu === "theme" && (
+            <div className="menu-in absolute right-0 top-12 z-50 w-48 rounded-2xl p-1.5" style={panelStyle}>
+              <div className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>
+                Theme
+              </div>
+              {THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => pickTheme(t.id)}
+                  className="tmenu flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2 text-left text-sm font-medium"
+                  style={t.id === theme ? { background: "var(--pill)", color: "var(--text)" } : undefined}
+                >
+                  <span className="tdot inline-block h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: t.dot, border: "1px solid var(--border)" }} />
+                  <span className="flex-1">{t.name}</span>
+                  {t.id === theme && <span>✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
           {openMenu === "profile" && (
             <div className="menu-in absolute right-0 top-12 z-50 w-72 rounded-2xl p-4" style={panelStyle}>
               <div className="flex items-center gap-3">
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-extrabold text-white"
-                  style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
-                >
-                  {initialsOf(displayName, email)}
+                <span className="block h-11 w-11 shrink-0 overflow-hidden rounded-full">
+                  {avatarUrl && imgOk ? (
+                    <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
+                  ) : (
+                    <span
+                      className="flex h-full w-full items-center justify-center text-base font-extrabold text-white"
+                      style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                    >
+                      {initialsOf(displayName, email)}
+                    </span>
+                  )}
                 </span>
                 <div className="min-w-0">
                   <div className="truncate text-sm font-extrabold">{displayName || email.split("@")[0]}</div>

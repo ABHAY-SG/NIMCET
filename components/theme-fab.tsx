@@ -1,15 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-
-const THEMES = [
-  { id: "light", name: "Light", dot: "#ffffff" },
-  { id: "midnight", name: "Midnight", dot: "#1e293b" },
-  { id: "ocean", name: "Ocean", dot: "#0284c7" },
-  { id: "forest", name: "Forest", dot: "#059669" },
-  { id: "sunset", name: "Sunset", dot: "#ea580c" },
-] as const;
-
-type ThemeId = (typeof THEMES)[number]["id"];
+import { THEMES, applyTheme, readTheme, type ThemeId } from "@/lib/theme";
 
 function ThemeIcon({ id }: { id: ThemeId }) {
   const paths: Record<ThemeId, React.ReactNode> = {
@@ -31,16 +22,12 @@ export default function ThemeFab() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("mcamock-theme") as ThemeId | null;
-      if (saved) setTheme(saved);
-    } catch {}
+    setTheme(readTheme());
   }, []);
 
   const pick = (t: ThemeId) => {
     setTheme(t);
-    document.documentElement.dataset.theme = t;
-    try { localStorage.setItem("mcamock-theme", t); } catch {}
+    applyTheme(t);
     setOpen(false);
   };
 
