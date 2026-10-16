@@ -127,7 +127,7 @@ export default function DashSide({
 }) {
   const body = (
     <div className="noscroll flex h-full flex-col gap-5 overflow-y-auto overscroll-contain p-4">
-      <div className="sticky top-0 z-10 -m-4 mb-0 border-b border-white/10 p-4 backdrop-blur-2xl" style={{ background: "rgba(20, 27, 52, 0.72)" }}>
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 px-4 pb-2.5 pt-4 backdrop-blur-2xl" style={{ background: "rgba(20, 27, 52, 0.72)" }}>
         <button
           type="button"
           onClick={() => { onSelect("home"); onClose(); }}
