@@ -222,7 +222,10 @@ export async function GET(req: Request) {
           await sb.auth.signOut();
           return ofail("registry");
         }
-        return NextResponse.redirect(new URL("/auth/verified?mode=oauth", origin));
+        // New OAuth account with a live session: straight into the app.
+        // (The /auth/verified interstitial is only for email confirmation,
+        // where another tab may be waiting.)
+        return NextResponse.redirect(new URL("/dashboard", origin));
       }
 
       const { data: { user }, error: userError } = await sb.auth.getUser();
@@ -248,7 +251,9 @@ export async function GET(req: Request) {
         return ofail("no-account");
       }
 
-      return NextResponse.redirect(new URL("/auth/verified?mode=oauth", origin));
+      // Existing OAuth account logging in with a live session: straight
+      // into the app, no email-interstitial pit stop.
+      return NextResponse.redirect(new URL("/dashboard", origin));
     }
 
     return fail("no-code");
