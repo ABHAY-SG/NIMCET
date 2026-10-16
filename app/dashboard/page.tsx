@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
 import DashSide, { type DashView } from "@/components/dash-side";
-import MockDemo from "@/components/mockdemo";
+import MockHub from "@/components/mock-hub";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
 import { calcBestStreak, calcStreak, formatStreak, lastWeekActivity } from "@/lib/streak";
 
@@ -241,6 +241,13 @@ export default function DashboardPage() {
   const visibleSeries = examFilter === "all" ? series : series.filter((t) => t.exam === examFilter);
 
   const attemptsForTitle = (title: string) => attempts.filter((a) => a.test === title).length;
+
+  // Attempt counts per test title (for catalog badges) — render-safe.
+  const attemptedCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const a of attempts) m[a.test] = (m[a.test] ?? 0) + 1;
+    return m;
+  }, [attempts]);
 
   // Best score + top-3 ranks by score (render-safe arithmetic only).
   const bestScore = useMemo(
@@ -572,13 +579,7 @@ export default function DashboardPage() {
       </>
       )}
       {view === "mock" && (
-        <Reveal>
-          <h1 className="text-2xl font-extrabold tracking-tight">Practice mock</h1>
-          <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
-            12 questions • 12 minutes • instant solutions. Your score saves to history automatically.
-          </p>
-          <div className="mt-4"><MockDemo /></div>
-        </Reveal>
+        <MockHub attempted={attemptedCounts} />
       )}
       {view === "history" && (
         <>

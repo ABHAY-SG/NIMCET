@@ -2,10 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import { saveAttempt } from "@/lib/supabase";
 
-type Q = {
+export type MockQuestion = {
   tag: string; stem: string; opts: string[]; ans: number;
   plus: number; minus: number; exp: string;
 };
+
+type Q = MockQuestion;
 
 const QS: Q[] = [
   { tag: "MATHS • +12 / −3", stem: "If A is 3×3 with det(A) = 4, det(2A) = ?", opts: ["8", "16", "32", "64"], ans: 2, plus: 12, minus: -3, exp: "det(kA) = k³·det(A) for 3×3, so 8 × 4 = 32." },
@@ -22,8 +24,7 @@ const QS: Q[] = [
   { tag: "ENGLISH • +4 / −1", stem: "'To bite the dust' means —", opts: ["Eat quickly", "Suffer defeat", "Work hard", "Hide away"], ans: 1, plus: 4, minus: -1, exp: "Idiom: to fail or be defeated." },
 ];
 
-const MAX = QS.reduce((a, q) => a + q.plus, 0);
-const MINUTES = 12;
+
 
 function fmt(s: number) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -31,12 +32,27 @@ function fmt(s: number) {
 
 type Summary = { score: number; correct: number; wrong: number; skip: number };
 
-export default function MockDemo() {
+export default function MockDemo({
+  questions,
+  title = "SAMPLE MOCK",
+  minutes,
+  testName,
+  autoStart = false,
+}: {
+  questions?: MockQuestion[];
+  title?: string;
+  minutes?: number;
+  testName?: string;
+  autoStart?: boolean;
+} = {}) {
+  const list = questions && questions.length > 0 ? questions : QS;
+  const MAX = list.reduce((a, q) => a + q.plus, 0);
+  const mins = minutes ?? 12;
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [left, setLeft] = useState(MINUTES * 60);
+  const [left, setLeft] = useState(mins * 60);
   const [done, setDone] = useState(false);
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(autoStart);
   const savedRef = useRef(false);
 
   useEffect(() => {
@@ -51,7 +67,7 @@ export default function MockDemo() {
     savedRef.current = true;
     const s = summarize();
     const record = {
-      test: "Free sample mock (12Q)",
+      test: testName ?? "Free sample mock (12Q)",
       score: s.score, correct: s.correct, wrong: s.wrong, skipped: s.skip,
       created_at: new Date().toISOString(),
     };
@@ -67,7 +83,7 @@ export default function MockDemo() {
 
   function summarize(): Summary {
     let score = 0, correct = 0, wrong = 0, skip = 0;
-    QS.forEach((qq, i) => {
+    list.forEach((qq, i) => {
       const a = answers[i];
       if (a == null) skip++;
       else if (a === qq.ans) { correct++; score += qq.plus; }
@@ -80,7 +96,7 @@ export default function MockDemo() {
     savedRef.current = false;
     setAnswers({});
     setIdx(0);
-    setLeft(MINUTES * 60);
+    setLeft(mins * 60);
     setDone(false);
   };
 
@@ -88,7 +104,7 @@ export default function MockDemo() {
     return (
       <div className="overflow-hidden rounded-2xl p-6 text-center backdrop-blur-xl sm:p-8" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
         <p className="mono text-[11px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.16em" }}>
-          FREE SAMPLE MOCK • {QS.length} QUESTIONS • {MINUTES} MINUTES
+          FREE SAMPLE MOCK • {list.length} QUESTIONS • {mins} MINUTES
         </p>
         <h3 className="mx-auto mt-2 max-w-sm text-xl font-extrabold tracking-tight">
           5 Maths • 3 Reasoning • 2 Computers • 2 English
@@ -115,7 +131,7 @@ export default function MockDemo() {
     return (
       <div className="overflow-hidden rounded-2xl backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
         <div className="p-5 text-center sm:p-6" style={{ borderBottom: "1px solid var(--border)" }}>
-          <p className="mono text-[11px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.16em" }}>SCORECARD • SAMPLE MOCK</p>
+          <p className="mono text-[11px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.16em" }}>SCORECARD • {title}</p>
           <div className="mono mt-2 text-5xl font-extrabold">
             {s.score}<span className="text-lg font-medium" style={{ color: "var(--muted)" }}>/{MAX}</span>
           </div>
@@ -123,7 +139,7 @@ export default function MockDemo() {
             <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--accent)" }} />
           </div>
           <p className="mono mt-2 text-xs" style={{ color: "var(--muted)" }}>
-            {s.correct} CORRECT • {s.wrong} WRONG • {s.skip} SKIPPED • +{QS[0].plus}/−{Math.abs(QS[0].minus)} MARKING APPLIED
+            {s.correct} CORRECT • {s.wrong} WRONG • {s.skip} SKIPPED • +{list[0].plus}/−{Math.abs(list[0].minus)} MARKING APPLIED
           </p>
           <div className="mt-4 flex justify-center gap-2">
             <button type="button" onClick={reset} className="rounded-full px-5 py-2 text-sm font-bold" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
@@ -137,7 +153,7 @@ export default function MockDemo() {
         <div className="max-h-96 overflow-y-auto p-4 sm:p-5">
           <p className="mono text-[11px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>SOLUTIONS</p>
           <div className="mt-2 space-y-3">
-            {QS.map((q, i) => {
+            {list.map((q, i) => {
               const a = answers[i];
               const ok = a === q.ans;
               return (
@@ -156,11 +172,11 @@ export default function MockDemo() {
     );
   }
 
-  const q = QS[idx];
+  const q = list[idx];
   return (
     <div className="overflow-hidden rounded-2xl backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between gap-2 px-4 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
-        <span className="mono text-[11px] font-bold" style={{ color: "var(--muted)" }}>SAMPLE MOCK • Q{idx + 1}/{QS.length}</span>
+        <span className="mono text-[11px] font-bold" style={{ color: "var(--muted)" }}>{title} • Q{idx + 1}/{list.length}</span>
         <span className="mono rounded-md px-2 py-0.5 text-xs font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>⏱ {fmt(left)}</span>
         <button type="button" onClick={() => setDone(true)} className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: "#16a34a", color: "#fff" }}>Submit</button>
       </div>
@@ -185,7 +201,7 @@ export default function MockDemo() {
         <div className="mt-3 flex items-center justify-between text-[13px]">
           <button type="button" disabled={idx === 0} onClick={() => setIdx(idx - 1)} className="font-semibold disabled:opacity-30" style={{ color: "var(--muted)" }}>← Prev</button>
           <div className="flex flex-wrap justify-center gap-1.5 px-2">
-            {QS.map((_, i) => (
+            {list.map((_, i) => (
               <button
                 key={i}
                 type="button"
@@ -204,7 +220,7 @@ export default function MockDemo() {
           </div>
           <button
             type="button"
-            disabled={idx === QS.length - 1}
+            disabled={idx === list.length - 1}
             onClick={() => setIdx(idx + 1)}
             className="font-bold disabled:opacity-30"
             style={{ color: "var(--accent)" }}
