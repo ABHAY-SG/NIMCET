@@ -53,6 +53,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [busy, setBusy] = useState(false);
   const [touchedEmail, setTouchedEmail] = useState(false);
   const [showCheckEmailLink, setShowCheckEmailLink] = useState(false);
+  const [showTryAnother, setShowTryAnother] = useState(false);
 
   const persistPending = (pendingEmail: string, challengeId: string) => {
     try {
@@ -87,9 +88,15 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       setMsg("Email confirmed successfully. Log in to continue.");
     } else if (params.get("error") === "exists") {
       setMode("in");
-      setMsg(params.get("provider") === "github"
-        ? "An account with this GitHub account already exists. Please log in instead."
-        : "An account with this Google account already exists. Please log in instead.");
+      if (params.get("provider") === "github") {
+        setMsg("An account with this GitHub account already exists. Please log in instead.");
+        // GitHub silently reuses its last signed-in account (no chooser when
+        // already granted), so this screen is where a wrong-account switch
+        // must be offered — restarting OAuth alone would reuse the same one.
+        setShowTryAnother(true);
+      } else {
+        setMsg("An account with this Google account already exists. Please log in instead.");
+      }
     } else if (params.get("error") === "cancelled") {
       // Provider authorization was dismissed (e.g. Cancel on GitHub's
       // screen). Stay on this page — nothing was signed in or registered.
@@ -130,6 +137,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     e.preventDefault();
     setMsg("");
     setShowCheckEmailLink(false);
+    setShowTryAnother(false);
     // Fresh attempt under a single identity: drop any tab-scoped session so
     // a stale memory login can never leak into the new attempt's result.
     try { await getSupabase(false).auth.signOut(); } catch {}
@@ -239,24 +247,27 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     }
   };
 
-  const oauth = async (provider: "google" | "github") => {
+  const oauth = async (provider: "google" | "github", forceMode?: "in" | "up") => {
     setMsg("");
+    setShowTryAnother(false);
     // Drop any tab-scoped session so a stale memory login can never leak
     // into the OAuth result.
     try { await getSupabase(false).auth.signOut(); } catch {}
     forgetMemorySession();
     try {
       const sb = getSupabase();
+      const oauthMode = forceMode ?? mode;
       const { error } = await sb.auth.signInWithOAuth({
         provider,
         // Google: `select_account consent` forces the account chooser on
         // every attempt AND re-shows Google's authorization screen
         // (Continue/Cancel) even if the account authorized us before.
-        // GitHub ignores `prompt` — GitHub itself decides whether its
-        // authorization screen appears (it shows whenever authorization
-        // is not yet granted, with Authorize/Cancel).
+        // GitHub supports no equivalent: its authorize endpoint only honors
+        // client_id/redirect_uri/scope/state/allow_signup/login, so a
+        // signed-in + granted session is silently reused. Account switching
+        // is therefore handled by the "Try another GitHub account" fallback.
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?mode=${mode}&provider=${provider}`,
+          redirectTo: `${window.location.origin}/auth/callback?mode=${oauthMode}&provider=${provider}`,
           ...(provider === "google" ? { queryParams: { prompt: "select_account consent" } } : {}),
         },
       });
@@ -490,6 +501,21 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
                 Open verification page →
               </button>
             )}
+            {showTryAnother && (
+              <div className="mt-3 rounded-xl p-4" style={{ border: "1px dashed var(--border)" }}>
+                <p className="text-[13px] leading-5" style={{ color: "var(--muted)" }}>
+                  Wrong GitHub account? GitHub remembers your last sign-in, so reopening it alone reuses the same one. Sign out of that account on github.com first — then tap below. A new GitHub identity will register; an existing one stays protected and is never duplicated or silently logged in.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => oauth("github", "up")}
+                  className="mt-2.5 w-full cursor-pointer rounded-xl py-2.5 text-[13px] font-bold transition-transform hover:-translate-y-px"
+                  style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+                >
+                  Try another GitHub account →
+                </button>
+              </div>
+            )}
 
             <button
               type="submit" disabled={busy}
@@ -499,7 +525,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               {busy ? "Please wait…" : mode === "in" ? "Log in →" : "Create account →"}
             </button>
           </form>
-          <button type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setMsg(""); setShowCheckEmailLink(false); }} className="mt-4 w-full cursor-pointer text-center text-sm" style={{ color: "var(--muted)" }}>
+          <button type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setMsg(""); setShowCheckEmailLink(false); setShowTryAnother(false); }} className="mt-4 w-full cursor-pointer text-center text-sm" style={{ color: "var(--muted)" }}>
             {mode === "in" ? "Don't have an account? " : "Have an account? "}
             <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
           </button>
