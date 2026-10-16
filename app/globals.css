@@ -239,6 +239,24 @@ footer .nlink::after { display: none; }
   .auth-lock { font-size: 14px; }
   .auth-lock .auth-card { padding: 0.5rem; }
 }
+/* Signup: fit the tall form into short viewports without any scrolling or
+   clipping. Zoom shrinks layout (unlike transform), so nothing is cut and no
+   scrollbar appears inside or outside. Browsers without zoom fall back to the
+   normal page scroll instead of clipped content. */
+@media (max-height: 780px) {
+  .auth-signup .auth-form-col { padding: 1rem; }
+  .auth-signup .auth-back-link { margin-bottom: 0.25rem; }
+}
+@media (max-height: 720px) {
+  .auth-signup .auth-secure-note { display: none; }
+  .auth-signup .auth-card { zoom: 0.92; }
+}
+@media (max-height: 640px) {
+  .auth-signup .auth-card { zoom: 0.84; }
+}
+@media (max-height: 560px) {
+  .auth-signup .auth-card { zoom: 0.76; }
+}
 /* black logo file shows on light themes, auto-inverts on dark themes */
 .site-logo { mix-blend-mode: multiply; }
 [data-theme="midnight"] .site-logo,

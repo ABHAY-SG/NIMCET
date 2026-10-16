@@ -393,9 +393,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 58%, transparent), color-mix(in srgb, var(--bg) 80%, transparent))", backdropFilter: "blur(3px)" }}
         />
       </div>
-      <main className={`relative mx-auto flex w-full max-w-6xl flex-col justify-center px-4 py-4${mode === "in" ? " auth-lock" : ""}`} style={{ minHeight: "100svh" }}>
+      <main className={`relative mx-auto flex w-full max-w-6xl flex-col justify-center px-4 py-4${mode === "in" ? " auth-lock" : " auth-signup"}`} style={{ minHeight: "100svh" }}>
       <ThemeFab />
-      <a href="/" className="mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
+      <a href="/" className="auth-back-link mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
         <span aria-hidden>←</span> Back to home
       </a>
       <div
@@ -431,7 +431,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               : "\u201cEvery topper was once stuck on question one.\u201d"}
           </p>
         </div>
-        <div className="relative z-10 p-5 sm:p-6">
+        <div className="auth-form-col relative z-10 p-5 sm:p-6">
           <h1 className="text-xl font-extrabold tracking-tight">
             {mode === "in" ? "Welcome back" : "Join NimCuet"}
           </h1>
@@ -579,7 +579,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             {mode === "in" ? "Don't have an account? " : "Have an account? "}
             <strong style={{ color: "var(--accent)" }}>{mode === "in" ? "Create account" : "Log in"}</strong>
           </button>
-          <p className="mt-3 text-center text-[11px]" style={{ color: "var(--muted)" }}>● Secure & encrypted</p>
+          <p className="auth-secure-note mt-3 text-center text-[11px]" style={{ color: "var(--muted)" }}>● Secure & encrypted</p>
         </div>
       </div>
     </main>
