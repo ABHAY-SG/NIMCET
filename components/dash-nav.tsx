@@ -87,9 +87,6 @@ export default function DashNav({
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-2 px-4">
         <a href="/dashboard" className="flex shrink-0 items-center gap-2.5" aria-label="NimCuet dashboard home">
           <img src="/logo.png" alt="" aria-hidden className="site-logo block h-7 w-auto" />
-          <span className="mono rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>
-            DASHBOARD
-          </span>
         </a>
         <div className="relative flex shrink-0 items-center gap-1.5">
           {streak && (
@@ -130,16 +127,22 @@ export default function DashNav({
             onClick={() => setOpenMenu((m) => (m === "profile" ? null : "profile"))}
             aria-label="Profile menu"
             title={displayName || email}
-            className="h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-full transition-transform hover:-translate-y-px"
-            style={avatarUrl && imgOk ? { border: "2px solid var(--accent)" } : { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+            className="flex h-10 shrink-0 cursor-pointer items-center gap-2 transition-transform hover:-translate-y-px"
           >
-            {avatarUrl && imgOk ? (
-              <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center text-sm font-extrabold text-white">
-                {initialsOf(displayName, email)}
-              </span>
-            )}
+            <span className="block h-10 w-10 overflow-hidden rounded-full"
+              style={avatarUrl && imgOk ? undefined : { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+            >
+              {avatarUrl && imgOk ? (
+                <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-sm font-extrabold text-white">
+                  {initialsOf(displayName, email)}
+                </span>
+              )}
+            </span>
+            <span className="hidden max-w-[140px] truncate text-sm font-bold sm:block">
+              {displayName || email.split("@")[0]}
+            </span>
           </button>
 
           {openMenu && (
