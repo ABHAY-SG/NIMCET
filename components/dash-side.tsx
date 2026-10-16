@@ -51,6 +51,8 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
   },
 ];
 
+const INK = "#1e2952";
+
 function Row({
   item,
   active,
@@ -62,24 +64,22 @@ function Row({
   onSelect: (v: DashView) => void;
   onClose: () => void;
 }) {
-  const cls = `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-all hover:-translate-y-px ${
-    active ? "" : "hover:bg-white/10"
-  }`;
+  const cls = `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-transform hover:-translate-y-px`;
   const style = active
-    ? { background: "#ffffff", color: "#1e2952", boxShadow: "0 12px 28px -12px rgba(0,0,0,0.5)" }
-    : { color: "rgba(255,255,255,0.82)" };
+    ? { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "#fff", boxShadow: "0 12px 28px -12px var(--accent)" }
+    : undefined;
   const inner = (
     <>
       <span
         aria-hidden
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-        style={active ? { background: "rgba(30,41,82,0.08)" } : { background: "rgba(255,255,255,0.1)" }}
+        style={active ? { background: "rgba(255,255,255,0.2)", color: "#fff" } : { background: "var(--pill)", color: "var(--accent)" }}
       >
         {item.icon}
       </span>
-      <span className="flex-1">{item.label}</span>
+      <span className="flex-1" style={active ? undefined : { color: INK }}>{item.label}</span>
       {item.soon && (
-        <span className="mono rounded-full px-2 py-0.5 text-[9px] font-extrabold" style={{ background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }}>
+        <span className="mono rounded-full px-2 py-0.5 text-[9px] font-extrabold" style={{ background: "var(--pill)", color: "var(--muted)" }}>
           SOON
         </span>
       )}
@@ -87,7 +87,7 @@ function Row({
   );
   if (item.soon) {
     return (
-      <span aria-disabled className={`${cls} cursor-default opacity-70`} style={style} title="Coming soon">
+      <span aria-disabled className={`${cls} cursor-default opacity-70`} title="Coming soon">
         {inner}
       </span>
     );
@@ -107,11 +107,9 @@ function Row({
 }
 
 const PANEL_STYLE: React.CSSProperties = {
-  background: "linear-gradient(180deg, rgba(20,27,52,0.88) 0%, rgba(28,36,80,0.88) 60%, rgba(35,44,99,0.88) 100%)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  boxShadow: "0 32px 70px -30px rgba(10, 15, 35, 0.8)",
-  backdropFilter: "blur(24px)",
-  WebkitBackdropFilter: "blur(24px)",
+  background: "#ffffff",
+  border: "1px solid var(--border)",
+  boxShadow: "0 32px 70px -30px rgba(30, 41, 82, 0.35)",
 };
 
 export default function DashSide({
@@ -129,23 +127,21 @@ export default function DashSide({
     <button
       type="button"
       onClick={() => { onSelect("home"); onClose(); }}
-      className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-extrabold transition-transform hover:-translate-y-px ${
-        view === "home" ? "" : "hover:bg-white/10"
-      }`}
+      className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-extrabold transition-transform hover:-translate-y-px"
       style={
         view === "home"
-          ? { background: "#ffffff", color: "#1e2952", boxShadow: "0 12px 28px -12px rgba(0,0,0,0.5)" }
-          : { color: "rgba(255,255,255,0.85)" }
+          ? { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "#fff", boxShadow: "0 12px 28px -12px var(--accent)" }
+          : { border: "1px solid var(--border)" }
       }
     >
       <span
         aria-hidden
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-        style={view === "home" ? { background: "rgba(30,41,82,0.08)" } : { background: "rgba(255,255,255,0.1)" }}
+        style={view === "home" ? { background: "rgba(255,255,255,0.2)", color: "#fff" } : { background: "var(--pill)", color: "var(--accent)" }}
       >
         {ICONS.home}
       </span>
-      Home
+      <span style={view === "home" ? undefined : { color: INK }}>Home</span>
     </button>
   );
 
@@ -153,7 +149,7 @@ export default function DashSide({
     <div className="noscroll flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain p-4">
       {GROUPS.map((g) => (
         <div key={g.title}>
-          <div className="px-3 pb-1.5 text-[11px] font-extrabold uppercase" style={{ color: "rgba(255,255,255,0.5)", letterSpacing: "0.18em" }}>
+          <div className="px-3 pb-1.5 text-[11px] font-extrabold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
             {g.title}
           </div>
           <div className="grid gap-0.5">
@@ -163,9 +159,9 @@ export default function DashSide({
           </div>
         </div>
       ))}
-      <div className="mt-auto rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
-        <div className="text-sm font-extrabold text-white">Keep the streak alive 🔥</div>
-        <p className="mt-1 text-xs leading-5" style={{ color: "rgba(255,255,255,0.7)" }}>
+      <div className="mt-auto rounded-2xl p-4 text-white" style={{ background: "linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}>
+        <div className="text-sm font-extrabold">Keep the streak alive 🔥</div>
+        <p className="mt-1 text-xs leading-5" style={{ color: "rgba(255,255,255,0.85)" }}>
           One mock a day keeps the flame burning.
         </p>
         <button
@@ -183,7 +179,7 @@ export default function DashSide({
   return (
     <>
       <aside className="fixed bottom-4 left-4 top-20 z-40 hidden w-64 flex-col overflow-hidden rounded-[22px] md:flex" style={PANEL_STYLE}>
-        <div className="shrink-0 p-4 pb-3 backdrop-blur-2xl" style={{ background: "rgba(20, 27, 52, 0.6)" }}>
+        <div className="shrink-0 border-b p-4 pb-3 backdrop-blur-2xl" style={{ borderColor: "var(--border)", background: "rgba(255,255,255,0.75)" }}>
           {homeBtn}
         </div>
         {list}
@@ -193,12 +189,12 @@ export default function DashSide({
           <button type="button" aria-label="Close menu" onClick={onClose} className="absolute inset-0 cursor-default" style={{ background: "rgba(0,0,0,0.45)" }} />
           <aside className="absolute bottom-0 left-0 top-0 flex w-72 max-w-[85vw] flex-col overflow-hidden" style={PANEL_STYLE}>
             <div className="flex shrink-0 items-center justify-between p-4 pb-0">
-              <span className="text-sm font-extrabold text-white">Menu</span>
+              <span className="text-sm font-extrabold" style={{ color: INK }}>Menu</span>
               <button type="button" onClick={onClose} aria-label="Close menu"
-                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-base text-white"
-                style={{ border: "1px solid rgba(255,255,255,0.2)" }}>✕</button>
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-base"
+                style={{ border: "1px solid var(--border)", color: INK }}>✕</button>
             </div>
-            <div className="shrink-0 p-4 pb-3 backdrop-blur-2xl" style={{ background: "rgba(20, 27, 52, 0.6)" }}>
+            <div className="shrink-0 p-4 pb-3" style={{ background: "rgba(255,255,255,0.75)" }}>
               {homeBtn}
             </div>
             {list}
