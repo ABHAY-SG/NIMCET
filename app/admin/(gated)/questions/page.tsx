@@ -261,7 +261,7 @@ export default function AdminQuestions() {
       topic: idx("topic") >= 0 ? r[idx("topic")] ?? "" : "",
       difficulty: idx("difficulty") >= 0 ? r[idx("difficulty")] ?? "" : "",
       stem: r[idx("stem")] ?? "",
-      options: [r[idx("optiona")], r[idx("optionb")], r[idx("optionc")], r[idx("optiond")], ...(idx("optione") >= 0 && (r[idx("optione")] ?? "").trim() ? [r[idx("optione")] : [])].map((v) => v ?? ""),
+      options: [r[idx("optiona")], r[idx("optionb")], r[idx("optionc")], r[idx("optiond")], ...(idx("optione") >= 0 && (r[idx("optione")] ?? "").trim() ? [r[idx("optione")]] : [])].map((v) => v ?? ""),
       answer: r[idx("answer")] ?? "",
       explanation: idx("explanation") >= 0 ? r[idx("explanation")] ?? "" : "",
       plus: idx("plus") >= 0 ? r[idx("plus")] ?? "" : "",
