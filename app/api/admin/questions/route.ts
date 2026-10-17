@@ -18,13 +18,13 @@ function validate(body: Record<string, unknown>): string | null {
   if (body.topic !== undefined && !s(body.topic).trim()) return "Topic is required.";
   if (body.options !== undefined) {
     const opts = Array.isArray(body.options) ? body.options : [];
-    if (opts.length !== 4 || opts.some((o) => typeof o !== "string" || !o.trim())) {
-      return "All 4 options are required.";
+    if ((opts.length !== 4 && opts.length !== 5) || opts.some((o) => typeof o !== "string" || !o.trim())) {
+      return "Provide 4 or 5 non-empty options.";
     }
   }
   if (body.answer !== undefined) {
     const ans = Number(body.answer);
-    if (!Number.isInteger(ans) || ans < 0 || ans > 3) return "Answer must be option A–D.";
+    if (!Number.isInteger(ans) || ans < 0 || ans > 4) return "Answer must be option A–E.";
   }
   if (body.difficulty !== undefined && !DIFFS.includes(String(body.difficulty))) {
     return "Difficulty must be Easy, Medium or Hard.";
