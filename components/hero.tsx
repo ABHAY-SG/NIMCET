@@ -69,11 +69,11 @@ export default function Hero() {
         {/* Editorial column */}
         <div className="text-center lg:text-left">
           <p
-            className="track-in inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase"
-            style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)", color: "var(--muted)", letterSpacing: "0.22em" }}
+            className="navfont track-in inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase"
+            style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)", color: "var(--muted)", letterSpacing: "0.18em" }}
           >
             <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "var(--accent)" }} />
-            Full-length mocks · NIMCET + CUET PG
+            NIMCET + CUET PG · nothing else
           </p>
 
           <h1 className="mt-5" style={{ fontSize: "clamp(1.9rem, 4.9vw, 4.6rem)", lineHeight: 1.06 }}>
@@ -82,12 +82,12 @@ export default function Hero() {
                 className="block font-extrabold tracking-tight"
                 style={{ fontFamily: '"Sora", "Space Grotesk", "Inter", sans-serif', whiteSpace: "nowrap" }}
               >
-                Rank is not luck.
+                The paper won’t
               </span>
             </span>
             <span className="hline">
               <span className="block" style={{ animationDelay: "0.12s", whiteSpace: "nowrap" }}>
-                <span className="display serif-it headline-warm">It’s repetition.</span>
+                <span className="display serif-it headline-warm">surprise you.</span>
               </span>
             </span>
           </h1>
@@ -97,41 +97,41 @@ export default function Hero() {
             style={{ background: "linear-gradient(90deg, transparent, var(--accent), transparent)", animationDelay: "0.3s" }}
           />
 
-          <p className="rise mx-auto mt-5 max-w-[440px] text-[15px] leading-relaxed lg:mx-0" style={{ color: "var(--muted)", animationDelay: "0.38s" }}>
-            Every mock replays the real paper — same pattern, same clock, same
-            negative marking. You attempt, the report talks, the leaks get
-            fixed, and the next attempt starts stronger than the last.
+          <p className="navfont rise mx-auto mt-5 max-w-[440px] text-[15.5px] font-medium leading-[1.65] lg:mx-0" style={{ color: "var(--muted)", animationDelay: "0.38s" }}>
+            Full-length NIMCET and CUET PG papers under the real clock — true
+            negative marking, instant scorecard, section-wise analytics. Every
+            attempt shows exactly what to fix next.
           </p>
 
           <div className="rise mt-7 flex flex-wrap justify-center gap-3 lg:justify-start" style={{ animationDelay: "0.46s" }}>
             <Link
               href="/#demo"
-              className="cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
+              className="navfont cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
               style={{ background: "var(--btn-bg)", color: "var(--btn-text)", boxShadow: "var(--shadow-1)" }}
             >
-              Take the free mock <span className="carr">→</span>
+              Attempt a full paper free <span className="carr">→</span>
             </Link>
             <Link
-              href="/#exams"
-              className="cta-line rounded-full px-7 py-3.5 text-sm font-semibold"
+              href="/#how"
+              className="navfont cta-line rounded-full px-7 py-3.5 text-sm font-semibold"
               style={{ border: "1px solid var(--border)", background: "color-mix(in srgb, var(--nav-bg) 55%, transparent)" }}
             >
-              Explore the pattern
+              See how it works
             </Link>
           </div>
 
           <div className="rise mt-7 flex items-center justify-center gap-7 lg:justify-start" style={{ animationDelay: "0.54s" }}>
             <div>
               <div className="mono text-[24px] font-extrabold leading-none">120</div>
-              <div className="mt-1.5 text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
-                Question paper · NIMCET
+              <div className="navfont mt-1.5 text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
+                NIMCET · full paper
               </div>
             </div>
             <span aria-hidden className="h-8 w-px" style={{ background: "var(--border)" }} />
             <div>
               <div className="mono text-[24px] font-extrabold leading-none">75</div>
-              <div className="mt-1.5 text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
-                Question paper · CUET PG
+              <div className="navfont mt-1.5 text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
+                CUET PG · full paper
               </div>
             </div>
           </div>
@@ -241,7 +241,7 @@ export default function Hero() {
                   className="mono"
                   style={{ fill: "color-mix(in srgb, var(--text) 40%, transparent)", letterSpacing: "0.34em" }}
                 >
-                  NIMCET
+                  NimCuet
                 </text>
               </g>
 

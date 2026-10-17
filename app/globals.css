@@ -133,6 +133,9 @@ body::after {
   color: var(--muted);
   display: inline-block;
   position: relative;
+  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.012em;
   transition: color 0.25s, transform 0.25s;
 }
 .nlink:hover {
@@ -174,6 +177,27 @@ footer .nlink::after { display: none; }
 }
 .menu-in { animation: menu-in 0.18s ease-out; transform-origin: top right; }
 .nlink.active { color: var(--accent); }
+
+/* navbar: premium type voice + accent hairline on the header's bottom edge */
+.navfont {
+  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.012em;
+}
+.logo-tag {
+  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.nav-hairline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  pointer-events: none;
+  opacity: 0.55;
+  background: linear-gradient(90deg, transparent 3%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 97%);
+}
 
 /* hero ticker */
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
