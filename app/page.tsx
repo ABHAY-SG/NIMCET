@@ -32,7 +32,7 @@ function Divider() {
 
 export default function Home() {
   return (
-    <main className="min-h-[20vh] pt-24">
+    <main className="min-h-[20vh]">
       <Hero />
       <Divider />
       <Exams />
