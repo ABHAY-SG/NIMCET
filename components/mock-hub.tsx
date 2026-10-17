@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import MockDemo, { type MockQuestion } from "@/components/mockdemo";
+import MockDemo, { SAMPLE_MARKS, SAMPLE_QUESTION_COUNT, type MockQuestion } from "@/components/mockdemo";
+import MockCard from "@/components/mock-card";
+import MockInstructions, { type SchemeRow } from "@/components/mock-instructions";
 import { getSupabase } from "@/lib/supabase";
 import { parseParts, partRanges, RUN_KEY, LEGACY_RUN_KEY, type ExamPart } from "@/lib/exam-parts";
 
@@ -30,6 +32,10 @@ type Test = {
 };
 
 type Run = { qs: MockQuestion[]; title: string; testName: string; attemptName: string; testId?: string; minutes: number; parts?: ExamPart[] };
+
+// Everything the pre-exam instructions page needs, plus the run it will
+// launch — resolved once, so Start Test is a pure state flip.
+type Setup = { title: string; minutes: number; count: number; totalMarks: number; scheme: SchemeRow[]; timed: boolean; run: Run };
 
 type SectionGroup = { label: string; count: number; marks: number; plus: number; minus: number };
 
@@ -72,18 +78,31 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function fmtMarks(n: number): string {
-  return String(Math.round(n * 10) / 10);
-}
-
-function shortLabel(label: string): string {
-  const l = label.toLowerCase();
-  if (l.includes("math")) return "Maths";
-  if (l.includes("reason")) return "Reasoning";
-  if (l.includes("computer") && l.includes("english")) return "Computers + English";
-  if (l.includes("computer")) return "Computers";
-  if (l.includes("english")) return "English";
-  return label;
+// Level badge for a test card: the dominant difficulty of its questions, or
+// "Mixed" when no single level holds a clear majority. "—" until the test's
+// rows are available.
+function dominantDifficulty(ids: string[], byId: Map<string, BankRow>): string {
+  const counts = new Map<string, number>();
+  let total = 0;
+  for (const id of ids) {
+    const q = byId.get(id);
+    if (!q) continue;
+    const d = (q.difficulty || "").trim();
+    if (!d) continue;
+    counts.set(d, (counts.get(d) ?? 0) + 1);
+    total += 1;
+  }
+  if (total === 0) return "—";
+  let best = "";
+  let bestN = 0;
+  for (const [d, n] of counts) {
+    if (n > bestN) {
+      best = d;
+      bestN = n;
+    }
+  }
+  if (bestN / total < 0.55) return "Mixed";
+  return best.charAt(0).toUpperCase() + best.slice(1);
 }
 
 // Groups a test's questions into ordered section buckets. Returns null while
@@ -125,8 +144,8 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
   const [count, setCount] = useState(10);
   const [minutes, setMinutes] = useState(20);
   const [run, setRun] = useState<Run | null>(null);
-  const [detail, setDetail] = useState<Test | null>(null);
-  const [detailRows, setDetailRows] = useState<BankRow[] | null>(null);
+  const [setup, setSetup] = useState<Setup | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -196,41 +215,83 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
     [bank]
   );
 
-  const startTest = async (t: Test) => {
+  // Resolves a published test and opens its two-page instructions flow. The
+  // ready-to-run payload travels with the setup so Start Test is instant.
+  const openSetup = async (t: Test) => {
+    setPendingId(t.id);
+    window.scrollTo({ top: 0 });
     const rows = await resolveRows(t);
+    setPendingId(null);
     if (rows.length === 0) return;
     const parts = parseParts(t.sections, t.question_ids.length) ?? undefined;
-    setRun({
-      qs: rows.map(toMock),
-      title: t.title.toUpperCase(),
-      testName: `${t.title} (${rows.length}Q)`,
-      // The plain title is what attempt history stores and what the
-      // dashboard matches tests against; the "(NQ)" form is display-only.
-      attemptName: t.title,
-      testId: t.id,
-      minutes: parts ? parts.reduce((s, p) => s + p.minutes, 0) : t.minutes || Math.max(10, rows.length),
-      parts,
+    const ranges = parts ? partRanges(parts) : null;
+    const byId = new Map(rows.map((q) => [q.id, q]));
+    const scheme: SchemeRow[] = parts && ranges
+      ? parts.map((p, i) => {
+          const r = ranges[i];
+          let marks = 0;
+          let plus = 0;
+          let minus = 0;
+          for (let j = r.start; j < r.end; j++) {
+            const q = byId.get(t.question_ids[j]);
+            if (!q) continue;
+            marks += Number(q.plus) || 0;
+            if (j === r.start) {
+              plus = Number(q.plus) || 0;
+              minus = Number(q.minus) || 0;
+            }
+          }
+          return { label: p.label, count: p.count, marks, plus, minus, minutes: p.minutes };
+        })
+      : (groupRows(t.question_ids, byId) ?? []).map((g) => ({ label: g.label, count: g.count, marks: g.marks, plus: g.plus, minus: g.minus }));
+    const minutes = parts ? parts.reduce((s, p) => s + p.minutes, 0) : t.minutes || Math.max(10, rows.length);
+    setSetup({
+      title: t.title,
+      minutes,
+      count: rows.length,
+      totalMarks: rows.reduce((s, q) => s + (Number(q.plus) || 0), 0),
+      scheme,
+      timed: !!parts,
+      run: {
+        qs: rows.map(toMock),
+        title: t.title.toUpperCase(),
+        testName: `${t.title} (${rows.length}Q)`,
+        // The plain title is what attempt history stores and what the
+        // dashboard matches tests against; the "(NQ)" form is display-only.
+        attemptName: t.title,
+        testId: t.id,
+        minutes,
+        parts,
+      },
     });
-    window.scrollTo({ top: 0 });
-  };
-
-  const openDetail = (t: Test) => {
-    setDetail(t);
-    setDetailRows(null);
-    resolveRows(t)
-      .then((rows) => setDetailRows(rows))
-      .catch(() => setDetailRows([]));
   };
 
   const startCustom = () => {
     const picked = shuffle(pool).slice(0, Math.min(count, pool.length));
     if (picked.length === 0) return;
-    setRun({
-      qs: picked.map(toMock),
-      title: "CUSTOM MOCK",
-      testName: `Custom ${examLabel(exam)} mock (${picked.length}Q)`,
-      attemptName: `Custom ${examLabel(exam)} mock (${picked.length}Q)`,
+    const label = `Custom ${examLabel(exam)} mock`;
+    const byId = new Map(picked.map((q) => [q.id, q]));
+    const scheme: SchemeRow[] = (groupRows(picked.map((q) => q.id), byId) ?? []).map((g) => ({
+      label: g.label,
+      count: g.count,
+      marks: g.marks,
+      plus: g.plus,
+      minus: g.minus,
+    }));
+    setSetup({
+      title: `${label} (${picked.length} questions)`,
       minutes,
+      count: picked.length,
+      totalMarks: picked.reduce((s, q) => s + (Number(q.plus) || 0), 0),
+      scheme,
+      timed: false,
+      run: {
+        qs: picked.map(toMock),
+        title: label.toUpperCase(),
+        testName: `${label} (${picked.length}Q)`,
+        attemptName: `${label} (${picked.length}Q)`,
+        minutes,
+      },
     });
     window.scrollTo({ top: 0 });
   };
@@ -289,138 +350,39 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
     );
   }
 
-  if (detail) {
-    const ids = detail.question_ids;
-    const byId = new Map((detailRows ?? []).map((q) => [q.id, q]));
-    const rowsReady = detailRows !== null && detailRows.length === ids.length;
-    const groups = rowsReady ? groupRows(ids, byId) : null;
-    const parts = parseParts(detail.sections, ids.length);
-    const ranges = parts ? partRanges(parts) : null;
-    const maxMarks = groups ? groups.reduce((s, g) => s + g.marks, 0) : marksOf(detail);
-    const partStats = parts && ranges && rowsReady
-      ? parts.map((p, i) => {
-          const r = ranges[i];
-          let marks = 0;
-          let plus = 0;
-          let minus = 0;
-          for (let j = r.start; j < r.end; j++) {
-            const q = byId.get(ids[j]);
-            if (!q) continue;
-            marks += Number(q.plus) || 0;
-            if (j === r.start) {
-              plus = Number(q.plus) || 0;
-              minus = Number(q.minus) || 0;
-            }
-          }
-          return { label: p.label, count: p.count, minutes: p.minutes, marks, plus, minus };
-        })
-      : null;
+  if (setup) {
     return (
       <div>
         <button
           type="button"
-          onClick={() => { setDetail(null); setDetailRows(null); }}
+          onClick={() => setSetup(null)}
           className="mb-3 inline-flex cursor-pointer items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1"
           style={{ color: "var(--muted)" }}
         >
           <span aria-hidden>←</span> Back to mocks
         </button>
-        <section
-          className="overflow-hidden rounded-2xl px-5 py-6 sm:px-7"
-          style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" style={{ background: "var(--pill)", color: "var(--muted)" }}>{examLabel(detail.exam)}</span>
-            {detail.tag && (
-              <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" style={{ background: "var(--pill)", color: "var(--muted)" }}>{detail.tag}</span>
-            )}
-            <span className="mono text-[10px] font-extrabold" style={{ color: detail.free ? "#16a34a" : "#d97706" }}>{detail.free ? "FREE" : "PREMIUM"}</span>
-          </div>
-          <h2 className="dash-display mt-2 text-xl font-extrabold tracking-tight sm:text-2xl" style={{ color: "var(--text)" }}>{detail.title}</h2>
-          {detail.description && (
-            <p className="mt-2 max-w-2xl text-sm leading-6" style={{ color: "var(--muted)" }}>{detail.description}</p>
-          )}
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] sm:grid-cols-4">
-            <span style={{ color: "var(--muted)" }}>❓ <strong className="mono" style={{ color: "var(--text)" }}>{ids.length}</strong> Questions</span>
-            <span style={{ color: "var(--muted)" }}>🕒 <strong className="mono" style={{ color: "var(--text)" }}>{detail.minutes}</strong> Minutes</span>
-            <span style={{ color: "var(--muted)" }}>🏆 <strong className="mono" style={{ color: "var(--text)" }}>{fmtMarks(maxMarks)}</strong> Marks</span>
-            <span style={{ color: "var(--muted)" }}>🎯 <strong className="mono" style={{ color: "var(--text)" }}>{partStats ? partStats.length : groups ? groups.length : "—"}</strong> Sections</span>
-          </div>
+        <MockInstructions
+          title={setup.title}
+          minutes={setup.minutes}
+          count={setup.count}
+          totalMarks={setup.totalMarks}
+          scheme={setup.scheme}
+          timed={setup.timed}
+          onStart={() => {
+            setRun(setup.run);
+            setSetup(null);
+            window.scrollTo({ top: 0 });
+          }}
+        />
+      </div>
+    );
+  }
 
-          {detailRows === null ? (
-            <p className="mt-4 text-sm" style={{ color: "var(--muted)" }}>Loading section details…</p>
-          ) : partStats ? (
-            <div className="mt-4">
-              <p className="mono text-[10px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>SECTION-WISE SCHEDULE &amp; MARKING</p>
-              <div className="admin-scroll mt-2 overflow-x-auto">
-                <table className="w-full min-w-[520px] text-[13px]">
-                  <thead>
-                    <tr className="mono text-[10px]" style={{ color: "var(--muted)" }}>
-                      <th className="py-1.5 pr-3 text-left font-bold">SECTION</th>
-                      <th className="px-2 py-1.5 text-right font-bold">QUESTIONS</th>
-                      <th className="px-2 py-1.5 text-right font-bold">MARKS</th>
-                      <th className="px-2 py-1.5 text-right font-bold">MARKING</th>
-                      <th className="py-1.5 pl-3 text-right font-bold">TIME</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {partStats.map((p) => (
-                      <tr key={p.label} style={{ borderTop: "1px solid var(--border)", color: "var(--text)" }}>
-                        <td className="py-2 pr-3 font-semibold">{p.label}</td>
-                        <td className="mono px-2 py-2 text-right">{p.count}</td>
-                        <td className="mono px-2 py-2 text-right">{fmtMarks(p.marks)}</td>
-                        <td className="mono px-2 py-2 text-right">+{p.plus} / {p.minus}</td>
-                        <td className="mono py-2 pl-3 text-right">{p.minutes} min</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : groups ? (
-            <div className="mt-4">
-              <p className="mono text-[10px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>SUBJECT BREAKDOWN</p>
-              <div className="admin-scroll mt-2 overflow-x-auto">
-                <table className="w-full min-w-[420px] text-[13px]">
-                  <thead>
-                    <tr className="mono text-[10px]" style={{ color: "var(--muted)" }}>
-                      <th className="py-1.5 pr-3 text-left font-bold">SUBJECT</th>
-                      <th className="px-2 py-1.5 text-right font-bold">QUESTIONS</th>
-                      <th className="px-2 py-1.5 text-right font-bold">MARKS</th>
-                      <th className="py-1.5 pl-3 text-right font-bold">MARKING</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {groups.map((g) => (
-                      <tr key={g.label} style={{ borderTop: "1px solid var(--border)", color: "var(--text)" }}>
-                        <td className="py-2 pr-3 font-semibold">{g.label}</td>
-                        <td className="mono px-2 py-2 text-right">{g.count}</td>
-                        <td className="mono px-2 py-2 text-right">{fmtMarks(g.marks)}</td>
-                        <td className="mono py-2 pl-3 text-right">+{g.plus} / {g.minus}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : null}
-
-          {detail.instructions && (
-            <div className="mt-4 rounded-xl px-3.5 py-3 text-[13px] leading-6" style={{ background: "var(--pill)", color: "var(--text)" }}>
-              <span className="mono mb-1 block text-[10px] font-extrabold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>Examination instructions</span>
-              <span className="whitespace-pre-line">{detail.instructions}</span>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => { setDetail(null); setDetailRows(null); startTest(detail); }}
-            className="mt-5 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold text-white transition-transform hover:-translate-y-px sm:w-auto sm:px-10"
-            style={{ background: "linear-gradient(120deg, #0f766e, #115e59)" }}
-          >
-            ▶ Start Test
-          </button>
-        </section>
+  if (pendingId) {
+    return (
+      <div className="flex items-center justify-center gap-3 rounded-2xl p-10" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <div className="h-6 w-6 animate-spin rounded-full" style={{ border: "3px solid var(--border)", borderTopColor: "var(--accent)" }} />
+        <p className="text-sm font-bold" style={{ color: "var(--muted)" }}>Preparing your instructions…</p>
       </div>
     );
   }
@@ -461,7 +423,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
       </section>
 
       <section className="mt-4 rounded-2xl px-5 py-5" style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
-        <h2 className="dash-display text-lg font-extrabold tracking-tight" style={{ color: "var(--text)" }}>Create your first mock</h2>
+        <h2 className="dash-display text-lg font-extrabold tracking-tight" style={{ color: "var(--text)" }}>Create a custom mock</h2>
         <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
           Pick an exam, difficulty and size — questions come straight from the bank{bank.length > 0 ? ` (${bank.length} loaded)` : ""}.
         </p>
@@ -529,67 +491,22 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
         )}
       </section>
 
-      <div className="mt-4 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {visibleTests.map((t) => {
           const done = attempted[t.title] ?? 0;
-          const qcount = Array.isArray(t.question_ids) ? t.question_ids.length : 0;
-          const marks = marksOf(t);
-          const chips = qcount > 0 ? groupRows(t.question_ids, bankById) : null;
           return (
-            <div
+            <MockCard
               key={t.id}
-              className="relative flex flex-col overflow-hidden rounded-2xl px-5 py-5"
-              style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-            >
-              <span aria-hidden className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: "linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }} />
-              <div className="flex items-center gap-2">
-                <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-xl text-base" style={{ background: "#fef3c7", color: "#d97706" }}>🏅</span>
-                <h3 className="truncate text-[15px] font-extrabold" style={{ color: "var(--text)" }} title={t.title}>{t.title}</h3>
-                {done > 0 && (
-                  <span className="mono ml-auto shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>
-                    ×{done}
-                  </span>
-                )}
-              </div>
-              {t.tag && (
-                <span className="mono mt-1.5 self-start rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" style={{ background: "var(--pill)", color: "var(--muted)" }}>
-                  {t.tag}
-                </span>
-              )}
-              <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[13px]">
-                <span style={{ color: "var(--muted)" }}>❓ <strong className="mono" style={{ color: "var(--text)" }}>{qcount}</strong> Questions</span>
-                <span style={{ color: "var(--muted)" }}>🕒 <strong className="mono" style={{ color: "var(--text)" }}>{t.minutes}</strong> Minutes</span>
-                <span style={{ color: "var(--muted)" }}>🏆 <strong className="mono" style={{ color: "var(--text)" }}>{marks}</strong> Marks</span>
-                <span style={{ color: t.free ? "#16a34a" : "#d97706", fontWeight: 800 }}>{t.free ? "FREE" : "PREMIUM"}</span>
-              </div>
-              {chips && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {chips.map((c) => (
-                    <span key={c.label} className="mono rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" style={{ background: "var(--pill)", color: "var(--muted)" }}>
-                      {shortLabel(c.label)} {c.count}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="mt-4 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => startTest(t)}
-                  className="flex-1 cursor-pointer rounded-xl py-2.5 text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
-                  style={{ background: "linear-gradient(120deg, #0f766e, #115e59)" }}
-                >
-                  ▶ Start Test
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openDetail(t)}
-                  className="cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-extrabold transition-transform hover:-translate-y-px"
-                  style={{ border: "1px solid var(--border)", color: "var(--text)" }}
-                >
-                  Details
-                </button>
-              </div>
-            </div>
+              title={t.title}
+              questions={Array.isArray(t.question_ids) ? t.question_ids.length : 0}
+              minutes={t.minutes}
+              marks={marksOf(t)}
+              difficulty={dominantDifficulty(t.question_ids, bankById)}
+              tag={t.tag}
+              free={t.free}
+              attempted={done}
+              onStart={() => openSetup(t)}
+            />
           );
         })}
         {visibleTests.length === 0 && (
@@ -599,28 +516,20 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
               : "No published mocks yet — build a custom one above or try the free sample below."}
           </div>
         )}
-        <div
-          className="relative flex flex-col overflow-hidden rounded-2xl px-5 py-5"
-          style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-        >
-          <span aria-hidden className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: "#16a34a" }} />
-          <div className="flex items-center gap-2">
-            <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-xl text-base" style={{ background: "#dcfce7", color: "#16a34a" }}>🆓</span>
-            <h3 className="text-[15px] font-extrabold" style={{ color: "var(--text)" }}>Free sample mock</h3>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[13px]">
-            <span style={{ color: "var(--muted)" }}>❓ <strong className="mono" style={{ color: "var(--text)" }}>12</strong> Questions</span>
-            <span style={{ color: "var(--muted)" }}>🕒 <strong className="mono" style={{ color: "var(--text)" }}>12</strong> Minutes</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setRun({ qs: [], title: "SAMPLE MOCK", testName: "Free sample mock (12Q)", attemptName: "Free sample mock (12Q)", minutes: 12 })}
-            className="mt-4 w-full cursor-pointer rounded-xl py-2.5 text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
-            style={{ background: "linear-gradient(120deg, #0f766e, #115e59)" }}
-          >
-            ▶ Start Test
-          </button>
-        </div>
+        <MockCard
+          title="Free sample mock"
+          questions={SAMPLE_QUESTION_COUNT}
+          minutes={12}
+          marks={SAMPLE_MARKS}
+          difficulty="Mixed"
+          tag="Sample"
+          free
+          attempted={0}
+          icon="🆓"
+          iconBg="#dcfce7"
+          iconFg="#15803d"
+          onStart={() => setRun({ qs: [], title: "SAMPLE MOCK", testName: "Free sample mock (12Q)", attemptName: "Free sample mock (12Q)", minutes: 12 })}
+        />
       </div>
     </div>
   );
