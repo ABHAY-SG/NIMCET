@@ -7,6 +7,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // bypasses RLS entirely; it lives only in server env (SUPABASE_SERVICE_ROLE_KEY)
 // and is never sent to the browser.
 
+export type SessionUser = { id: string; email: string };
+
 function env(name: string): string {
   return (process.env[name] || "").trim();
 }
@@ -18,13 +20,23 @@ function serviceClient(): SupabaseClient | null {
   return createClient(url, service, { auth: { persistSession: false } });
 }
 
-async function sessionUser(): Promise<{ id: string; email: string } | null> {
+function publicSupabaseEnv(): { url: string; key: string } | null {
   const url = env("NEXT_PUBLIC_SUPABASE_URL");
-  const anon =
+  const key =
     env("NEXT_PUBLIC_SUPABASE_ANON_KEY") || env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
-  if (!url || !anon) return null;
+  if (!url || !key) return null;
+  return { url, key };
+}
+
+// Verifies the request's Supabase session SERVER-SIDE from cookies. Works
+// identically in route handlers, server components and the page gate — the
+// session is whatever the signed-in browser holds, never anything the client
+// claims.
+export async function sessionUser(): Promise<SessionUser | null> {
+  const cfg = publicSupabaseEnv();
+  if (!cfg) return null;
   const store = await cookies();
-  const sb = createServerClient(url, anon, {
+  const sb = createServerClient(cfg.url, cfg.key, {
     cookies: {
       getAll: () => store.getAll(),
       setAll: (list) => {
@@ -45,24 +57,67 @@ async function sessionUser(): Promise<{ id: string; email: string } | null> {
   }
 }
 
-function adminAllowlist(): string[] {
-  // Server-only allowlist. Intentionally NO fallback to NEXT_PUBLIC_* here:
-  // a browser-visible variable must never be the database security boundary.
-  return (process.env.ADMIN_EMAILS || "")
+// One entry per email. Tolerant of how values get pasted into dashboards
+// (wrapping quotes, padding, stray case) so a legitimately configured admin
+// is never locked out by formatting noise.
+function parseAllowlist(raw: string): string[] {
+  return raw
     .split(",")
-    .map((s) => s.trim().toLowerCase())
+    .map((s) => s.trim().replace(/^["']+|["']+$/g, "").trim().toLowerCase())
     .filter(Boolean);
 }
 
-export type AdminContext = { svc: SupabaseClient; user: { id: string; email: string } };
+// The ONE server-side admin allowlist. Deliberately NOT NEXT_PUBLIC_*:
+// the browser-visible variable may exist as a convenience/legacy value, but
+// it must never be what grants page or database access. Empty list = NOT
+// CONFIGURED and every admin path fails closed with an explicit 503/message.
+export function serverAdminEmails(): { list: string[]; configured: boolean } {
+  const list = parseAllowlist(env("ADMIN_EMAILS"));
+  return { list, configured: list.length > 0 };
+}
 
-// Verifies the request's Supabase session server-side, then authorizes the
-// email against the SERVER allowlist. Fails closed (503/401/403) — never
-// degrades to anon-key access.
+export type AdminSession =
+  | { status: "admin"; user: SessionUser }
+  | { status: "unauthenticated" }
+  | { status: "forbidden"; user: SessionUser }
+  | { status: "unconfigured"; user: SessionUser };
+
+// The single authorization decision. Both consumers share it:
+//   - the /admin page gate (app/admin/(gated)/layout.tsx) redirects with it
+//   - requireAdmin() below arms the admin API routes with it
+// Pages and APIs can therefore never disagree about who is an admin.
+export async function getAdminSession(): Promise<AdminSession> {
+  const user = await sessionUser();
+  if (!user) return { status: "unauthenticated" };
+  const { list, configured } = serverAdminEmails();
+  if (!configured) return { status: "unconfigured", user };
+  if (!list.includes(user.email.toLowerCase())) return { status: "forbidden", user };
+  return { status: "admin", user };
+}
+
+export type AdminContext = { svc: SupabaseClient; user: SessionUser };
+
+// Authorizes the request FIRST, then attaches the service-role client (so an
+// anonymous probe never learns whether the service key exists). Fails closed:
+// 401 unauthenticated · 403 signed-in non-admin · 503 server misconfigured.
 export async function requireAdmin(): Promise<
-  | AdminContext
-  | { error: NextResponse }
+  AdminContext | { error: NextResponse }
 > {
+  const session = await getAdminSession();
+  if (session.status === "unauthenticated") {
+    return { error: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
+  }
+  if (session.status === "unconfigured") {
+    return {
+      error: NextResponse.json(
+        { error: "Admin access is not configured: set ADMIN_EMAILS in the server environment." },
+        { status: 503 }
+      ),
+    };
+  }
+  if (session.status === "forbidden") {
+    return { error: NextResponse.json({ error: "Not authorized." }, { status: 403 }) };
+  }
   const svc = serviceClient();
   if (!svc) {
     return {
@@ -72,22 +127,17 @@ export async function requireAdmin(): Promise<
       ),
     };
   }
-  const user = await sessionUser();
-  if (!user) {
-    return { error: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
-  }
-  const allow = adminAllowlist();
-  if (allow.length === 0 || !allow.includes(user.email.toLowerCase())) {
-    return { error: NextResponse.json({ error: "Not authorized." }, { status: 403 }) };
-  }
-  return { svc, user };
+  return { svc, user: session.user };
 }
 
 // Any authenticated user (student or admin). Used by student-scoped routes.
 export async function requireUser(): Promise<
-  | { svc: SupabaseClient; user: { id: string; email: string } }
-  | { error: NextResponse }
+  { svc: SupabaseClient; user: SessionUser } | { error: NextResponse }
 > {
+  const user = await sessionUser();
+  if (!user) {
+    return { error: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
+  }
   const svc = serviceClient();
   if (!svc) {
     return {
@@ -96,10 +146,6 @@ export async function requireUser(): Promise<
         { status: 503 }
       ),
     };
-  }
-  const user = await sessionUser();
-  if (!user) {
-    return { error: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
   }
   return { svc, user };
 }

@@ -1,14 +1,7 @@
-export function adminEmails(): string[] {
-  return (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-export function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return adminEmails().includes(email.toLowerCase());
-}
+// Client-safe helpers + shared row types. NOTE: there is intentionally NO
+// client-side admin check here anymore. Authorization lives exclusively on
+// the server (lib/admin-server.ts: getAdminSession / requireAdmin) so the
+// browser never decides who is an admin — see app/admin/(gated)/layout.tsx.
 
 // Allow only same-origin in-app paths as post-login return targets.
 // Rejects absolute URLs, protocol-relative URLs and backslashes so a

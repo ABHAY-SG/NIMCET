@@ -2,9 +2,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getSupabase } from "@/lib/supabase";
-import { isAdminEmail } from "@/lib/admin";
-import { signOutAll } from "@/lib/supabase";
+import { getSupabase, signOutAll } from "@/lib/supabase";
+
+// Admin shell (sidebar + header). Authorization is NOT decided here: every
+// /admin page is already gated server-side by app/admin/(gated)/layout.tsx,
+// which shares its allowlist check with the admin API routes. This component
+// only renders the UI and shows the signed-in admin's email.
 
 const LINKS: Array<{ href: string; label: string; icon: React.ReactNode }> = [
   { href: "/admin", label: "Overview", icon: <span aria-hidden>▦</span> },
@@ -15,6 +18,7 @@ const LINKS: Array<{ href: string; label: string; icon: React.ReactNode }> = [
 ];
 
 function initialsOf(email: string): string {
+  if (!email) return "?";
   const src = email.split("@")[0].replace(/[._-]+/g, " ").trim();
   if (!src) return "?";
   return src
@@ -27,7 +31,6 @@ function initialsOf(email: string): string {
 export default function AdminLayout({ title, crumbs, children }: { title: string; crumbs?: string[]; children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
-  const [state, setState] = useState<"loading" | "noauth" | "denied" | "ok">("loading");
   const [email, setEmail] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [drawer, setDrawer] = useState(false);
@@ -38,12 +41,8 @@ export default function AdminLayout({ title, crumbs, children }: { title: string
       try {
         const sb = getSupabase();
         const { data: { user } } = await sb.auth.getUser();
-        if (!user) { setState("noauth"); return; }
-        setEmail(user.email ?? "");
-        setState(isAdminEmail(user.email) ? "ok" : "denied");
-      } catch {
-        setState("noauth");
-      }
+        if (user?.email) setEmail(user.email);
+      } catch {}
     })();
   }, []);
 
@@ -51,46 +50,6 @@ export default function AdminLayout({ title, crumbs, children }: { title: string
     try { await signOutAll(); } catch {}
     router.push("/login");
   };
-
-  if (state === "loading") {
-    return (
-      <main data-theme="midnight" className="mx-auto max-w-3xl px-4 pb-20 pt-28" style={{ background: "var(--bg)", color: "var(--text)" }}>
-        <div className="animate-pulse space-y-3" aria-label="Loading">
-          <div className="h-8 w-48 rounded-xl" style={{ background: "var(--pill)" }} />
-          <div className="h-24 rounded-2xl" style={{ background: "var(--pill)" }} />
-          <div className="h-24 rounded-2xl" style={{ background: "var(--pill)" }} />
-        </div>
-      </main>
-    );
-  }
-
-  if (state === "noauth") {
-    const back = `/login?next=${encodeURIComponent(path || "/admin")}`;
-    return (
-      <main data-theme="midnight" className="mx-auto max-w-md px-4 pb-20 pt-28 text-center" style={{ background: "var(--bg)", color: "var(--text)" }}>
-        <h1 className="text-2xl font-extrabold">Admins only</h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>Log in with an admin account first.</p>
-        <div className="mt-5 flex justify-center gap-2">
-          <a href={back} className="rounded-full px-6 py-2.5 text-sm font-bold" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>Log in →</a>
-          <button type="button" onClick={() => router.push("/")} className="rounded-full px-6 py-2.5 text-sm font-bold" style={{ border: "1px solid var(--border)" }}>Home</button>
-        </div>
-      </main>
-    );
-  }
-
-  if (state === "denied") {
-    return (
-      <main data-theme="midnight" className="mx-auto max-w-md px-4 pb-20 pt-28 text-center" style={{ background: "var(--bg)", color: "var(--text)" }}>
-        <h1 className="text-2xl font-extrabold">Not authorized</h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
-          Signed in as {email || "unknown"}. This account is not in the admin list — add it to NEXT_PUBLIC_ADMIN_EMAILS.
-        </p>
-        <Link href="/" className="mt-5 inline-block rounded-full px-6 py-2.5 text-sm font-bold" style={{ border: "1px solid var(--border)" }}>
-          ← Back home
-        </Link>
-      </main>
-    );
-  }
 
   const nav = (
     <nav className="flex h-full flex-col gap-5 overflow-y-auto p-4" aria-label="Admin sections">
@@ -120,7 +79,7 @@ export default function AdminLayout({ title, crumbs, children }: { title: string
       <div className={`mt-auto rounded-2xl p-3 ${collapsed ? "text-center" : ""}`} style={{ background: "var(--pill)" }}>
         {!collapsed && (
           <p className="px-1 pb-2 text-[11px] leading-4" style={{ color: "var(--muted)" }}>
-            Signed in as admin. Mutations run under database RLS.
+            Access verified server-side. Mutations run through authorized admin APIs.
           </p>
         )}
         <button
@@ -186,7 +145,7 @@ export default function AdminLayout({ title, crumbs, children }: { title: string
                 <button type="button" aria-label="Close menu" onClick={() => setMenuOpen(false)} className="fixed inset-0 z-40 cursor-default bg-transparent" />
                 <div className="menu-in absolute right-0 top-12 z-50 w-56 rounded-2xl p-1.5" style={{ background: "var(--bg)", border: "1px solid var(--border)", boxShadow: "0 18px 50px -12px rgba(0,0,0,0.35)" }}>
                   <div className="px-3.5 py-2.5">
-                    <div className="truncate text-sm font-extrabold">{email}</div>
+                    <div className="truncate text-sm font-extrabold">{email || "Administrator"}</div>
                     <div className="text-[11px]" style={{ color: "var(--muted)" }}>Administrator</div>
                   </div>
                   <button type="button" onClick={logout}

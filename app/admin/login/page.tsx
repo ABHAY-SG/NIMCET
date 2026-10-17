@@ -1,8 +1,25 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthClient, signOutAll } from "@/lib/supabase";
-import { isAdminEmail } from "@/lib/admin";
+import { forgetMemorySession, getSupabase, signOutAll } from "@/lib/supabase";
+
+// Admin login. Authentication is the same Supabase sign-in as everywhere
+// else; AUTHORIZATION is checked by the server (GET /api/admin/session),
+// which shares its allowlist decision with the admin pages and API routes.
+// No build-time NEXT_PUBLIC value decides access here, so a stale browser
+// bundle can never lock out a legitimate admin or admit anyone else.
+//
+// The session is deliberately cookie-backed here (never the tab-scoped
+// memory mode): server-side checks read cookies, so an admin session must
+// live there.
+
+type SessionInfo = { authenticated: boolean; admin: boolean; configured: boolean; email?: string };
+
+async function fetchSessionInfo(): Promise<SessionInfo> {
+  const res = await fetch("/api/admin/session", { credentials: "same-origin", cache: "no-store" });
+  if (!res.ok) throw new Error("Could not verify admin access — check your connection and retry.");
+  return (await res.json()) as SessionInfo;
+}
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -11,6 +28,16 @@ export default function AdminLoginPage() {
   const [show, setShow] = useState(false);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Already signed in as an admin? Straight to the panel.
+  useEffect(() => {
+    (async () => {
+      try {
+        const info = await fetchSessionInfo();
+        if (info.admin) router.replace("/admin");
+      } catch {}
+    })();
+  }, [router]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,9 +53,10 @@ export default function AdminLoginPage() {
     }
     setBusy(true);
     try {
-      // Same Supabase authentication as everywhere else — no second system.
-      const sb = getAuthClient();
-      const { data, error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
+      // Cookie-backed session only: the server gate and admin APIs read it.
+      forgetMemorySession();
+      const sb = getSupabase(true);
+      const { error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
       if (error) {
         if (/email not confirmed/i.test(error.message)) {
           throw new Error("Email not verified yet — complete verification first, then use this page.");
@@ -38,13 +66,20 @@ export default function AdminLoginPage() {
         }
         throw error;
       }
-      // Allowlist decides — never the login form itself.
-      if (data.user && isAdminEmail(data.user.email)) {
+      // The SERVER decides whether this account is an admin — the same check
+      // that guards /admin pages and every admin API route.
+      const info = await fetchSessionInfo();
+      if (info.admin) {
         router.push("/admin");
         return;
       }
       // Signed in but not an admin: leave no session behind.
       try { await signOutAll(); } catch {}
+      if (!info.configured) {
+        throw new Error(
+          "Signed in, but admin access is not configured on the server. Set ADMIN_EMAILS in Vercel (Production) and redeploy."
+        );
+      }
       throw new Error("This account is not authorized as an admin.");
     } catch (err: unknown) {
       setMsg(err instanceof Error ? err.message : "Something went wrong.");
