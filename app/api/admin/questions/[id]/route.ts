@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
+import { errorPayload } from "@/lib/admin-queries";
+import { logAdminAction } from "@/lib/audit";
 
 const DIFFS = ["Easy", "Medium", "Hard"];
 
@@ -47,11 +49,11 @@ function pick(body: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
-// PUT /api/admin/questions/[id] — partial update, validated.
+// PUT /api/admin/questions/[id] — partial update, validated + audited.
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await requireAdmin();
   if ("error" in ctx) return ctx.error;
-  const { svc } = ctx;
+  const { svc, user: actor } = ctx;
   try {
     const { id } = await params;
     if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
@@ -64,12 +66,22 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
     const { error } = await svc.from("questions").update(patch).eq("id", id);
     if (error) throw error;
+
+    await logAdminAction(svc, {
+      actor,
+      action: "question.update",
+      entity: "question",
+      entityId: id,
+      details: {
+        changed: Object.keys(patch),
+        ...(body.stem !== undefined ? { stem: String(body.stem).trim().slice(0, 80) } : {}),
+      },
+    });
+
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Update failed." },
-      { status: 500 }
-    );
+    const p = errorPayload(e, "Update failed.");
+    return NextResponse.json({ error: p.error }, { status: p.status });
   }
 }
 
@@ -77,7 +89,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await requireAdmin();
   if ("error" in ctx) return ctx.error;
-  const { svc } = ctx;
+  const { svc, user: actor } = ctx;
   try {
     const { id } = await params;
     if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
@@ -92,13 +104,21 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         { status: 409 }
       );
     }
+    const { data: row } = await svc.from("questions").select("stem").eq("id", id).maybeSingle();
     const { error } = await svc.from("questions").delete().eq("id", id);
     if (error) throw error;
+
+    await logAdminAction(svc, {
+      actor,
+      action: "question.delete",
+      entity: "question",
+      entityId: id,
+      details: { stem: ((row as { stem?: string } | null)?.stem ?? "").slice(0, 80) },
+    });
+
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Delete failed." },
-      { status: 500 }
-    );
+    const p = errorPayload(e, "Delete failed.");
+    return NextResponse.json({ error: p.error }, { status: p.status });
   }
 }

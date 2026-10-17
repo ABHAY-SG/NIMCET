@@ -26,5 +26,8 @@ export function applyTheme(t: ThemeId) {
   try {
     document.documentElement.dataset.theme = t;
     localStorage.setItem("mcamock-theme", t);
+    // Notify in-page listeners (admin shell / settings picker) so every open
+    // component re-renders with the new theme immediately.
+    window.dispatchEvent(new CustomEvent("mcamock-theme", { detail: t }));
   } catch {}
 }
