@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Anton&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
 :root, [data-theme="light"] {
@@ -248,38 +248,53 @@ footer .nlink::after { display: none; }
 }
 .rv.in { opacity: 1; transform: none; }
 
-/* ---- hero v6: theme-native bento — headline, sample scorecard, section
-   snapshot and stats as tiles built from theme tokens, so the stage reads
-   correctly in all five themes. Zero blur filters. ---- */
+/* ---- hero v7: cinematic spotlight — ghost wordmark, script tagline,
+   floating question deck, corner blocks. Theme tokens only. ---- */
 .hero { --mx: 50vw; --my: 38vh; }
-.tile {
-  position: relative;
-  border-radius: 24px;
+/* giant brand watermark behind the subject */
+.hero-ghost {
+  font-family: "Anton", "Sora", sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 0.9;
+  white-space: nowrap;
+  user-select: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--text) 15%, transparent) 6%, color-mix(in srgb, var(--text) 5%, transparent) 60%, transparent 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* script tagline */
+.hero-script { font-family: "Alex Brush", cursive; font-weight: 400; line-height: 1.1; }
+.hero-script-grad {
+  background: linear-gradient(100deg, var(--accent), var(--accent-2) 55%, var(--accent));
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: grad-pan 9s ease-in-out infinite;
+}
+/* atmosphere: token smoke + centre spotlight */
+.hero-smoke { position: absolute; border-radius: 50%; pointer-events: none; }
+.hero-smoke-1 { left: -12%; top: 6%; width: 46vw; height: 46vw; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%); animation: smoke-a 22s ease-in-out infinite alternate; }
+.hero-smoke-2 { right: -14%; bottom: 2%; width: 42vw; height: 42vw; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent-2) 11%, transparent), transparent 70%); animation: smoke-b 28s ease-in-out infinite alternate; }
+@keyframes smoke-a { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(6%, 8%, 0) scale(1.15); } }
+@keyframes smoke-b { from { transform: translate3d(0, 0, 0) scale(1.08); } to { transform: translate3d(-7%, -6%, 0) scale(0.95); } }
+.hero-spot { background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 15%, transparent), transparent 72%); }
+/* the subject: a floating question deck */
+.deck-card {
+  border-radius: 18px;
   border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--nav-bg) 62%, transparent);
-  box-shadow: var(--shadow-1);
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s;
+  background: color-mix(in srgb, var(--nav-bg) 92%, transparent);
+  box-shadow: 0 46px 90px -34px rgba(0, 0, 0, 0.45), var(--shadow-1);
 }
-.tile:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 26px 52px -26px rgba(0, 0, 0, 0.3);
-}
-.tile-bar {
-  display: block;
-  height: 6px;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-  overflow: hidden;
-}
-.tile-bar > span {
-  display: block;
-  height: 100%;
-  width: var(--w, 50%);
-  border-radius: 9999px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  transform-origin: left;
-  animation: grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
+.hero-float { animation: deck-float 7.5s ease-in-out infinite; }
+@keyframes deck-float { 0%, 100% { transform: translate3d(0, -5px, 0); } 50% { transform: translate3d(0, 6px, 0); } }
+.opt-row { border: 1px solid var(--border); border-radius: 12px; }
+.opt-row-on { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.hero-glyph { animation: glyph-float 9s ease-in-out infinite; }
+@keyframes glyph-float { 0%, 100% { transform: translate3d(0, -6px, 0) rotate(-4deg); } 50% { transform: translate3d(0, 7px, 0) rotate(5deg); } }
 .hero-dots {
   background-image: radial-gradient(color-mix(in srgb, var(--text) 10%, transparent) 1.1px, transparent 1.5px);
   background-size: 26px 26px;
@@ -337,7 +352,9 @@ footer .nlink::after { display: none; }
   .menu-in { animation: none; }
   .tmenu, .tmenu .tdot { transition: none; }
   .orb, .bg-pan, .headline-warm, .scroll-cue, .chart-bar, .pop,
-  .ring-grad::before, .hero-dots, .track-in, .hline > span { animation: none; }
+  .ring-grad::before, .hero-dots, .track-in, .hline > span,
+  .hero-smoke-1, .hero-smoke-2, .hero-float, .hero-script-grad,
+  .hero-glyph { animation: none; }
   .hline > span { transform: none; }
   .scroll-line::after { animation: none; }
   .hero-glow { transition: none; }

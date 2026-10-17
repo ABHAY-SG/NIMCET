@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 
 const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERATING SYSTEMS", "DBMS", "NETWORKS", "REASONING"];
@@ -9,19 +9,16 @@ const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERA
 // navbar's bottom edge down — no dead strip at the top of the stage.
 const NAV_H = 64;
 
-// Sample scorecard content — a real-looking attempt, all theme-tinted.
-const SECTIONS: Array<[string, number]> = [
-  ["Mathematics", 78],
-  ["Reasoning", 64],
-  ["Computer Awareness", 82],
-  ["General English", 71],
+// Sample question for the floating deck — one option ticked so the card reads
+// as an attempt under way (NIMCET-style: true marking shown in the footer).
+const OPTIONS: Array<[string, string, boolean]> = [
+  ["A", "0.602", false],
+  ["B", "0.451", false],
+  ["C", "0.903", true],
+  ["D", "1.204", false],
 ];
 
-const STATS: Array<[string, string]> = [
-  ["120", "NIMCET · full paper"],
-  ["75", "CUET PG · full paper"],
-  ["Instant", "scorecard & analytics"],
-];
+const CHIPS = ["120 Q", "REAL CLOCK", "+4 / −1"];
 
 export default function Hero() {
   const secRef = useRef<HTMLElement>(null);
@@ -46,151 +43,177 @@ export default function Hero() {
 
   return (
     <section ref={secRef} className="hero relative flex min-h-[100svh] flex-col overflow-hidden">
-      {/* Stage: dot sheet, cursor glow, vignette — all theme tokens */}
+      {/* Stage: token smoke, centre spotlight, dot sheet, cursor glow, vignette */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="hero-smoke hero-smoke-1" />
+        <div className="hero-smoke hero-smoke-2" />
+        <div className="hero-spot absolute left-1/2 top-[46%] h-[620px] w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full" />
         <div className="hero-dots absolute inset-0" />
         <div className="hero-glow" />
         <div className="hero-vignette absolute inset-0" />
       </div>
 
-      {/* Bento: headline, mock scorecard, section snapshot, stats */}
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 items-center px-4 pb-12 pt-24 sm:px-6 lg:px-8 lg:pt-28">
-        <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
-          {/* Headline tile */}
-          <div className="tile rise p-7 sm:p-9 lg:col-span-7 lg:row-span-2 lg:p-10" style={{ animationDelay: "0.08s" }}>
-            <p
-              className="navfont inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase"
-              style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)", color: "var(--muted)", letterSpacing: "0.18em" }}
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-6 pt-24 sm:px-6 lg:px-8 lg:pt-28">
+        {/* Composition: ghost wordmark, script tagline, floating question deck */}
+        <div className="relative flex flex-1 flex-col items-center justify-center">
+          {/* Giant brand watermark behind everything */}
+          <span
+            aria-hidden
+            className="hero-ghost pointer-events-none absolute inset-x-0 top-[5%] z-0 text-center"
+            style={{ fontSize: "clamp(4rem, 17vw, 15rem)" }}
+          >
+            NimCuet
+          </span>
+
+          <h1 className="sr-only">Full-length NIMCET and CUET PG mock tests — prepare smart, perform better.</h1>
+
+          {/* Floating subject glyphs */}
+          <span aria-hidden className="hero-glyph mono absolute left-[7%] top-[22%] z-0 text-[18px]" style={{ color: "color-mix(in srgb, var(--text) 22%, transparent)", animationDelay: "0s" }}>∑</span>
+          <span aria-hidden className="hero-glyph mono absolute right-[9%] top-[15%] z-0 text-[15px]" style={{ color: "color-mix(in srgb, var(--text) 18%, transparent)", animationDelay: "1.6s" }}>π</span>
+          <span aria-hidden className="hero-glyph mono absolute right-[15%] bottom-[26%] z-0 text-[17px]" style={{ color: "color-mix(in srgb, var(--text) 20%, transparent)", animationDelay: "3.1s" }}>λ</span>
+
+          {/* The subject: a floating deck of question cards */}
+          <div className="hero-float relative z-20 w-[min(80vw,300px)] sm:w-[320px]">
+            {/* Script line 1 — crosses behind the deck */}
+            <span
+              aria-hidden
+              className="hero-script hero-script-grad pointer-events-none absolute left-1/2 top-1/2 -z-10 w-[96vw] max-w-[1240px] -translate-x-1/2 -translate-y-1/2 text-center"
+              style={{ fontSize: "clamp(2.4rem, 7.6vw, 6.4rem)", rotate: "-4deg" }}
             >
-              <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "var(--accent)" }} />
-              NIMCET + CUET PG · nothing else
-            </p>
+              prepare smart.
+            </span>
 
-            <h1 className="mt-6" style={{ fontSize: "clamp(2rem, 4.4vw, 3.9rem)", lineHeight: 1.06 }}>
-              <span className="hline">
+            {/* Back card — just the mark */}
+            <div aria-hidden className="deck-card absolute inset-0" style={{ rotate: "8deg", translate: "18px 10px", opacity: 0.75 }}>
+              <div className="flex h-full items-center justify-center">
+                <span className="hero-ghost text-[110px] leading-none" style={{ opacity: 0.55 }}>N</span>
+              </div>
+            </div>
+
+            {/* Middle card — next question coming up */}
+            <div aria-hidden className="deck-card absolute inset-0" style={{ rotate: "3.5deg", translate: "26px -14px", opacity: 0.92 }}>
+              <div className="p-5 sm:p-6">
+                <span className="mono text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>
+                  Q.15 · Reasoning
+                </span>
+                <p className="mt-2.5 text-[15px] font-semibold leading-snug">5, 11, 23, 47, ?</p>
+              </div>
+            </div>
+
+            {/* Front card — question under way */}
+            <div className="deck-card relative">
+              <div className="p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <span className="mono text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Q.14 · Mathematics</span>
+                  <span className="mono text-[9px] font-semibold" style={{ color: "var(--muted)" }}>01:24:07</span>
+                </div>
+                <div className="mt-3 h-px w-full" style={{ background: "var(--border)" }} />
+                <p className="mt-3.5 text-[15px] font-semibold leading-snug">If log₁₀ 2 = 0.301, then log₁₀ 8 = ?</p>
+                <div className="mt-3.5 flex flex-col gap-2">
+                  {OPTIONS.map(([letter, text, on]) => (
+                    <div key={letter} className={`opt-row flex items-center gap-2.5 px-3 py-2${on ? " opt-row-on" : ""}`}>
+                      <span
+                        className="mono inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
+                        style={on ? { background: "var(--accent)", color: "var(--btn-text)" } : { border: "1px solid var(--border)", color: "var(--muted)" }}
+                      >
+                        {letter}
+                      </span>
+                      <span className="mono text-[12.5px] font-semibold" style={on ? { color: "var(--accent)" } : undefined}>{text}</span>
+                      {on ? <span aria-hidden className="ml-auto text-[11px]" style={{ color: "var(--accent)" }}>✓</span> : null}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3.5 flex items-center justify-between">
+                  <span className="mono text-[9px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>Marking +4 / −1</span>
+                  <span className="mono text-[9px] font-semibold" style={{ color: "var(--muted)" }}>Q 14 OF 120</span>
+                </div>
+              </div>
+              {/* Hangtag */}
+              <span
+                aria-hidden
+                className="mono absolute -top-3.5 right-5 rounded-md px-2.5 py-1 text-[9px] font-bold"
+                style={{ background: "var(--accent)", color: "var(--btn-text)", letterSpacing: "0.14em", rotate: "3deg", boxShadow: "var(--shadow-1)" }}
+              >
+                FULL LENGTH · 120 Q
+              </span>
+            </div>
+          </div>
+
+          {/* Script line 2 — the promise, in front */}
+          <span
+            aria-hidden
+            className="hero-script relative z-30 mt-7 text-center"
+            style={{ fontSize: "clamp(1.7rem, 4vw, 3.2rem)", rotate: "-2deg" }}
+          >
+            perform better.
+          </span>
+
+          {/* CTAs */}
+          <div className="relative z-30 mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/#demo"
+              className="navfont cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
+              style={{ background: "var(--btn-bg)", color: "var(--btn-text)", boxShadow: "var(--shadow-1)" }}
+            >
+              Attempt a full paper free <span className="carr">→</span>
+            </Link>
+            <Link
+              href="/#how"
+              className="navfont cta-line rounded-full px-7 py-3.5 text-sm font-semibold"
+              style={{ border: "1px solid var(--border)", background: "color-mix(in srgb, var(--nav-bg) 55%, transparent)" }}
+            >
+              See how it works
+            </Link>
+          </div>
+        </div>
+
+        {/* Corner blocks: the pitch bottom-left, the live mock bottom-right */}
+        <div className="relative z-30 mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:mt-4 lg:grid-cols-[300px_1fr_320px] lg:items-end">
+          <div>
+            <span className="navfont text-[11px] font-bold uppercase" style={{ letterSpacing: "0.16em" }}>
+              Full-length mocks
+            </span>
+            <p className="mt-2.5 max-w-[260px] text-[13px] leading-[1.6]" style={{ color: "var(--muted)" }}>
+              NIMCET and CUET PG papers under the real clock — true negative
+              marking, instant scorecard, section-wise analytics.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <div className="flex items-baseline gap-2">
+                <span className="mono text-[22px] font-extrabold leading-none">120</span>
+                <span className="navfont text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.12em" }}>NIMCET · full paper</span>
+              </div>
+              <span aria-hidden className="h-6 w-px" style={{ background: "var(--border)" }} />
+              <div className="flex items-baseline gap-2">
+                <span className="mono text-[22px] font-extrabold leading-none">75</span>
+                <span className="navfont text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.12em" }}>CUET PG · full paper</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden lg:block" />
+
+          <div className="deck-card p-5">
+            <div className="flex items-center gap-2">
+              <span aria-hidden className="inline-block h-2 w-2 animate-pulse rounded-full" style={{ background: "var(--accent)" }} />
+              <span className="navfont text-[11px] font-bold uppercase" style={{ letterSpacing: "0.16em" }}>
+                This week’s mock
+              </span>
+            </div>
+            <p className="mt-2.5 text-[12.5px] leading-[1.6]" style={{ color: "var(--muted)" }}>
+              Mock Test 01 — Full Length is live now. 120 questions, one
+              sitting, the real clock.
+            </p>
+            <div className="mt-3.5 flex flex-wrap gap-1.5">
+              {CHIPS.map((t) => (
                 <span
-                  className="block font-extrabold tracking-tight"
-                  style={{ fontFamily: '"Sora", "Space Grotesk", "Inter", sans-serif', animationDelay: "0.16s" }}
+                  key={t}
+                  className="mono rounded-full px-2.5 py-1 text-[9px] font-bold"
+                  style={{ background: "var(--pill)", color: "var(--muted)", letterSpacing: "0.1em" }}
                 >
-                  The paper won’t
+                  {t}
                 </span>
-              </span>
-              <span className="hline">
-                <span className="block" style={{ animationDelay: "0.24s" }}>
-                  <span className="display serif-it headline-warm">surprise you.</span>
-                </span>
-              </span>
-            </h1>
-
-            <p className="navfont mt-5 max-w-[460px] text-[15.5px] font-medium leading-[1.65]" style={{ color: "var(--muted)" }}>
-              Full-length NIMCET and CUET PG papers under the real clock — true
-              negative marking, instant scorecard, section-wise analytics.
-            </p>
-
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                href="/#demo"
-                className="navfont cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
-                style={{ background: "var(--btn-bg)", color: "var(--btn-text)", boxShadow: "var(--shadow-1)" }}
-              >
-                Attempt a full paper free <span className="carr">→</span>
-              </Link>
-              <Link
-                href="/#how"
-                className="navfont cta-line rounded-full px-7 py-3.5 text-sm font-semibold"
-                style={{ border: "1px solid var(--border)", background: "color-mix(in srgb, var(--nav-bg) 55%, transparent)" }}
-              >
-                See how it works
-              </Link>
-            </div>
-          </div>
-
-          {/* Scorecard tile */}
-          <div className="tile rise flex items-center gap-5 p-6 sm:p-7 lg:col-span-5" style={{ animationDelay: "0.18s" }}>
-            <div className="relative h-[96px] w-[96px] shrink-0">
-              <svg viewBox="0 0 96 96" className="block h-full w-full">
-                <defs>
-                  <linearGradient id="heroRing" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" style={{ stopColor: "var(--accent)" }} />
-                    <stop offset="1" style={{ stopColor: "var(--accent-2)" }} />
-                  </linearGradient>
-                </defs>
-                <circle cx="48" cy="48" r="40" fill="none" strokeWidth="7" style={{ stroke: "color-mix(in srgb, var(--text) 9%, transparent)" }} />
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="40"
-                  fill="none"
-                  strokeWidth="7"
-                  strokeLinecap="round"
-                  strokeDasharray="182 251"
-                  transform="rotate(-90 48 48)"
-                  style={{ stroke: "url(#heroRing)" }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="mono text-[17px] font-extrabold leading-none">87</span>
-                <span className="mono mt-1 text-[9px] font-semibold" style={{ color: "var(--muted)" }}>/ 120</span>
-              </div>
-            </div>
-            <div className="min-w-0">
-              <div className="mono text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>
-                NIMCET · Mock 01
-              </div>
-              <div
-                className="mono mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold"
-                style={{ background: "color-mix(in srgb, var(--accent) 14%, transparent)", color: "var(--accent)", letterSpacing: "0.08em" }}
-              >
-                +4 / −1 TRUE MARKING
-              </div>
-              <div className="mt-3 flex gap-5">
-                <div>
-                  <div className="mono text-[9px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>Accuracy</div>
-                  <div className="display mt-1 text-[24px] leading-none">72%</div>
-                </div>
-                <div>
-                  <div className="mono text-[9px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>Percentile</div>
-                  <div className="display mt-1 text-[24px] leading-none" style={{ color: "var(--accent)" }}>99.2</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section snapshot tile */}
-          <div className="tile rise p-6 sm:p-7 lg:col-span-5" style={{ animationDelay: "0.28s" }}>
-            <div className="flex items-center justify-between">
-              <span className="mono text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>
-                Section snapshot
-              </span>
-              <span className="mono text-[10px] font-semibold" style={{ color: "var(--muted)" }}>vs last attempt ↑</span>
-            </div>
-            <div className="mt-4 flex flex-col gap-3">
-              {SECTIONS.map(([name, pct], i) => (
-                <div key={name} className="flex items-center gap-3">
-                  <span className="navfont w-[136px] shrink-0 truncate text-[12px] font-semibold">{name}</span>
-                  <span className="tile-bar flex-1">
-                    <span style={{ "--w": `${pct}%`, animationDelay: `${0.35 + i * 0.12}s` } as CSSProperties} />
-                  </span>
-                  <span className="mono w-9 text-right text-[11px] font-bold" style={{ color: "var(--muted)" }}>{pct}%</span>
-                </div>
               ))}
             </div>
-          </div>
-
-          {/* Stats strip */}
-          <div className="tile rise grid grid-cols-1 gap-5 p-6 sm:grid-cols-3 sm:p-7 lg:col-span-12" style={{ animationDelay: "0.38s" }}>
-            {STATS.map(([n, c], i) => (
-              <div
-                key={c}
-                className={`flex items-baseline gap-3${i > 0 ? " sm:border-l sm:pl-6" : ""}`}
-                style={{ borderColor: "var(--border)" }}
-              >
-                <span className="mono text-[24px] font-extrabold leading-none">{n}</span>
-                <span className="navfont text-[11px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.12em" }}>
-                  {c}
-                </span>
-              </div>
-            ))}
           </div>
         </div>
       </div>
