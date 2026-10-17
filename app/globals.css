@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
 :root, [data-theme="light"] {
@@ -210,21 +210,6 @@ footer .nlink::after { display: none; }
   background: linear-gradient(90deg, transparent 3%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 97%);
 }
 
-/* navbar over the dark hero stage: transparent bar, light type, lime accents */
-.over-hero .nlink { color: rgba(244, 246, 255, 0.75); }
-.over-hero .nlink:hover { color: #f4f6ff; }
-.over-hero .nlink.active { color: #d3f75c; }
-.over-hero .nlink::after { background: #d3f75c; }
-.over-hero .navplain { color: rgba(244, 246, 255, 0.75); }
-.over-hero .navplain:hover { color: #f4f6ff; }
-.over-hero .logo-script { color: #f4f6ff; }
-.over-hero .logo-tag { color: rgba(244, 246, 255, 0.72); }
-.over-hero .site-logo { filter: invert(1); mix-blend-mode: screen; }
-.over-hero .nav-hairline {
-  opacity: 0.5;
-  background: linear-gradient(90deg, transparent 3%, rgba(211, 247, 92, 0.45) 50%, transparent 97%);
-}
-
 /* hero ticker */
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .marquee { display: flex; width: max-content; animation: marquee 30s linear infinite; }
@@ -263,60 +248,40 @@ footer .nlink::after { display: none; }
 }
 .rv.in { opacity: 1; transform: none; }
 
-/* ---- hero v5: dark cinema stage — electric-lime ink palette, poster
-   typography, OMR answer-sheet centerpiece. Zero blur filters. ---- */
-.hero {
-  --mx: 50vw; --my: 38vh;
-  --hx-ink: #05060c;
-  --hx-text: #f4f6ff;
-  --hx-muted: #99a2c6;
-  --hx-lime: #d3f75c;
-  --hx-violet: #7c5cff;
-  --hx-cyan: #38bdf8;
-  --hx-amber: #ffb86b;
-  --hx-paper: #f6f3ea;
-  background: linear-gradient(180deg, #05060c 0%, #080a16 52%, #0a0d1e 100%);
-  color: var(--hx-text);
+/* ---- hero v6: theme-native bento — headline, sample scorecard, section
+   snapshot and stats as tiles built from theme tokens, so the stage reads
+   correctly in all five themes. Zero blur filters. ---- */
+.hero { --mx: 50vw; --my: 38vh; }
+.tile {
+  position: relative;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--nav-bg) 62%, transparent);
+  box-shadow: var(--shadow-1);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s;
 }
-/* drifting aurora washes — plain gradients, no filters */
-.hx-aur { position: absolute; border-radius: 50%; pointer-events: none; }
-.hx-aur-1 { top: -28%; left: -22%; width: 78vw; height: 78vw; background: radial-gradient(closest-side, color-mix(in srgb, var(--hx-violet) 32%, transparent), transparent 70%); animation: hx-drift-a 26s ease-in-out infinite alternate; }
-.hx-aur-2 { top: -34%; right: -26%; width: 72vw; height: 72vw; background: radial-gradient(closest-side, color-mix(in srgb, var(--hx-cyan) 24%, transparent), transparent 70%); animation: hx-drift-b 32s ease-in-out infinite alternate; }
-.hx-aur-3 { bottom: -46%; left: 14%; width: 74vw; height: 74vw; background: radial-gradient(closest-side, color-mix(in srgb, var(--hx-lime) 12%, transparent), transparent 70%); animation: hx-drift-c 38s ease-in-out infinite alternate; }
-@keyframes hx-drift-a { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(7%, 5%, 0) scale(1.14); } }
-@keyframes hx-drift-b { from { transform: translate3d(0, 0, 0) scale(1.05); } to { transform: translate3d(-6%, 6%, 0) scale(0.94); } }
-@keyframes hx-drift-c { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-5%, -6%, 0) scale(1.12); } }
-/* poster type helpers */
-.hx-serif { font-family: "Instrument Serif", "Fraunces", Georgia, serif; font-weight: 400; }
-.hx-outline {
-  color: transparent;
-  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--hx-text) 46%, transparent);
+.tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 26px 52px -26px rgba(0, 0, 0, 0.3);
 }
-/* OMR answer sheet — the centerpiece object */
-.hx-paper {
-  background: linear-gradient(180deg, #fbf9f3, var(--hx-paper) 62%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 20px;
-  box-shadow: 0 60px 120px -44px rgba(0, 0, 0, 0.9), 0 26px 54px -26px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+.tile-bar {
+  display: block;
+  height: 6px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  overflow: hidden;
 }
-.hx-float { animation: hx-float 9s ease-in-out infinite; }
-@keyframes hx-float { 0%, 100% { transform: translate3d(0, -4px, 0); } 50% { transform: translate3d(0, 5px, 0); } }
-.hx-stamp {
-  border: 2px solid var(--hx-lime);
-  color: var(--hx-lime);
-  background: color-mix(in srgb, var(--hx-ink) 88%, transparent);
-  box-shadow: 0 12px 34px -14px color-mix(in srgb, var(--hx-lime) 45%, rgba(0, 0, 0, 0.7));
+.tile-bar > span {
+  display: block;
+  height: 100%;
+  width: var(--w, 50%);
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transform-origin: left;
+  animation: grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-/* OMR bubble motion — natural state is visible/final, animations start
-   from empty, so prefers-reduced-motion simply skips the reveal */
-.hx-dot { transform-box: fill-box; transform-origin: center; animation: hx-pop 0.55s cubic-bezier(0.34, 1.45, 0.64, 1) both; }
-@keyframes hx-pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.hx-ring { transform-box: fill-box; transform-origin: center; stroke-dasharray: 88; stroke-dashoffset: 88; animation: hx-ring-draw 0.7s ease-out 1.5s both; }
-@keyframes hx-ring-draw { to { stroke-dashoffset: 0; } }
-.hx-cross line { stroke-dasharray: 19; stroke-dashoffset: 19; animation: hx-cross-draw 0.4s ease-out 1.35s both; }
-@keyframes hx-cross-draw { to { stroke-dashoffset: 0; } }
 .hero-dots {
-  background-image: radial-gradient(color-mix(in srgb, #dfe6ff 8%, transparent) 1.1px, transparent 1.5px);
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 10%, transparent) 1.1px, transparent 1.5px);
   background-size: 26px 26px;
   -webkit-mask-image: radial-gradient(120% 92% at 50% 26%, #000 30%, transparent 74%);
   mask-image: radial-gradient(120% 92% at 50% 26%, #000 30%, transparent 74%);
@@ -324,11 +289,11 @@ footer .nlink::after { display: none; }
 }
 @keyframes grid-drift { from { background-position: 0 0; } to { background-position: 52px 26px; } }
 .hero-vignette {
-  background: radial-gradient(135% 105% at 50% 4%, transparent 44%, rgba(3, 4, 10, 0.62) 100%);
+  background: radial-gradient(130% 100% at 50% 0%, transparent 52%, color-mix(in srgb, var(--text) 6%, transparent));
 }
 .hero-glow {
   position: absolute; left: 0; top: 0; width: 880px; height: 880px; border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--hx-lime) 17%, transparent), transparent 72%);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent 72%);
   transform: translate3d(calc(var(--mx) - 440px), calc(var(--my) - 440px), 0);
   transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
@@ -372,12 +337,8 @@ footer .nlink::after { display: none; }
   .menu-in { animation: none; }
   .tmenu, .tmenu .tdot { transition: none; }
   .orb, .bg-pan, .headline-warm, .scroll-cue, .chart-bar, .pop,
-  .ring-grad::before, .hero-dots, .track-in, .hline > span,
-  .hx-aur-1, .hx-aur-2, .hx-aur-3, .hx-float, .hx-dot,
-  .hx-ring, .hx-cross line { animation: none; }
+  .ring-grad::before, .hero-dots, .track-in, .hline > span { animation: none; }
   .hline > span { transform: none; }
-  .hx-ring { stroke-dashoffset: 0; }
-  .hx-cross line { stroke-dashoffset: 0; }
   .scroll-line::after { animation: none; }
   .hero-glow { transition: none; }
 }

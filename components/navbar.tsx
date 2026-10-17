@@ -93,8 +93,6 @@ export default function Navbar() {
   const [themeOpen, setThemeOpen] = useState(false);
   const theme = useTheme();
   const [scrolled, setScrolled] = useState(false);
-  // True while the home hero (dark stage) is still behind the bar.
-  const [overHero, setOverHero] = useState(false);
   const [active, setActive] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const pathname = usePathname();
@@ -136,22 +134,6 @@ export default function Navbar() {
     };
   }, []);
 
-  // The home hero is a dark stage in every theme: while it still sits behind
-  // the bar, the navbar borrows the stage's light type (see .over-hero).
-  useEffect(() => {
-    const check = () => {
-      const hero = document.querySelector("section.hero");
-      setOverHero(window.location.pathname === "/" && !!hero && hero.getBoundingClientRect().bottom > 84);
-    };
-    check();
-    window.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
-    };
-  }, [pathname]);
-
   const pick = (t: ThemeId) => {
     applyTheme(t);
     setThemeOpen(false);
@@ -168,7 +150,7 @@ export default function Navbar() {
   }, [themeOpen]);
 
   const linkCls = "nlink shrink-0 rounded-full px-2.5 py-2 text-sm font-medium sm:px-3";
-  const plainCls = "navplain navfont shrink-0 rounded-full px-2.5 py-2 text-sm font-medium text-[var(--muted)] transition-colors hover:text-[var(--text)] sm:px-3";
+  const plainCls = "navfont shrink-0 rounded-full px-2.5 py-2 text-sm font-medium text-[var(--muted)] transition-colors hover:text-[var(--text)] sm:px-3";
   const nav = (id: string, label: string, extra = "") => (
     <a href={id === "home" ? "/" : `/#${id}`} className={`${linkCls}${isActive(id) ? " active" : ""}${extra}`}>
       {label}
@@ -179,23 +161,15 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 ${overHero ? "over-hero" : ""} ${overHero && !open ? "" : "backdrop-blur-2xl backdrop-saturate-150"}`}
+      className="fixed inset-x-0 top-0 z-50 backdrop-blur-2xl backdrop-saturate-150"
       style={{
-        background: overHero
-          ? open
-            ? "color-mix(in srgb, #05060c 90%, transparent)"
-            : "transparent"
-          : scrolled
-            ? "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)), color-mix(in srgb, var(--nav-bg) 82%, transparent)"
-            : "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01)), color-mix(in srgb, var(--nav-bg) 55%, transparent)",
-        borderBottom: overHero ? "1px solid rgba(255,255,255,0.10)" : "1px solid var(--border)",
-        boxShadow: overHero
-          ? open
-            ? "0 18px 48px -20px rgba(0,0,0,0.5)"
-            : "none"
-          : scrolled
-            ? "0 18px 48px -20px rgba(0,0,0,0.35), inset 0 1px 0 0 rgba(255,255,255,0.18)"
-            : "inset 0 1px 0 0 rgba(255,255,255,0.12)",
+        background: scrolled
+          ? "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)), color-mix(in srgb, var(--nav-bg) 82%, transparent)"
+          : "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01)), color-mix(in srgb, var(--nav-bg) 55%, transparent)",
+        borderBottom: "1px solid var(--border)",
+        boxShadow: scrolled
+          ? "0 18px 48px -20px rgba(0,0,0,0.35), inset 0 1px 0 0 rgba(255,255,255,0.18)"
+          : "inset 0 1px 0 0 rgba(255,255,255,0.12)",
       }}
     >
       <div className="mx-auto flex h-16 w-full items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
@@ -273,7 +247,7 @@ export default function Navbar() {
             <a
               href="/dashboard"
               className="navfont cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
-              style={overHero ? { background: "#d3f75c", color: "#0b0d16" } : { background: "var(--text)", color: "var(--bg)" }}
+              style={{ background: "var(--text)", color: "var(--bg)" }}
             >
               Dashboard
               <span className="carr text-[15px]">→</span>
@@ -284,7 +258,7 @@ export default function Navbar() {
               <a
                 href="/signup"
                 className="navfont cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
-                style={overHero ? { background: "#d3f75c", color: "#0b0d16" } : { background: "var(--text)", color: "var(--bg)" }}
+                style={{ background: "var(--text)", color: "var(--bg)" }}
               >
                 Get Started
                 <span className="carr text-[15px]">→</span>

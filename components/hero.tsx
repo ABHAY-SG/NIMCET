@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 
 const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERATING SYSTEMS", "DBMS", "NETWORKS", "REASONING"];
@@ -9,13 +9,18 @@ const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERA
 // navbar's bottom edge down — no dead strip at the top of the stage.
 const NAV_H = 64;
 
-// OMR answer sheet — 2 columns × 7 questions. Each value is the filled bubble
-// index (0-3), or -1 for a blank. Row 05 draws a correction: the original
-// mark is struck through and the re-mark ringed in lime, so the sheet reads
-// like a paper already attempted, reviewed and fixed.
-const OMR: number[][] = [
-  [1, 3, 0, 2, 1, -1, 2],
-  [-1, 2, 1, 3, 0, 3, 1],
+// Sample scorecard content — a real-looking attempt, all theme-tinted.
+const SECTIONS: Array<[string, number]> = [
+  ["Mathematics", 78],
+  ["Reasoning", 64],
+  ["Computer Awareness", 82],
+  ["General English", 71],
+];
+
+const STATS: Array<[string, string]> = [
+  ["120", "NIMCET · full paper"],
+  ["75", "CUET PG · full paper"],
+  ["Instant", "scorecard & analytics"],
 ];
 
 export default function Hero() {
@@ -41,166 +46,158 @@ export default function Hero() {
 
   return (
     <section ref={secRef} className="hero relative flex min-h-[100svh] flex-col overflow-hidden">
-      {/* Stage: aurora washes, dot sheet, cursor glow, vignette — no blur filters */}
+      {/* Stage: dot sheet, cursor glow, vignette — all theme tokens */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="hx-aur hx-aur-1" />
-        <div className="hx-aur hx-aur-2" />
-        <div className="hx-aur hx-aur-3" />
         <div className="hero-dots absolute inset-0" />
         <div className="hero-glow" />
         <div className="hero-vignette absolute inset-0" />
       </div>
 
-      {/* Centered poster: meta strip → giant headline → sub → CTAs → OMR sheet */}
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-4 pb-10 pt-28 text-center sm:px-6 lg:px-8 lg:pt-32">
-        <p
-          className="rise mono flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[10px] font-semibold uppercase"
-          style={{ color: "var(--hx-muted)", letterSpacing: "0.2em", animationDelay: "0.08s" }}
-        >
-          <span>NIMCET · 120 Q</span>
-          <span aria-hidden className="hidden sm:inline" style={{ opacity: 0.5 }}>—</span>
-          <span>CUET PG · 75 Q</span>
-          <span aria-hidden className="hidden sm:inline" style={{ opacity: 0.5 }}>—</span>
-          <span className="hidden sm:inline">Full length, real clock</span>
-        </p>
-
-        <h1 className="mt-6 sm:mt-8" style={{ fontSize: "clamp(2.5rem, 8.4vw, 7rem)", lineHeight: 1 }}>
-          <span className="hline">
-            <span
-              className="hx-outline block font-bold uppercase tracking-[-0.02em]"
-              style={{ fontFamily: '"Space Grotesk", "Inter", sans-serif', animationDelay: "0.16s" }}
+      {/* Bento: headline, mock scorecard, section snapshot, stats */}
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 items-center px-4 pb-12 pt-24 sm:px-6 lg:px-8 lg:pt-28">
+        <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
+          {/* Headline tile */}
+          <div className="tile rise p-7 sm:p-9 lg:col-span-7 lg:row-span-2 lg:p-10" style={{ animationDelay: "0.08s" }}>
+            <p
+              className="navfont inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase"
+              style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)", color: "var(--muted)", letterSpacing: "0.18em" }}
             >
-              The paper
-            </span>
-          </span>
-          <span className="hline">
-            <span
-              className="block font-bold uppercase tracking-[-0.02em]"
-              style={{ fontFamily: '"Space Grotesk", "Inter", sans-serif', animationDelay: "0.24s" }}
-            >
-              won’t feel
-            </span>
-          </span>
-          <span className="hline">
-            <span className="block" style={{ animationDelay: "0.32s" }}>
-              <span className="hx-serif italic" style={{ color: "var(--hx-lime)" }}>new to you.</span>
-            </span>
-          </span>
-        </h1>
+              <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "var(--accent)" }} />
+              NIMCET + CUET PG · nothing else
+            </p>
 
-        <p
-          className="rise navfont mt-6 max-w-[620px] text-[15.5px] font-medium leading-[1.65]"
-          style={{ color: "var(--hx-muted)", animationDelay: "0.4s" }}
-        >
-          Full-length NIMCET and CUET PG papers under the real clock — true
-          negative marking, instant scorecard, section-wise analytics.
-        </p>
-
-        <div className="rise mt-8 flex flex-wrap items-center justify-center gap-3" style={{ animationDelay: "0.48s" }}>
-          <Link
-            href="/#demo"
-            className="navfont cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
-            style={{ background: "var(--hx-lime)", color: "#0b0d16", boxShadow: "0 22px 50px -20px color-mix(in srgb, var(--hx-lime) 55%, transparent)" }}
-          >
-            Attempt a full paper free <span className="carr">→</span>
-          </Link>
-          <Link
-            href="/#how"
-            className="navfont cta-line rounded-full px-7 py-3.5 text-sm font-semibold"
-            style={{
-              border: "1px solid color-mix(in srgb, #ffffff 22%, transparent)",
-              background: "color-mix(in srgb, #ffffff 5%, transparent)",
-              color: "var(--hx-text)",
-            }}
-          >
-            See how it works
-          </Link>
-        </div>
-
-        {/* The object: a real OMR answer sheet, mid-review */}
-        <div aria-hidden className="rise relative mt-14 w-[min(86vw,560px)]" style={{ animationDelay: "0.56s", rotate: "-2deg" }}>
-          <span
-            className="hx-stamp mono absolute -top-3 -right-1.5 z-10 rounded-[10px] px-3 py-1.5 text-[10px] font-bold"
-            style={{ rotate: "-7deg", letterSpacing: "0.22em" }}
-          >
-            REHEARSED
-          </span>
-          <div className="hx-paper hx-float px-5 py-5 text-left sm:px-8 sm:py-7">
-            <div className="flex items-center justify-between gap-3">
-              <span className="mono text-[10px] font-bold uppercase" style={{ color: "rgba(20,23,42,0.72)", letterSpacing: "0.16em" }}>
-                NIMCET — Mock 01
+            <h1 className="mt-6" style={{ fontSize: "clamp(2rem, 4.4vw, 3.9rem)", lineHeight: 1.06 }}>
+              <span className="hline">
+                <span
+                  className="block font-extrabold tracking-tight"
+                  style={{ fontFamily: '"Sora", "Space Grotesk", "Inter", sans-serif', animationDelay: "0.16s" }}
+                >
+                  The paper won’t
+                </span>
               </span>
-              <span className="mono text-[10px] font-semibold uppercase" style={{ color: "rgba(20,23,42,0.45)", letterSpacing: "0.16em" }}>
-                Full length · 120 Q
+              <span className="hline">
+                <span className="block" style={{ animationDelay: "0.24s" }}>
+                  <span className="display serif-it headline-warm">surprise you.</span>
+                </span>
               </span>
+            </h1>
+
+            <p className="navfont mt-5 max-w-[460px] text-[15.5px] font-medium leading-[1.65]" style={{ color: "var(--muted)" }}>
+              Full-length NIMCET and CUET PG papers under the real clock — true
+              negative marking, instant scorecard, section-wise analytics.
+            </p>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link
+                href="/#demo"
+                className="navfont cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
+                style={{ background: "var(--btn-bg)", color: "var(--btn-text)", boxShadow: "var(--shadow-1)" }}
+              >
+                Attempt a full paper free <span className="carr">→</span>
+              </Link>
+              <Link
+                href="/#how"
+                className="navfont cta-line rounded-full px-7 py-3.5 text-sm font-semibold"
+                style={{ border: "1px solid var(--border)", background: "color-mix(in srgb, var(--nav-bg) 55%, transparent)" }}
+              >
+                See how it works
+              </Link>
             </div>
-            <div className="mt-3 h-px w-full" style={{ background: "rgba(20,23,42,0.12)" }} />
+          </div>
 
-            <svg viewBox="0 0 368 228" className="mt-4 block h-auto w-full">
-              {OMR.map((col, c) =>
-                col.map((filled, r) => {
-                  const x = c * 216 + 8;
-                  const y = 22 + r * 31;
-                  const seq = c * 7 + r;
-                  const isCorrection = c === 0 && r === 4;
-                  const corrected = isCorrection ? 2 : -1;
-                  return (
-                    <g key={`${c}-${r}`}>
-                      <text x={x} y={y + 3.5} fontSize="10" className="mono" fill="rgba(20,23,42,0.5)">
-                        {String(seq + 1).padStart(2, "0")}
-                      </text>
-                      {[0, 1, 2, 3].map((k) => {
-                        const cx = x + 30 + k * 30;
-                        const showFilled = filled === k || corrected === k;
-                        return (
-                          <g key={k}>
-                            <circle cx={cx} cy={y} r="8.5" fill="none" stroke="rgba(20,23,42,0.3)" strokeWidth="1.4" />
-                            {showFilled && (
-                              <circle
-                                cx={cx}
-                                cy={y}
-                                r="7.5"
-                                fill="#14172a"
-                                className="hx-dot"
-                                style={{ animationDelay: `${0.75 + seq * 0.045}s` }}
-                              />
-                            )}
-                            {isCorrection && k === 1 && (
-                              <g className="hx-cross" stroke="var(--hx-amber)" strokeWidth="2.4" strokeLinecap="round">
-                                <line x1={cx - 6} y1={y - 6} x2={cx + 6} y2={y + 6} />
-                                <line x1={cx - 6} y1={y + 6} x2={cx + 6} y2={y - 6} />
-                              </g>
-                            )}
-                            {isCorrection && k === 2 && (
-                              <circle cx={cx} cy={y} r="13.5" fill="none" stroke="var(--hx-lime)" strokeWidth="2.2" className="hx-ring" />
-                            )}
-                          </g>
-                        );
-                      })}
-                    </g>
-                  );
-                })
-              )}
-            </svg>
-
-            <div className="mt-3 flex items-end justify-between gap-3">
-              <span className="mono text-[10px] font-semibold uppercase" style={{ color: "rgba(20,23,42,0.45)", letterSpacing: "0.14em" }}>
-                Marking +4 / −1
-              </span>
-              <span className="hx-serif italic text-[20px] leading-none" style={{ color: "rgba(20,23,42,0.82)" }}>
-                attempt, review, repeat.
-              </span>
+          {/* Scorecard tile */}
+          <div className="tile rise flex items-center gap-5 p-6 sm:p-7 lg:col-span-5" style={{ animationDelay: "0.18s" }}>
+            <div className="relative h-[96px] w-[96px] shrink-0">
+              <svg viewBox="0 0 96 96" className="block h-full w-full">
+                <defs>
+                  <linearGradient id="heroRing" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" style={{ stopColor: "var(--accent)" }} />
+                    <stop offset="1" style={{ stopColor: "var(--accent-2)" }} />
+                  </linearGradient>
+                </defs>
+                <circle cx="48" cy="48" r="40" fill="none" strokeWidth="7" style={{ stroke: "color-mix(in srgb, var(--text) 9%, transparent)" }} />
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  fill="none"
+                  strokeWidth="7"
+                  strokeLinecap="round"
+                  strokeDasharray="182 251"
+                  transform="rotate(-90 48 48)"
+                  style={{ stroke: "url(#heroRing)" }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="mono text-[17px] font-extrabold leading-none">87</span>
+                <span className="mono mt-1 text-[9px] font-semibold" style={{ color: "var(--muted)" }}>/ 120</span>
+              </div>
             </div>
+            <div className="min-w-0">
+              <div className="mono text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>
+                NIMCET · Mock 01
+              </div>
+              <div
+                className="mono mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold"
+                style={{ background: "color-mix(in srgb, var(--accent) 14%, transparent)", color: "var(--accent)", letterSpacing: "0.08em" }}
+              >
+                +4 / −1 TRUE MARKING
+              </div>
+              <div className="mt-3 flex gap-5">
+                <div>
+                  <div className="mono text-[9px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>Accuracy</div>
+                  <div className="display mt-1 text-[24px] leading-none">72%</div>
+                </div>
+                <div>
+                  <div className="mono text-[9px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>Percentile</div>
+                  <div className="display mt-1 text-[24px] leading-none" style={{ color: "var(--accent)" }}>99.2</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section snapshot tile */}
+          <div className="tile rise p-6 sm:p-7 lg:col-span-5" style={{ animationDelay: "0.28s" }}>
+            <div className="flex items-center justify-between">
+              <span className="mono text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>
+                Section snapshot
+              </span>
+              <span className="mono text-[10px] font-semibold" style={{ color: "var(--muted)" }}>vs last attempt ↑</span>
+            </div>
+            <div className="mt-4 flex flex-col gap-3">
+              {SECTIONS.map(([name, pct], i) => (
+                <div key={name} className="flex items-center gap-3">
+                  <span className="navfont w-[136px] shrink-0 truncate text-[12px] font-semibold">{name}</span>
+                  <span className="tile-bar flex-1">
+                    <span style={{ "--w": `${pct}%`, animationDelay: `${0.35 + i * 0.12}s` } as CSSProperties} />
+                  </span>
+                  <span className="mono w-9 text-right text-[11px] font-bold" style={{ color: "var(--muted)" }}>{pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Stats strip */}
+          <div className="tile rise grid grid-cols-1 gap-5 p-6 sm:grid-cols-3 sm:p-7 lg:col-span-12" style={{ animationDelay: "0.38s" }}>
+            {STATS.map(([n, c], i) => (
+              <div
+                key={c}
+                className={`flex items-baseline gap-3${i > 0 ? " sm:border-l sm:pl-6" : ""}`}
+                style={{ borderColor: "var(--border)" }}
+              >
+                <span className="mono text-[24px] font-extrabold leading-none">{n}</span>
+                <span className="navfont text-[11px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.12em" }}>
+                  {c}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Subject ticker — loop math unchanged */}
-      <div aria-hidden className="marquee-mask relative overflow-hidden py-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.09)" }}>
-        <div
-          className="marquee mono gap-10 text-[11px] font-semibold"
-          style={{ color: "color-mix(in srgb, var(--hx-muted) 80%, transparent)", letterSpacing: "0.18em" }}
-        >
+      <div aria-hidden className="marquee-mask relative overflow-hidden py-2.5" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="marquee mono gap-10 text-[11px] font-semibold" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
           {[0, 1].map((k) => (
             <div key={k} className="flex shrink-0 gap-10 pr-10">
               {TICKER.map((t) => (
