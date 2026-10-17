@@ -18,7 +18,15 @@ export default function LegalPage({
         <span className="orb" style={{ right: "6%", top: "-12%", width: "20rem", height: "20rem", background: "color-mix(in srgb, var(--gold-3) 11%, transparent)", animationDelay: "-12s" }} />
       </div>
 
-      <div className="text-center">
+      {/* Heading band: pinned under the navbar, content scrolls beneath it */}
+      <div
+        className="sticky top-16 z-30 -mx-4 px-4 pb-5 pt-2 text-center sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+        style={{
+          background: "linear-gradient(180deg, var(--bg) 0%, var(--bg) 72%, transparent 100%)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}
+      >
         <Reveal>
           <p className="text-[11px] font-semibold uppercase" style={{ color: "var(--accent)", letterSpacing: "0.22em" }}>
             Legal
@@ -35,7 +43,7 @@ export default function LegalPage({
       </div>
 
       <div className="mt-10 grid items-start gap-8 md:grid-cols-[230px_minmax(0,1fr)]">
-        <Reveal className="hidden md:sticky md:top-24 md:block">
+        <Reveal className="hidden md:sticky md:top-[14.5rem] md:block">
           <aside className="premium-card rounded-[22px] p-3.5">
             <div className="px-2 pb-2 pt-1 text-[10px] font-extrabold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
               On this page
@@ -56,7 +64,7 @@ export default function LegalPage({
               <section
                 key={t}
                 id={`s${i + 1}`}
-                className="scroll-mt-28 border-b py-7 first:pt-0 last:border-b-0 last:pb-0"
+                className="scroll-mt-[15rem] border-b py-7 first:pt-0 last:border-b-0 last:pb-0"
                 style={{ borderColor: "var(--border)" }}
               >
                 <div className="flex items-baseline gap-3">
