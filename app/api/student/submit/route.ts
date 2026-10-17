@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       if (!a || typeof a.id !== "string" || !a.id.trim() || a.id.length > 64) {
         return NextResponse.json({ error: "Invalid answer reference." }, { status: 400 });
       }
-      if (a.answer !== null && (!Number.isInteger(a.answer) || a.answer < 0 || a.answer > 3)) {
+      if (a.answer !== null && (!Number.isInteger(a.answer) || a.answer < 0 || a.answer > 4)) {
         return NextResponse.json({ error: "Invalid answer option." }, { status: 400 });
       }
     }
