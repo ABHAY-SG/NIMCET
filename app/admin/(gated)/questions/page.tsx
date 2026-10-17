@@ -261,7 +261,7 @@ export default function AdminQuestions() {
       topic: idx("topic") >= 0 ? r[idx("topic")] ?? "" : "",
       difficulty: idx("difficulty") >= 0 ? r[idx("difficulty")] ?? "" : "",
       stem: r[idx("stem")] ?? "",
-      options: [r[idx("optiona")], r[idx("optionb")], r[idx("optionc")], r[idx("optiond")]].map((v) => v ?? ""),
+      options: [r[idx("optiona")], r[idx("optionb")], r[idx("optionc")], r[idx("optiond")], ...(idx("optione") >= 0 && (r[idx("optione")] ?? "").trim() ? [r[idx("optione")] : [])].map((v) => v ?? ""),
       answer: r[idx("answer")] ?? "",
       explanation: idx("explanation") >= 0 ? r[idx("explanation")] ?? "" : "",
       plus: idx("plus") >= 0 ? r[idx("plus")] ?? "" : "",
@@ -359,7 +359,7 @@ export default function AdminQuestions() {
 
       <p className="mb-2 px-1 text-[11.5px]" style={{ color: "var(--muted)" }}>
         Import format: export a CSV first — the same columns round-trip (exam, section, topic, difficulty,
-        stem, optionA–D, answer as A–D, explanation, plus, minus). Up to 200 rows per batch.
+        stem, optionA–D (optionE supported), answer as A–E, explanation, plus, minus). Up to 200 rows per batch.
       </p>
 
       {error && (
