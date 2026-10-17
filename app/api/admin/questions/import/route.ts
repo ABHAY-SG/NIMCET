@@ -32,19 +32,19 @@ function parseRow(raw: Record<string, unknown>, index: number): ParsedRow | stri
   const difficulty = DIFFS.includes(s(raw.difficulty)) ? s(raw.difficulty) : "Medium";
 
   const options = Array.isArray(raw.options) ? raw.options.map((o) => String(o).trim()) : [];
-  if (options.length !== 4 || options.some((o) => !o || o.length > 1000)) {
-    return `${line}: exactly 4 non-empty options (max 1000 chars each) are required.`;
+  if ((options.length !== 4 && options.length !== 5) || options.some((o) => !o || o.length > 1000)) {
+    return `${line}: 4 or 5 non-empty options (max 1000 chars each) are required.`;
   }
 
   let answer = -1;
   if (typeof raw.answer === "number") answer = raw.answer;
   else {
     const a = s(raw.answer).toUpperCase();
-    answer = ["A", "B", "C", "D"].indexOf(a);
-    if (answer < 0 && /^[0-3]$/.test(a)) answer = Number(a);
+    answer = ["A", "B", "C", "D", "E"].indexOf(a);
+    if (answer < 0 && /^[0-4]$/.test(a)) answer = Number(a);
   }
-  if (!Number.isInteger(answer) || answer < 0 || answer > 3) {
-    return `${line}: answer must be A–D (or 0–3).`;
+  if (!Number.isInteger(answer) || answer < 0 || answer >= options.length) {
+    return `${line}: answer must match an available option (A–E or its zero-based index).`;
   }
 
   const plus = raw.plus === undefined || raw.plus === "" ? 4 : Number(raw.plus);
