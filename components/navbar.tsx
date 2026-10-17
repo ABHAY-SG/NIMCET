@@ -66,7 +66,7 @@ function LogoImg() {
         <span className="logo-script block text-[26px] text-[var(--text)] sm:text-[30px]">
           <span className="text-[1.3em]">N</span>imCuet
         </span>
-        <span className="logo-tag -mt-1 block text-[9px] font-medium text-[var(--muted)]">
+        <span className="-mt-1 block text-[9px] font-medium tracking-[0.08em] text-[var(--muted)]">
           Prepare smart. <span style={{ color: "var(--accent)" }}>Perform better.</span>
         </span>
       </span>
@@ -81,7 +81,7 @@ function LogoImg() {
         onError={() => setMissing(true)}
         className="site-logo block h-7 w-auto sm:h-8"
       />
-      <span className="logo-tag mt-0 hidden text-[9px] font-medium text-[var(--muted)] min-[420px]:block">
+      <span className="mt-0 hidden text-[9px] font-medium tracking-[0.08em] text-[var(--muted)] min-[420px]:block">
         Prepare smart. <span style={{ color: "var(--accent)" }}>Perform better.</span>
       </span>
     </span>
@@ -150,7 +150,7 @@ export default function Navbar() {
   }, [themeOpen]);
 
   const linkCls = "nlink shrink-0 rounded-full px-2.5 py-2 text-sm font-medium sm:px-3";
-  const plainCls = "navfont shrink-0 rounded-full px-2.5 py-2 text-sm font-medium text-[var(--muted)] transition-colors hover:text-[var(--text)] sm:px-3";
+  const plainCls = "shrink-0 rounded-full px-2.5 py-2 text-sm font-medium text-[var(--muted)] transition-colors hover:text-[var(--text)] sm:px-3";
   const nav = (id: string, label: string, extra = "") => (
     <a href={id === "home" ? "/" : `/#${id}`} className={`${linkCls}${isActive(id) ? " active" : ""}${extra}`}>
       {label}
@@ -195,8 +195,8 @@ export default function Navbar() {
           {nav("how", "How it works")}
           {nav("pricing", "Pricing")}
           {nav("about", "About Us")}
-          {nav("faqs", "FAQs", " navwide")}
-          {nav("contact", "Contact Us", " navwide")}
+          {nav("faqs", "FAQs")}
+          {nav("contact", "Contact Us")}
         </nav>
 
         <div className="flex shrink-0 items-center gap-1">
@@ -246,7 +246,7 @@ export default function Navbar() {
           {loggedIn ? (
             <a
               href="/dashboard"
-              className="navfont cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
+              className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
               style={{ background: "var(--text)", color: "var(--bg)" }}
             >
               Dashboard
@@ -257,7 +257,7 @@ export default function Navbar() {
               <a href="/login-choice" className={plainCls + " hidden sm:block"}>Log in</a>
               <a
                 href="/signup"
-                className="navfont cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
+                className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
                 style={{ background: "var(--text)", color: "var(--bg)" }}
               >
                 Get Started
@@ -267,8 +267,6 @@ export default function Navbar() {
           )}
         </div>
       </div>
-
-      <div aria-hidden className="nav-hairline" />
 
       {open && (
         <nav id="mobile-menu" className="mx-auto flex w-full flex-col px-4 pb-3 sm:px-6 lg:hidden lg:px-8">

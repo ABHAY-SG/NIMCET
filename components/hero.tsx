@@ -1,178 +1,255 @@
+"use client";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
-
-// NIMCET is 120 questions across four sections, +4 / −1 marking — the labels
-// and meta row state the real pattern, not invented numbers.
-const LABELS: Array<{ t: string; pos: string }> = [
-  { t: "MATHEMATICS · 50", pos: "left-[2%] top-[9%]" },
-  { t: "REASONING · 40", pos: "right-[1%] top-[27%]" },
-  { t: "COMPUTER · 10", pos: "left-[3%] bottom-[26%]" },
-  { t: "ENGLISH · 20", pos: "right-[3%] bottom-[8%]" },
-];
-
-// Micro fragments — restrained technical texture floating inside the cage.
-const FRAGS: Array<{ t: string; pos: string }> = [
-  { t: "∫ x² dx", pos: "left-[10%] top-[38%]" },
-  { t: "O(n log n)", pos: "right-[12%] top-[31%]" },
-  { t: "P(A ∩ B)", pos: "right-[15%] bottom-[31%]" },
-];
 
 const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERATING SYSTEMS", "DBMS", "NETWORKS", "REASONING"];
 
+// Fixed navbar height (h-16). The cursor glow pins to this line whenever the
+// pointer rides over the bar, so the hover effect covers everything from the
+// navbar's bottom edge down — no dead strip at the top of the stage.
+const NAV_H = 64;
+
+// The compass dial: 60 tick marks, longer every fifth — a protractor for the
+// "precision preparation" idea. Positions are computed once at module load.
+const TICKS = Array.from({ length: 60 }, (_, i) => {
+  const a = (i * 6 * Math.PI) / 180;
+  const major = i % 5 === 0;
+  const r1 = 206;
+  const r2 = major ? 190 : 199;
+  return {
+    major,
+    x1: +(240 + r1 * Math.cos(a)).toFixed(1),
+    y1: +(240 + r1 * Math.sin(a)).toFixed(1),
+    x2: +(240 + r2 * Math.cos(a)).toFixed(1),
+    y2: +(240 + r2 * Math.sin(a)).toFixed(1),
+  };
+});
+
+// Four syllabus glyphs anchored inside the dial: maths, CS, logic, analysis.
+const GLYPHS: Array<[string, number, number]> = [
+  ["∑", 240, 114],
+  ["π", 366, 240],
+  ["λ", 240, 366],
+  ["∫", 114, 240],
+];
+
 export default function Hero() {
+  const secRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const sec = secRef.current;
+    if (!sec) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const onMove = (e: MouseEvent) => {
+      const r = sec.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) return;
+      const x = Math.min(Math.max(e.clientX - r.left, 0), r.width);
+      let y = e.clientY - r.top;
+      const navLine = NAV_H - r.top; // navbar's bottom edge in hero coordinates
+      if (y < navLine) y = navLine;
+      sec.style.setProperty("--mx", `${x}px`);
+      sec.style.setProperty("--my", `${y}px`);
+      sec.style.setProperty("--nx", String((x / r.width - 0.5) * 2));
+      sec.style.setProperty("--ny", String((y / r.height - 0.5) * 2));
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
   return (
-    <section className="hero relative flex min-h-[100svh] flex-col overflow-hidden">
-      <div className="relative mx-auto grid w-full max-w-7xl flex-1 items-center gap-14 px-4 pb-10 pt-24 sm:px-6 lg:grid-cols-12 lg:gap-8 lg:px-8 lg:pb-16 lg:pt-28">
-        {/* Left: the pitch */}
-        <div className="rise max-w-[560px] lg:col-span-6">
-          <span
-            className="hero-eyebrow navfont inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase"
-            style={{ letterSpacing: "0.18em" }}
-          >
-            <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-            NIMCET + CUET PG · Full-length mocks
-          </span>
+    <section ref={secRef} className="hero relative flex min-h-[100svh] flex-col overflow-hidden">
+      {/* Stage: dot sheet, cursor glow, vignette — no blur filters anywhere */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="hero-dots absolute inset-0" />
+        <div className="hero-glow" />
+        <div className="hero-vignette absolute inset-0" />
+      </div>
 
-          <h1
-            className="mt-6 font-extrabold"
-            style={{ fontFamily: '"Sora", "Space Grotesk", "Inter", sans-serif', fontSize: "clamp(2.3rem, 5.2vw, 4.3rem)", lineHeight: 1.04, letterSpacing: "-0.015em" }}
+      <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-4 pb-12 pt-28 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:gap-10 lg:px-8 lg:pt-24">
+        {/* Editorial column */}
+        <div className="text-center lg:text-left">
+          <p
+            className="track-in inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase"
+            style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)", color: "var(--muted)", letterSpacing: "0.22em" }}
           >
-            <span className="block">Your NIMCET</span>
-            <span className="display serif-it hero-em block" style={{ fontSize: "1.06em" }}>breakthrough</span>
-            <span className="block">starts here.</span>
-          </h1>
-
-          <p className="mt-5 max-w-[480px] text-[15.5px] leading-[1.7]" style={{ color: "rgba(244, 244, 246, 0.62)" }}>
-            Full-length NIMCET and CUET PG mock tests under the real clock —
-            true negative marking, instant scorecard, and section-wise
-            analytics after every attempt.
+            <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "var(--accent)" }} />
+            Full-length mocks · NIMCET + CUET PG
           </p>
 
-          <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <Link href="/#demo" className="hbtn hbtn-1 navfont justify-center px-7 py-3.5 text-[14px]">
-              Attempt Free Mock <span className="carr">→</span>
+          <h1 className="mt-5" style={{ fontSize: "clamp(1.9rem, 4.9vw, 4.6rem)", lineHeight: 1.06 }}>
+            <span className="hline">
+              <span
+                className="block font-extrabold tracking-tight"
+                style={{ fontFamily: '"Sora", "Space Grotesk", "Inter", sans-serif', whiteSpace: "nowrap" }}
+              >
+                Rank is not luck.
+              </span>
+            </span>
+            <span className="hline">
+              <span className="block" style={{ animationDelay: "0.12s", whiteSpace: "nowrap" }}>
+                <span className="display serif-it headline-warm">It’s repetition.</span>
+              </span>
+            </span>
+          </h1>
+
+          <div
+            className="rise mx-auto mt-6 h-px w-24 lg:mx-0"
+            style={{ background: "linear-gradient(90deg, transparent, var(--accent), transparent)", animationDelay: "0.3s" }}
+          />
+
+          <p className="rise mx-auto mt-5 max-w-[440px] text-[15px] leading-relaxed lg:mx-0" style={{ color: "var(--muted)", animationDelay: "0.38s" }}>
+            Every mock replays the real paper — same pattern, same clock, same
+            negative marking. You attempt, the report talks, the leaks get
+            fixed, and the next attempt starts stronger than the last.
+          </p>
+
+          <div className="rise mt-7 flex flex-wrap justify-center gap-3 lg:justify-start" style={{ animationDelay: "0.46s" }}>
+            <Link
+              href="/#demo"
+              className="cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
+              style={{ background: "var(--btn-bg)", color: "var(--btn-text)", boxShadow: "var(--shadow-1)" }}
+            >
+              Take the free mock <span className="carr">→</span>
             </Link>
-            <Link href="/#exams" className="hbtn hbtn-2 navfont justify-center px-7 py-3.5 text-[14px]">
-              Explore Mock Tests
+            <Link
+              href="/#exams"
+              className="cta-line rounded-full px-7 py-3.5 text-sm font-semibold"
+              style={{ border: "1px solid var(--border)", background: "color-mix(in srgb, var(--nav-bg) 55%, transparent)" }}
+            >
+              Explore the pattern
             </Link>
           </div>
 
-          <div
-            className="mono mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-semibold"
-            style={{ color: "rgba(244, 244, 246, 0.42)", letterSpacing: "0.18em" }}
-          >
-            <span>120 QUESTIONS</span>
-            <span aria-hidden className="h-3 w-px" style={{ background: "rgba(255, 255, 255, 0.14)" }} />
-            <span>REAL CLOCK</span>
-            <span aria-hidden className="h-3 w-px" style={{ background: "rgba(255, 255, 255, 0.14)" }} />
-            <span>+4 / −1 MARKING</span>
+          <div className="rise mt-7 flex items-center justify-center gap-7 lg:justify-start" style={{ animationDelay: "0.54s" }}>
+            <div>
+              <div className="mono text-[24px] font-extrabold leading-none">120</div>
+              <div className="mt-1.5 text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
+                Question paper · NIMCET
+              </div>
+            </div>
+            <span aria-hidden className="h-8 w-px" style={{ background: "var(--border)" }} />
+            <div>
+              <div className="mono text-[24px] font-extrabold leading-none">75</div>
+              <div className="mt-1.5 text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
+                Question paper · CUET PG
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right: the subject — a dimensional subject orrery */}
-        <div className="rise relative mx-auto w-full max-w-[420px] sm:max-w-[480px] lg:col-span-6 lg:mx-0 lg:max-w-[540px] lg:justify-self-end" style={{ animationDelay: "0.15s" }}>
-          <div className="hero-lift relative aspect-square">
-            {/* micro fragments */}
-            {FRAGS.map((f) => (
-              <span
-                key={f.t}
-                aria-hidden
-                className={`mono absolute hidden text-[11px] font-semibold md:block ${f.pos}`}
-                style={{ color: "rgba(255, 255, 255, 0.34)", letterSpacing: "0.06em" }}
-              >
-                {f.t}
-              </span>
-            ))}
-
-            {/* the cage: four lit rings around a glowing core */}
-            <svg viewBox="0 0 560 560" className="absolute inset-0 block h-full w-full" aria-hidden>
+        {/* Compass core — decor only */}
+        <div aria-hidden className="rise" style={{ animationDelay: "0.35s" }}>
+          <div className="hero-par-2 relative mx-auto w-[min(80vw,320px)] sm:w-[340px] lg:w-[400px]">
+            <div className="core-glow pointer-events-none absolute -inset-[16%]" />
+            <svg viewBox="0 0 480 480" className="relative block h-auto w-full">
               <defs>
-                <linearGradient id="hxG1" gradientUnits="userSpaceOnUse" x1="70" y1="40" x2="500" y2="530">
-                  <stop offset="0" style={{ stopColor: "#ffffff", stopOpacity: 0.55 }} />
-                  <stop offset="1" style={{ stopColor: "#ffffff", stopOpacity: 0.07 }} />
-                </linearGradient>
-                <linearGradient id="hxG2" gradientUnits="userSpaceOnUse" x1="70" y1="40" x2="500" y2="530">
-                  <stop offset="0" style={{ stopColor: "#ffffff", stopOpacity: 0.4 }} />
-                  <stop offset="1" style={{ stopColor: "#ffffff", stopOpacity: 0.06 }} />
-                </linearGradient>
-                <linearGradient id="hxG3" gradientUnits="userSpaceOnUse" x1="70" y1="40" x2="500" y2="530">
-                  <stop offset="0" style={{ stopColor: "#ffffff", stopOpacity: 0.32 }} />
-                  <stop offset="1" style={{ stopColor: "#ffffff", stopOpacity: 0.05 }} />
-                </linearGradient>
-                <linearGradient id="hxG4" gradientUnits="userSpaceOnUse" x1="70" y1="40" x2="500" y2="530">
-                  <stop offset="0" style={{ stopColor: "#ffffff", stopOpacity: 0.5 }} />
-                  <stop offset="1" style={{ stopColor: "#ffffff", stopOpacity: 0.08 }} />
-                </linearGradient>
-                <radialGradient id="hxHalo">
-                  <stop offset="0" style={{ stopColor: "var(--accent)", stopOpacity: 0.3 }} />
-                  <stop offset="1" style={{ stopColor: "var(--accent)", stopOpacity: 0 }} />
+                <radialGradient id="coreOrbG" cx="0.38" cy="0.3" r="0.92">
+                  <stop offset="0" className="core-stop-a" stopOpacity="0.34" />
+                  <stop offset="0.6" className="core-stop-a" stopOpacity="0.09" />
+                  <stop offset="1" className="core-stop-a" stopOpacity="0" />
                 </radialGradient>
-                <radialGradient id="hxCore">
-                  <stop offset="0" style={{ stopColor: "#ffffff", stopOpacity: 0.98 }} />
-                  <stop offset="0.45" style={{ stopColor: "var(--accent)", stopOpacity: 0.85 }} />
-                  <stop offset="1" style={{ stopColor: "var(--accent)", stopOpacity: 0 }} />
+                <radialGradient id="coreShadowG" cx="0.5" cy="0.5" r="0.5">
+                  <stop offset="0" className="core-stop-a" stopOpacity="0.2" />
+                  <stop offset="1" className="core-stop-a" stopOpacity="0" />
                 </radialGradient>
               </defs>
 
-              {/* ambient core light */}
-              <circle cx="280" cy="280" r="130" fill="url(#hxHalo)" />
-
-              {/* rings, lit from the top-left corner */}
-              <g fill="none">
-                <ellipse cx="280" cy="280" rx="230" ry="86" transform="rotate(-16 280 280)" stroke="url(#hxG1)" strokeWidth="1.6" />
-                <ellipse cx="280" cy="280" rx="230" ry="148" transform="rotate(48 280 280)" stroke="url(#hxG2)" strokeWidth="1.4" />
-                <ellipse cx="280" cy="280" rx="224" ry="204" transform="rotate(-72 280 280)" stroke="url(#hxG3)" strokeWidth="1.2" />
-                <ellipse cx="280" cy="280" rx="234" ry="54" transform="rotate(22 280 280)" stroke="url(#hxG4)" strokeWidth="1.2" />
+              {/* dial ticks */}
+              <g style={{ stroke: "color-mix(in srgb, var(--text) 14%, transparent)" }}>
+                {TICKS.map((t, i) => (
+                  <line
+                    key={i}
+                    x1={t.x1}
+                    y1={t.y1}
+                    x2={t.x2}
+                    y2={t.y2}
+                    strokeWidth={t.major ? 1.6 : 1}
+                    style={t.major ? { stroke: "color-mix(in srgb, var(--text) 32%, transparent)" } : undefined}
+                  />
+                ))}
               </g>
 
-              {/* ring nodes — one lit by the accent */}
-              <circle cx="64" cy="311" r="2.4" fill="rgba(255,255,255,0.45)" />
-              <circle cx="187" cy="83" r="2.4" fill="rgba(255,255,255,0.45)" />
-              <circle cx="439" cy="412" r="2.4" fill="rgba(255,255,255,0.4)" />
-              <circle cx="490" cy="375" r="3" style={{ fill: "var(--accent)", opacity: 0.9 }} />
+              {/* rotating dashed orbit */}
+              <g className="core-spin-c">
+                <circle
+                  cx="240"
+                  cy="240"
+                  r="178"
+                  fill="none"
+                  strokeWidth="1"
+                  strokeDasharray="2 7"
+                  strokeLinecap="round"
+                  style={{ stroke: "color-mix(in srgb, var(--text) 22%, transparent)" }}
+                />
+              </g>
 
-              {/* core */}
-              <circle cx="280" cy="280" r="62" fill="none" stroke="rgba(255,255,255,0.09)" />
-              <circle cx="280" cy="280" r="34" fill="url(#hxCore)" className="orb-pulse" />
-              <circle cx="280" cy="280" r="6" fill="#ffffff" />
+              {/* fixed inner circle + halo ring */}
+              <circle cx="240" cy="240" r="150" fill="none" strokeWidth="1" style={{ stroke: "color-mix(in srgb, var(--text) 12%, transparent)" }} />
+              <circle
+                cx="240"
+                cy="240"
+                r="112"
+                fill="none"
+                strokeWidth="1"
+                strokeDasharray="1 5"
+                strokeLinecap="round"
+                style={{ stroke: "color-mix(in srgb, var(--accent) 22%, transparent)" }}
+              />
+
+              {/* syllabus glyphs */}
+              <g className="mono" textAnchor="middle" style={{ fill: "color-mix(in srgb, var(--text) 26%, transparent)" }}>
+                {GLYPHS.map(([g, x, y]) => (
+                  <text key={g} x={x} y={y} fontSize="15" dominantBaseline="central">
+                    {g}
+                  </text>
+                ))}
+              </g>
+
+              {/* orbiting nodes */}
+              <g className="core-spin-a">
+                <circle cx="240" cy="62" r="12" style={{ fill: "color-mix(in srgb, var(--accent) 20%, transparent)" }} />
+                <circle cx="240" cy="62" r="5" style={{ fill: "var(--accent)" }} />
+              </g>
+              <g className="core-spin-b">
+                <circle cx="390" cy="240" r="4" style={{ fill: "var(--gold-3)" }} />
+              </g>
+
+              {/* monogram orb */}
+              <g className="core-breathe">
+                <circle cx="240" cy="240" r="88" strokeWidth="1" style={{ fill: "color-mix(in srgb, var(--nav-bg) 72%, transparent)", stroke: "var(--border)" }} />
+                <circle cx="240" cy="240" r="88" style={{ fill: "url(#coreOrbG)" }} />
+                {/* brand wordmark, in place of the monogram */}
+                <image href="/logo.png" x="165" y="214" width="150" height="26" className="orb-logo" preserveAspectRatio="xMidYMid meet" />
+                <text
+                  x="240"
+                  y="292"
+                  textAnchor="middle"
+                  fontSize="8"
+                  className="mono"
+                  style={{ fill: "color-mix(in srgb, var(--text) 46%, transparent)", letterSpacing: "0.22em" }}
+                >
+                  REAL QUESTION PAPERS
+                </text>
+              </g>
+
+              {/* ground reflection */}
+              <ellipse cx="240" cy="466" rx="132" ry="13" style={{ fill: "url(#coreShadowG)" }} />
             </svg>
-
-            {/* dial layer — dashed ring + orbiting satellite */}
-            <div aria-hidden className="orb-spin absolute inset-0">
-              <svg viewBox="0 0 560 560" className="block h-full w-full">
-                <circle cx="280" cy="280" r="246" fill="none" stroke="rgba(255,255,255,0.13)" strokeWidth="1" strokeDasharray="1 9" />
-                <circle cx="280" cy="34" r="13" fill="rgba(255,255,255,0.16)" />
-                <circle cx="280" cy="34" r="4" fill="#ffffff" opacity="0.92" />
-              </svg>
-            </div>
-
-            {/* counter layer — accent arc + accent satellite */}
-            <div aria-hidden className="orb-spin-rev absolute inset-0">
-              <svg viewBox="0 0 560 560" className="block h-full w-full">
-                <circle cx="280" cy="280" r="252" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" strokeDasharray="300 1283" transform="rotate(-90 280 280)" strokeLinecap="round" />
-                <circle cx="280" cy="56" r="12" style={{ fill: "var(--accent)", opacity: 0.18 }} />
-                <circle cx="280" cy="56" r="3.2" style={{ fill: "var(--accent)", opacity: 0.95 }} />
-              </svg>
-            </div>
-
-            {/* subject callouts */}
-            {LABELS.map((l) => (
-              <span
-                key={l.t}
-                className={`hero-label mono absolute flex items-center gap-1.5 whitespace-nowrap text-[9px] font-semibold ${l.pos}`}
-                style={{ letterSpacing: "0.16em" }}
-              >
-                <span aria-hidden className="inline-block h-1 w-1 shrink-0 rounded-full" style={{ background: "var(--accent)" }} />
-                <span aria-hidden className="inline-block h-px w-3 shrink-0" style={{ background: "rgba(255, 255, 255, 0.22)" }} />
-                {l.t}
-              </span>
-            ))}
           </div>
         </div>
       </div>
 
+      {/* Scroll cue */}
+      <div aria-hidden className="pointer-events-none absolute bottom-24 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 md:flex">
+        <span className="mono text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.3em" }}>
+          Scroll
+        </span>
+        <span className="scroll-line" />
+      </div>
+
       {/* Subject ticker — loop math unchanged */}
-      <div aria-hidden className="marquee-mask relative overflow-hidden py-3" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
-        <div className="marquee mono gap-10 text-[11px] font-semibold" style={{ color: "rgba(244, 244, 246, 0.4)", letterSpacing: "0.18em" }}>
+      <div aria-hidden className="marquee-mask relative overflow-hidden py-2.5" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="marquee mono gap-10 text-[11px] font-semibold" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
           {[0, 1].map((k) => (
             <div key={k} className="flex shrink-0 gap-10 pr-10">
               {TICKER.map((t) => (

@@ -133,21 +133,7 @@ body::after {
   color: var(--muted);
   display: inline-block;
   position: relative;
-  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.012em;
   transition: color 0.25s, transform 0.25s;
-}
-header .nlink {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-/* Overflow links (FAQs, Contact): the seven uppercase links need ~584px, the
-   bar offers ~513px at 1024 — reveal the last two once it truly fits. */
-.navwide { display: none; }
-@media (min-width: 1140px) {
-  .navwide { display: inline-block; }
 }
 .nlink:hover {
   color: var(--accent);
@@ -189,27 +175,6 @@ footer .nlink::after { display: none; }
 .menu-in { animation: menu-in 0.18s ease-out; transform-origin: top right; }
 .nlink.active { color: var(--accent); }
 
-/* navbar: premium type voice + accent hairline on the header's bottom edge */
-.navfont {
-  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: 0.012em;
-}
-.logo-tag {
-  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.nav-hairline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 1px;
-  pointer-events: none;
-  opacity: 0.55;
-  background: linear-gradient(90deg, transparent 3%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 97%);
-}
-
 /* hero ticker */
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .marquee { display: flex; width: max-content; animation: marquee 30s linear infinite; }
@@ -248,46 +213,33 @@ footer .nlink::after { display: none; }
 }
 .rv.in { opacity: 1; transform: none; }
 
-/* ---- hero v8: dark cinematic stage — headline left, subject orrery right.
-   A fixed near-black band in every theme; the theme accent lights the
-   atmosphere and the object, so each theme tints the same composition. ---- */
-.hero {
-  background:
-    radial-gradient(58% 52% at 76% 32%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
-    radial-gradient(44% 38% at 8% 90%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 72%),
-    linear-gradient(180deg, #0a0c11 0%, #0e1118 58%, #0a0c11 100%);
-  color: #f4f4f6;
+/* ---- hero stage v4: precision-instrument stage — dot sheet, single
+   cursor glow (navbar-clamped), rotating compass core. Zero blur filters. ---- */
+.hero { --mx: 50vw; --my: 38vh; --nx: 0; --ny: 0; }
+.hero-dots {
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 10%, transparent) 1.1px, transparent 1.5px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(120% 92% at 50% 26%, #000 30%, transparent 74%);
+  mask-image: radial-gradient(120% 92% at 50% 26%, #000 30%, transparent 74%);
+  animation: grid-drift 34s linear infinite;
 }
-.hero-eyebrow {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(244, 244, 246, 0.66);
+@keyframes grid-drift { from { background-position: 0 0; } to { background-position: 52px 26px; } }
+.hero-vignette {
+  background: radial-gradient(130% 100% at 50% 0%, transparent 52%, color-mix(in srgb, var(--text) 6%, transparent));
 }
-.hero-em {
-  background: linear-gradient(96deg, var(--accent), color-mix(in srgb, var(--accent) 45%, #ffffff));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.hero-glow {
+  position: absolute; left: 0; top: 0; width: 880px; height: 880px; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent 72%);
+  transform: translate3d(calc(var(--mx) - 440px), calc(var(--my) - 440px), 0);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
-/* hero buttons — fixed light-on-dark roles, independent of theme tokens */
-.hbtn { display: inline-flex; align-items: center; gap: 0.55rem; border-radius: 9999px; font-weight: 700; }
-.hbtn-1 { background: #f4f4f6; color: #0b0d12; box-shadow: 0 22px 46px -22px rgba(0, 0, 0, 0.8); transition: transform 0.25s, background 0.25s; }
-.hbtn-1:hover { transform: translateY(-2px); background: #ffffff; }
-.hbtn-1 .carr { display: inline-block; transition: transform 0.25s; }
-.hbtn-1:hover .carr { transform: translateX(4px); }
-.hbtn-2 { border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.03); color: #f4f4f6; transition: transform 0.25s, border-color 0.25s, background 0.25s; }
-.hbtn-2:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.44); background: rgba(255, 255, 255, 0.08); }
-/* the subject: a slow-floating orrery with counter-rotating dial layers */
-.hero-lift { animation: hero-lift 9s ease-in-out infinite; }
-@keyframes hero-lift { 0%, 100% { transform: translate3d(0, -7px, 0); } 50% { transform: translate3d(0, 7px, 0); } }
-.orb-spin { animation: orb-spin 64s linear infinite; }
-.orb-spin-rev { animation: orb-spin 88s linear infinite reverse; }
-@keyframes orb-spin { to { transform: rotate(360deg); } }
-.orb-pulse { animation: orb-pulse 5.5s ease-in-out infinite; }
-@keyframes orb-pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
-.hero-label { color: rgba(244, 244, 246, 0.58); }
-.hline { display: block; overflow: hidden; padding-bottom: 0.18em; margin-bottom: -0.18em; }
-.hline > span { display: block; transform: translateY(130%); animation: line-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.hero-par-2 {
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(calc(var(--nx) * 7px), calc(var(--ny) * 6px), 0);
+}
+.hline { display: block; overflow: hidden; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+.hline > span { display: block; transform: translateY(118%); animation: line-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
 @keyframes line-up { to { transform: translateY(0); } }
 .track-in { animation: track-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
 @keyframes track-in { from { opacity: 0; letter-spacing: 0.42em; filter: blur(5px); } to { opacity: 1; letter-spacing: 0.22em; filter: none; } }
@@ -307,6 +259,19 @@ footer .nlink::after { display: none; }
 }
 @keyframes cue-drop { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
 
+/* compass core — the hero centerpiece (pure SVG + CSS transforms) */
+.core-glow {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent-2) 7%, transparent) 58%, transparent 78%);
+}
+.core-spin-a { transform-box: view-box; transform-origin: 240px 240px; animation: core-spin 46s linear infinite; }
+.core-spin-b { transform-box: view-box; transform-origin: 240px 240px; animation: core-spin 34s linear infinite reverse; }
+.core-spin-c { transform-box: view-box; transform-origin: 240px 240px; animation: core-spin 64s linear infinite; }
+@keyframes core-spin { to { transform: rotate(360deg); } }
+.core-breathe { animation: core-breathe 7.5s ease-in-out infinite; }
+@keyframes core-breathe { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
+.core-stop-a { stop-color: var(--accent); }
+.core-stop-b { stop-color: var(--accent-2); }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto !important; }
   /* Universal fallback: any animation/transition not covered by the
@@ -325,10 +290,11 @@ footer .nlink::after { display: none; }
   .menu-in { animation: none; }
   .tmenu, .tmenu .tdot { transition: none; }
   .orb, .bg-pan, .headline-warm, .scroll-cue, .chart-bar, .pop,
-  .ring-grad::before, .track-in, .hline > span,
-  .hero-lift, .orb-spin, .orb-spin-rev, .orb-pulse { animation: none; }
+  .ring-grad::before, .hero-dots, .track-in, .hline > span,
+  .core-spin-a, .core-spin-b, .core-spin-c, .core-breathe { animation: none; }
   .hline > span { transform: none; }
   .scroll-line::after { animation: none; }
+  .hero-glow, .hero-par-2 { transition: none; }
 }
 
 /* CTA: lift + sheen sweep, no glow */
@@ -585,6 +551,9 @@ footer .nlink::after { display: none; }
 .site-logo { mix-blend-mode: multiply; }
 [data-theme="midnight"] .site-logo,
 [data-theme="forest"] .site-logo { filter: invert(1); mix-blend-mode: screen; }
+/* wordmark inside the hero orb: dark-on-light ink, flipped on dark themes */
+[data-theme="midnight"] .orb-logo,
+[data-theme="forest"] .orb-logo { filter: invert(1); }
 
 /* ============ admin panel UI helpers ============ */
 .admin-input {
