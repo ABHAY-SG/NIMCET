@@ -23,9 +23,14 @@ type BankRow = {
 //     submission is rejected);
 //   - submissions are throttled per account so the answer key cannot be
 //     farmed by rapid blank submissions;
+//   - retried submissions of the same finished run (a dropped response makes
+//     the client retry) do not create duplicate attempt rows;
 //   - raw database error text is never returned to the client.
 const SUBMIT_WINDOW_MS = 5 * 60_000;
 const SUBMIT_MAX_IN_WINDOW = 25;
+// Identical-attempt dedupe window: an attempt with the same test name and the
+// exact same counters recorded moments ago is the same submission retried.
+const DUPLICATE_WINDOW_MS = 120_000;
 
 export async function POST(req: Request) {
   const ctx = await requireUser();
@@ -165,15 +170,37 @@ export async function POST(req: Request) {
     }
 
     score = Math.round(score * 10) / 10;
-    const { error: insErr } = await svc.from("attempts").insert({
-      user_id: user.id,
-      test,
-      score,
-      correct,
-      wrong,
-      skipped,
-    });
-    if (insErr) throw insErr;
+
+    // Duplicate-submission guard: a dropped response can make the client
+    // retry a submission the server already recorded. An IDENTICAL attempt
+    // (same user, same test name, same counters) recorded moments ago is that
+    // same submission — skip the duplicate row; the student still gets this
+    // scorecard. Genuinely different outcomes are always recorded.
+    const dupSince = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString();
+    const { data: dups, error: dupErr } = await svc
+      .from("attempts")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("test", test)
+      .eq("score", score)
+      .eq("correct", correct)
+      .eq("wrong", wrong)
+      .eq("skipped", skipped)
+      .gte("created_at", dupSince)
+      .limit(1);
+    if (dupErr) throw dupErr;
+
+    if (!Array.isArray(dups) || dups.length === 0) {
+      const { error: insErr } = await svc.from("attempts").insert({
+        user_id: user.id,
+        test,
+        score,
+        correct,
+        wrong,
+        skipped,
+      });
+      if (insErr) throw insErr;
+    }
 
     // Details follow the submitted order (duplicates repeat their question's
     // detail) so the client can render them index-aligned.
