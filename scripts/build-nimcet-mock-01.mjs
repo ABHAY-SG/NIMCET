@@ -7,7 +7,7 @@
 // Run from the repo root:  node scripts/build-nimcet-mock-01.mjs
 //
 // The script fails (non-zero exit) if any structural invariant is broken:
-// wrong per-section counts, 4 unique options per question, answer in 0..3,
+// wrong per-section counts, 4 or 5 unique options per question, answer in range,
 // marking that does not match the official section scheme, duplicate stems,
 // or a total that is not 120 questions / 1000 max marks.
 
@@ -74,7 +74,7 @@ for (const file of FILES) {
 const stemsSeen = new Map();
 const optionSets = new Map();
 const perSection = new Map();
-for (const key of MARKS.keys()) perSection.set(key, { count: 0, marks: 0, answers: [0, 0, 0, 0], diffs: { Easy: 0, Medium: 0, Hard: 0 } });
+for (const key of MARKS.keys()) perSection.set(key, { count: 0, marks: 0, answers: [0, 0, 0, 0, 0], diffs: { Easy: 0, Medium: 0, Hard: 0 } });
 
 rows.forEach((q, idx) => {
   const where = `${q._file} #${q._n}`;
@@ -87,19 +87,19 @@ rows.forEach((q, idx) => {
   const stem = String(q.stem ?? "").trim();
   if (stem.length < 5 || stem.length > 4000) problems.push(`${where}: stem length ${stem.length} out of range`);
   if (!String(q.topic ?? "").trim()) problems.push(`${where}: empty topic`);
-  if (!Array.isArray(q.options) || q.options.length !== 4) {
-    problems.push(`${where}: needs exactly 4 options`);
+  if (!Array.isArray(q.options) || ![4, 5].includes(q.options.length)) {
+    problems.push(`${where}: needs 4 or 5 options`);
   } else {
     const opts = q.options.map((o) => String(o ?? "").trim());
     if (opts.some((o) => !o || o.length > 1000)) problems.push(`${where}: empty or overlong option`);
-    if (new Set(opts.map((o) => o.toLowerCase())).size !== 4) problems.push(`${where}: duplicate options inside the question`);
+    if (new Set(opts.map((o) => o.toLowerCase())).size !== opts.length) problems.push(`${where}: duplicate options inside the question`);
     const key = opts.map((o) => o.toLowerCase()).sort().join("|");
     if (optionSets.has(key)) warnings.push(`${where}: option set identical to ${optionSets.get(key)} — check it is a genuinely different question`);
     else optionSets.set(key, where);
   }
-  if (!Number.isInteger(q.answer) || q.answer < 0 || q.answer > 3) problems.push(`${where}: answer must be an integer 0..3, got ${q.answer}`);
+  if (!Number.isInteger(q.answer) || q.answer < 0 || !Array.isArray(q.options) || q.answer >= q.options.length) problems.push(`${where}: answer must index an available option, got ${q.answer}`);
   const exp = String(q.explanation ?? "").trim();
-  if (exp.length < 5 || exp.length > 4000) problems.push(`${where}: explanation length ${exp.length} out of range`);
+  if (exp.length > 4000) problems.push(`${where}: explanation length ${exp.length} out of range`);
 
   const norm = stem.toLowerCase().replace(/\s+/g, " ").replace(/[“”"']/g, "");
   if (stemsSeen.has(norm)) problems.push(`${where}: stem duplicated with ${stemsSeen.get(norm)}`);
@@ -144,12 +144,12 @@ console.log("All structural checks passed.");
 
 // ---------- generate ----------
 const sq = (v) => "'" + String(v).replace(/'/g, "''") + "'";
-const LETTERS = ["A", "B", "C", "D"];
+const LETTERS = ["A", "B", "C", "D", "E"];
 
 const valueLines = rows.map((q, i) => {
   const seq = i + 1;
-  const opts = q.options.map((o) => sq(o));
-  return `  (${seq}, ${sq(q.section)}, ${sq(q.topic)}, ${sq(q.difficulty)}, ${sq(q.stem)}, ${opts[0]}, ${opts[1]}, ${opts[2]}, ${opts[3]}, ${q.answer}, ${sq(q.explanation)}, ${q.plus}, ${q.minus})`;
+  const opts = `jsonb_build_array(${q.options.map((o) => sq(o)).join(", ")})`;
+  return `  (${seq}, ${sq(q.section)}, ${sq(q.topic)}, ${sq(q.difficulty)}, ${sq(q.stem)}, ${opts}, ${q.answer}, ${sq(q.explanation)}, ${q.plus}, ${q.minus})`;
 });
 
 const sectionsJson = JSON.stringify(SECTIONS);
@@ -184,24 +184,20 @@ create temporary table seed_mock01 (
   topic       text not null,
   difficulty  text not null,
   stem        text not null,
-  option_a    text not null,
-  option_b    text not null,
-  option_c    text not null,
-  option_d    text not null,
+  options     jsonb not null,
   answer      int  not null,
   explanation text not null,
   plus        numeric not null,
   minus       numeric not null
 ) on commit drop;
 
-insert into seed_mock01 (seq, section, topic, difficulty, stem, option_a, option_b, option_c, option_d, answer, explanation, plus, minus) values
+insert into seed_mock01 (seq, section, topic, difficulty, stem, options, answer, explanation, plus, minus) values
 ${valueLines.join(",\n")};
 
 -- 3. Insert only questions that do not exist yet (matched by exact stem).
 insert into public.questions (exam, section, topic, difficulty, stem, options, answer, explanation, plus, minus)
 select 'nimcet', s.section, s.topic, s.difficulty, s.stem,
-       jsonb_build_array(s.option_a, s.option_b, s.option_c, s.option_d),
-       s.answer, s.explanation, s.plus, s.minus
+       s.options, s.answer, s.explanation, s.plus, s.minus
 from seed_mock01 s
 where not exists (select 1 from public.questions q where q.stem = s.stem);
 
@@ -260,9 +256,9 @@ const csvCell = (v) => {
   const s = String(v);
   return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 };
-const csvHeader = "exam,section,topic,difficulty,stem,optiona,optionb,optionc,optiond,answer,explanation,plus,minus";
+const csvHeader = "exam,section,topic,difficulty,stem,options,answer,explanation,plus,minus";
 const csvLines = rows.map((q) =>
-  ["nimcet", q.section, q.topic, q.difficulty, q.stem, q.options[0], q.options[1], q.options[2], q.options[3], LETTERS[q.answer], q.explanation, q.plus, q.minus]
+  ["nimcet", q.section, q.topic, q.difficulty, q.stem, JSON.stringify(q.options), LETTERS[q.answer], q.explanation, q.plus, q.minus]
     .map(csvCell)
     .join(",")
 );
