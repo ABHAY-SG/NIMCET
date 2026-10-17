@@ -341,10 +341,10 @@ export default function ProfilePage() {
   };
 
   const cardStyle: React.CSSProperties = {
-    background: "#ffffff",
+    background: "var(--card)",
     border: "1px solid var(--border)",
     boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)",
-    color: "#1e2952",
+    color: "var(--text)",
   };
 
   return (
@@ -372,8 +372,8 @@ export default function ProfilePage() {
                   <img src={`/api/avatar?src=${encodeURIComponent(avatarUrl)}`} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
                 ) : (
                   <span
-                    className="flex h-full w-full items-center justify-center text-3xl font-extrabold text-white"
-                    style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                    className="flex h-full w-full items-center justify-center text-3xl font-extrabold"
+                    style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
                   >
                     {initialsOf(displayName, email)}
                   </span>
@@ -473,7 +473,7 @@ export default function ProfilePage() {
               )}
               <div className="mt-3 flex gap-2">
                 <button type="button" onClick={saveProfile} disabled={busy}
-                  className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                  className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-50"
                   style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
                   {busy ? "Saving…" : "Save changes"}
                 </button>
@@ -535,7 +535,7 @@ export default function ProfilePage() {
               )}
               <div className="mt-3 flex gap-2">
                 <button type="button" onClick={savePassword} disabled={busy}
-                  className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                  className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-50"
                   style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
                   {busy ? "Saving…" : pwMode === "set" ? "Set password" : "Update password"}
                 </button>
@@ -616,7 +616,7 @@ export default function ProfilePage() {
                     <span
                       className="flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold"
                       style={d.active
-                        ? { background: "var(--accent)", color: "#fff" }
+                        ? { background: "var(--accent)", color: "var(--accent-fg)" }
                         : { background: "var(--pill)", color: "var(--muted)", border: d.isToday ? "1.5px solid var(--accent)" : "1px solid transparent" }}
                     >
                       {d.active ? "✓" : d.label}

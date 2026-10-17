@@ -25,7 +25,7 @@ type Test = {
   question_ids: string[];
 };
 
-type Run = { qs: MockQuestion[]; title: string; testName: string; minutes: number };
+type Run = { qs: MockQuestion[]; title: string; testName: string; attemptName: string; testId?: string; minutes: number };
 
 function toMock(q: BankRow): MockQuestion {
   return {
@@ -133,6 +133,10 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
       qs: rows.map(toMock),
       title: t.title.toUpperCase(),
       testName: `${t.title} (${rows.length}Q)`,
+      // The plain title is what attempt history stores and what the
+      // dashboard matches tests against; the "(NQ)" form is display-only.
+      attemptName: t.title,
+      testId: t.id,
       minutes: t.minutes || Math.max(10, rows.length),
     });
     window.scrollTo({ top: 0 });
@@ -145,18 +149,20 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
       qs: picked.map(toMock),
       title: "CUSTOM MOCK",
       testName: `Custom ${examLabel(exam)} mock (${picked.length}Q)`,
+      attemptName: `Custom ${examLabel(exam)} mock (${picked.length}Q)`,
       minutes,
     });
     window.scrollTo({ top: 0 });
   };
 
-  const submitRun = async (qs: MockQuestion[], testName: string, picks: Record<number, number>) => {
+  const submitRun = async (qs: MockQuestion[], attemptName: string, testId: string | undefined, picks: Record<number, number>) => {
     const r = await fetch("/api/student/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "same-origin",
       body: JSON.stringify({
-        test: testName,
+        test: attemptName,
+        testId,
         answers: qs.map((q, i) => ({ id: q.qid ?? "", answer: picks[i] ?? null })),
       }),
     });
@@ -165,12 +171,22 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
     return j as { score: number; correct: number; wrong: number; skipped: number; details: Array<{ stem: string; opts: string[]; picked: number | null; correct: number; exp: string; ok?: boolean }> };
   };
 
+  const leaveRun = () => {
+    if (run && run.qs.length > 0) {
+      let inProgress = false;
+      try { inProgress = sessionStorage.getItem("nimcuet-run-v1") !== null; } catch {}
+      if (inProgress && !window.confirm("Leave this test? Your in-progress run will be discarded.")) return;
+      try { sessionStorage.removeItem("nimcuet-run-v1"); } catch {}
+    }
+    setRun(null);
+  };
+
   if (run) {
     return (
       <div>
         <button
           type="button"
-          onClick={() => setRun(null)}
+          onClick={leaveRun}
           className="mb-3 inline-flex cursor-pointer items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1"
           style={{ color: "var(--muted)" }}
         >
@@ -183,7 +199,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
           minutes={run.minutes}
           testName={run.testName}
           autoStart
-          onSubmit={(picks) => submitRun(run.qs, run.testName, picks)}
+          onSubmit={run.qs.length > 0 ? (picks) => submitRun(run.qs, run.attemptName, run.testId, picks) : undefined}
         />
       </div>
     );
@@ -224,8 +240,8 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
         </div>
       </section>
 
-      <section className="mt-4 rounded-2xl bg-white px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
-        <h2 className="dash-display text-lg font-extrabold tracking-tight" style={{ color: "#1e2952" }}>Create your first mock</h2>
+      <section className="mt-4 rounded-2xl px-5 py-5" style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
+        <h2 className="dash-display text-lg font-extrabold tracking-tight" style={{ color: "var(--text)" }}>Create your first mock</h2>
         <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
           Pick an exam, difficulty and size — questions come straight from the bank{bank.length > 0 ? ` (${bank.length} loaded)` : ""}.
         </p>
@@ -234,7 +250,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
         ) : (
           <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
             <label className="block">
-              <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "#1e2952" }}>Exam</span>
+              <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "var(--text)" }}>Exam</span>
               <select value={exam} onChange={(e) => setExam(e.target.value)}
                 className="w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2"
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}>
@@ -244,7 +260,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
               </select>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "#1e2952" }}>Difficulty</span>
+              <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "var(--text)" }}>Difficulty</span>
               <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as (typeof DIFFS)[number])}
                 className="w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2"
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}>
@@ -254,7 +270,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
               </select>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "#1e2952" }}>Questions</span>
+              <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "var(--text)" }}>Questions</span>
               <select value={count} onChange={(e) => setCount(Number(e.target.value))}
                 className="w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2"
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}>
@@ -264,7 +280,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
               </select>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "#1e2952" }}>Minutes</span>
+              <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "var(--text)" }}>Minutes</span>
               <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}
                 className="w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2"
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}>
@@ -301,13 +317,13 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
           return (
             <div
               key={t.id}
-              className="relative flex flex-col overflow-hidden rounded-2xl bg-white px-5 py-5"
-              style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+              className="relative flex flex-col overflow-hidden rounded-2xl px-5 py-5"
+              style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
             >
               <span aria-hidden className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: "linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }} />
               <div className="flex items-center gap-2">
                 <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-xl text-base" style={{ background: "#fef3c7", color: "#d97706" }}>🏅</span>
-                <h3 className="truncate text-[15px] font-extrabold" style={{ color: "#1e2952" }} title={t.title}>{t.title}</h3>
+                <h3 className="truncate text-[15px] font-extrabold" style={{ color: "var(--text)" }} title={t.title}>{t.title}</h3>
                 {done > 0 && (
                   <span className="mono ml-auto shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>
                     ×{done}
@@ -315,9 +331,9 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
                 )}
               </div>
               <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[13px]">
-                <span style={{ color: "var(--muted)" }}>❓ <strong className="mono" style={{ color: "#1e2952" }}>{qcount}</strong> Questions</span>
-                <span style={{ color: "var(--muted)" }}>🕒 <strong className="mono" style={{ color: "#1e2952" }}>{t.minutes}</strong> Minutes</span>
-                <span style={{ color: "var(--muted)" }}>🏆 <strong className="mono" style={{ color: "#1e2952" }}>{marks}</strong> Marks</span>
+                <span style={{ color: "var(--muted)" }}>❓ <strong className="mono" style={{ color: "var(--text)" }}>{qcount}</strong> Questions</span>
+                <span style={{ color: "var(--muted)" }}>🕒 <strong className="mono" style={{ color: "var(--text)" }}>{t.minutes}</strong> Minutes</span>
+                <span style={{ color: "var(--muted)" }}>🏆 <strong className="mono" style={{ color: "var(--text)" }}>{marks}</strong> Marks</span>
                 <span style={{ color: t.free ? "#16a34a" : "#d97706", fontWeight: 800 }}>{t.free ? "FREE" : "PREMIUM"}</span>
               </div>
               <button
@@ -332,28 +348,28 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
           );
         })}
         {visibleTests.length === 0 && (
-          <div className="rounded-2xl bg-white p-6 text-center text-sm sm:col-span-2 xl:col-span-3" style={{ border: "1px dashed var(--border)", color: "var(--muted)" }}>
+          <div className="rounded-2xl p-6 text-center text-sm sm:col-span-2 xl:col-span-3" style={{ background: "var(--card)", border: "1px dashed var(--border)", color: "var(--muted)" }}>
             {query || kind !== "All"
               ? "No tests match this filter — clear the search or pick another filter."
               : "No published mocks yet — build a custom one above or try the free sample below."}
           </div>
         )}
         <div
-          className="relative flex flex-col overflow-hidden rounded-2xl bg-white px-5 py-5"
-          style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+          className="relative flex flex-col overflow-hidden rounded-2xl px-5 py-5"
+          style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
         >
           <span aria-hidden className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: "#16a34a" }} />
           <div className="flex items-center gap-2">
             <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-xl text-base" style={{ background: "#dcfce7", color: "#16a34a" }}>🆓</span>
-            <h3 className="text-[15px] font-extrabold" style={{ color: "#1e2952" }}>Free sample mock</h3>
+            <h3 className="text-[15px] font-extrabold" style={{ color: "var(--text)" }}>Free sample mock</h3>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[13px]">
-            <span style={{ color: "var(--muted)" }}>❓ <strong className="mono" style={{ color: "#1e2952" }}>12</strong> Questions</span>
-            <span style={{ color: "var(--muted)" }}>🕒 <strong className="mono" style={{ color: "#1e2952" }}>12</strong> Minutes</span>
+            <span style={{ color: "var(--muted)" }}>❓ <strong className="mono" style={{ color: "var(--text)" }}>12</strong> Questions</span>
+            <span style={{ color: "var(--muted)" }}>🕒 <strong className="mono" style={{ color: "var(--text)" }}>12</strong> Minutes</span>
           </div>
           <button
             type="button"
-            onClick={() => setRun({ qs: [], title: "SAMPLE MOCK", testName: "Free sample mock (12Q)", minutes: 12 })}
+            onClick={() => setRun({ qs: [], title: "SAMPLE MOCK", testName: "Free sample mock (12Q)", attemptName: "Free sample mock (12Q)", minutes: 12 })}
             className="mt-4 w-full cursor-pointer rounded-xl py-2.5 text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
             style={{ background: "linear-gradient(120deg, #0f766e, #115e59)" }}
           >

@@ -39,13 +39,19 @@ function examLabel(exam: string): string {
   return exam.toUpperCase();
 }
 
+// Older attempts stored "Title (NQ)" while tests are keyed by title alone;
+// compare on the base title so history from both formats lines up.
+function baseTestName(name: string): string {
+  return name.replace(/\s*\(\d+\s*Q\)\s*$/i, "").trim();
+}
+
 const MEDAL_LABEL = ["#1", "#2", "#3"];
 
 function AttemptRow({ a, cloud = false, best = 0, rank = 0 }: { a: Attempt; cloud?: boolean; best?: number; rank?: number }) {
   const pct = best > 0 ? Math.min(100, Math.round(((Number(a.score) || 0) / best) * 100)) : 0;
   return (
     <div
-      className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5"
+      className="flex items-center gap-3 rounded-2xl card-bg px-4 py-3.5"
       style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
     >
       {rank > 0 && rank <= 3 ? (
@@ -56,7 +62,7 @@ function AttemptRow({ a, cloud = false, best = 0, rank = 0 }: { a: Attempt; clou
         <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)" }}>📝</span>
       )}
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-extrabold" style={{ color: "#1e2952" }}>
+        <div className="truncate text-sm font-extrabold" style={{ color: "var(--text)" }}>
           {a.test}{" "}
           {!cloud && (
             <span className="mono rounded px-1.5 py-0.5 text-[10px]" style={{ background: "var(--pill)", color: "var(--muted)" }}>
@@ -85,11 +91,11 @@ function TrendChart({ data }: { data: Attempt[] }) {
   const bw = (W - PAD * 2) / pts.length;
   return (
     <div
-      className="mt-3 rounded-2xl bg-white px-5 py-4"
+      className="mt-3 rounded-2xl card-bg px-5 py-4"
       style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
     >
       <div className="flex items-baseline justify-between">
-        <div className="dash-display text-sm font-extrabold tracking-tight" style={{ color: "#1e2952" }}>Score trend</div>
+        <div className="dash-display text-sm font-extrabold tracking-tight" style={{ color: "var(--text)" }}>Score trend</div>
         <div className="text-[11px]" style={{ color: "#64748b" }}>last {pts.length} mocks • oldest → newest</div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="Score trend chart">
@@ -103,7 +109,7 @@ function TrendChart({ data }: { data: Attempt[] }) {
           return (
             <g key={a.id ?? i}>
               <rect x={x} y={H - 14 - h} width={Math.max(6, bw * 0.56)} height={h} rx="5" fill="var(--accent)" opacity={0.85} />
-              <text x={x + bw * 0.28} y={H - 18 - h} textAnchor="middle" fontSize="11" fontWeight="700" fill="#1e2952">{v}</text>
+              <text x={x + bw * 0.28} y={H - 18 - h} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text)">{v}</text>
             </g>
           );
         })}
@@ -285,12 +291,15 @@ export default function DashboardPage() {
 
   const visibleSeries = examFilter === "all" ? series : series.filter((t) => t.exam === examFilter);
 
-  const attemptsForTitle = (title: string) => attempts.filter((a) => a.test === title).length;
+  const attemptsForTitle = (title: string) => attempts.filter((a) => baseTestName(a.test) === title).length;
 
   // Attempt counts per test title (for catalog badges) — render-safe.
   const attemptedCounts = useMemo(() => {
     const m: Record<string, number> = {};
-    for (const a of attempts) m[a.test] = (m[a.test] ?? 0) + 1;
+    for (const a of attempts) {
+      const k = baseTestName(a.test);
+      m[k] = (m[k] ?? 0) + 1;
+    }
     return m;
   }, [attempts]);
 
@@ -450,25 +459,25 @@ export default function DashboardPage() {
       </Reveal>
 
       {note && (
-        <p className="mt-4 rounded-xl bg-white px-4 py-3 text-[13px]" style={{ border: "1px solid var(--border)" }}>{note}</p>
+        <p className="mt-4 rounded-xl card-bg px-4 py-3 text-[13px]" style={{ border: "1px solid var(--border)" }}>{note}</p>
       )}
 
       <Reveal>
         <section
-          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-5 py-4"
+          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl card-bg px-5 py-4"
           style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
         >
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg font-extrabold text-white" style={{ background: "var(--accent)" }}>N</span>
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg font-extrabold" style={{ background: "var(--accent)", color: "var(--accent-fg)" }}>N</span>
             <div>
-              <div className="text-sm font-extrabold" style={{ color: "#1e2952" }}>NIMCET 2027 <span className="ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>DATE TBA</span></div>
+              <div className="text-sm font-extrabold" style={{ color: "var(--text)" }}>NIMCET 2027 <span className="ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>DATE TBA</span></div>
               <div className="text-xs" style={{ color: "var(--muted)" }}>June 2027 cycle • official date awaited — countdown starts on announcement.</div>
             </div>
           </div>
           <div className="flex gap-2 text-center">
             {[["120", "Questions"], ["1000", "Marks"], ["120 min", "Duration"]].map(([v, l]) => (
               <div key={l} className="rounded-xl px-3.5 py-2" style={{ background: "var(--pill)" }}>
-                <div className="mono text-sm font-extrabold" style={{ color: "#1e2952" }}>{v}</div>
+                <div className="mono text-sm font-extrabold" style={{ color: "var(--text)" }}>{v}</div>
                 <div className="text-[10px] font-semibold" style={{ color: "var(--muted)" }}>{l}</div>
               </div>
             ))}
@@ -479,13 +488,13 @@ export default function DashboardPage() {
       {notices.length > 0 && (
         <Reveal>
           <section
-            className="mt-4 rounded-2xl bg-white px-5 py-4"
+            className="mt-4 rounded-2xl card-bg px-5 py-4"
             style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm" style={{ background: "var(--pill)" }}>📢</span>
-                <h2 className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Notices from admin</h2>
+                <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Notices from admin</h2>
               </div>
               {notices.length > 2 && (
                 <button
@@ -502,7 +511,7 @@ export default function DashboardPage() {
               {(showAllNotices ? notices : notices.slice(0, 2)).map((n) => (
                 <div key={n.id} className="rounded-xl px-4 py-3" style={{ background: "var(--pill)" }}>
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-[13px] font-extrabold" style={{ color: "#1e2952" }}>{n.title}</span>
+                    <span className="text-[13px] font-extrabold" style={{ color: "var(--text)" }}>{n.title}</span>
                     <span className="text-[11px]" style={{ color: "var(--muted)" }}>
                       {new Date(n.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </span>
@@ -517,7 +526,7 @@ export default function DashboardPage() {
 
       <Reveal>
         <div
-          className="mt-4 overflow-hidden rounded-2xl bg-white"
+          className="mt-4 overflow-hidden rounded-2xl card-bg"
           style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
         >
           <div className="grid grid-cols-2 gap-px sm:grid-cols-3 lg:grid-cols-6" style={{ background: "var(--border)" }}>
@@ -529,10 +538,10 @@ export default function DashboardPage() {
               { icon: "❓", label: "Questions", value: loading ? "…" : (derived?.questions ?? "0"), sub: "attempted total" },
               { icon: "🔥", label: "Day streak", value: loading ? "…" : formatStreak(derived?.streak ?? 0), sub: derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily" },
             ].map((s) => (
-              <div key={s.label} className="bg-white px-4 py-4">
+              <div key={s.label} className="card-bg px-4 py-4">
                 <div className="flex items-center gap-2">
                   <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm" style={{ background: "var(--pill)" }}>{s.icon}</span>
-                  <span className="text-[12px] font-bold" style={{ color: "#1e2952" }}>{s.label}</span>
+                  <span className="text-[12px] font-bold" style={{ color: "var(--text)" }}>{s.label}</span>
                 </div>
                 <div className="mono mt-1.5 text-xl font-extrabold" style={{ color: "var(--accent)" }}>{s.value}</div>
                 <div className="mt-0.5 text-[10px] font-semibold" style={{ color: "var(--muted)" }}>{s.sub}</div>
@@ -579,7 +588,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={t.id}
-                    className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl bg-white px-5 py-4 pl-7"
+                    className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl card-bg px-5 py-4 pl-7"
                     style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
                   >
                     <span aria-hidden className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: "linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }} />
@@ -597,7 +606,7 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
-                      <div className="mt-1.5 truncate text-sm font-extrabold" style={{ color: "#1e2952" }}>{t.title}</div>
+                      <div className="mt-1.5 truncate text-sm font-extrabold" style={{ color: "var(--text)" }}>{t.title}</div>
                       <div className="mono mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
                         {qcount}Q • {t.minutes} min{t.tag ? ` • ${t.tag}` : ""}
                       </div>
@@ -605,8 +614,8 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => setView("mock")}
-                      className="shrink-0 cursor-pointer rounded-xl px-4 py-2 text-[13px] font-extrabold text-white transition-transform hover:-translate-y-px"
-                      style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                      className="shrink-0 cursor-pointer rounded-xl px-4 py-2 text-[13px] font-extrabold transition-transform hover:-translate-y-px"
+                      style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
                     >
                       Practice →
                     </button>
@@ -622,7 +631,7 @@ export default function DashboardPage() {
         <h2 className="dash-display mt-10 text-lg font-extrabold tracking-tight">Recent attempts</h2>
         {attempts.length === 0 && !loading ? (
           <div
-            className="mt-3 rounded-2xl bg-white p-6 text-center text-sm"
+            className="mt-3 rounded-2xl card-bg p-6 text-center text-sm"
             style={{ border: "1px dashed var(--border)", color: "var(--muted)" }}
           >
             No attempts yet.{" "}
@@ -730,9 +739,9 @@ export default function DashboardPage() {
             <a href="/terms" className="font-bold underline" style={{ color: "var(--accent)" }}>Terms</a>.
           </p>
           <div className="mt-4 grid gap-2.5 md:grid-cols-3">
-            <div className="rounded-2xl bg-white px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
-              <div className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Free</div>
-              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "#1e2952" }}>₹0 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>forever</span></div>
+            <div className="rounded-2xl card-bg px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
+              <div className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Free</div>
+              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "var(--text)" }}>₹0 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>forever</span></div>
               <ul className="mt-3 space-y-1.5 text-[13px]" style={{ color: "var(--muted)" }}>
                 <li>• Free 12Q sample mock</li>
                 <li>• Solutions + scorecard</li>
@@ -744,9 +753,9 @@ export default function DashboardPage() {
                 Start free →
               </button>
             </div>
-            <div className="rounded-2xl bg-white px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
-              <div className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Monthly</div>
-              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "#1e2952" }}>₹149 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>/month</span></div>
+            <div className="rounded-2xl card-bg px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
+              <div className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Monthly</div>
+              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "var(--text)" }}>₹149 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>/month</span></div>
               <ul className="mt-3 space-y-1.5 text-[13px]" style={{ color: "var(--muted)" }}>
                 <li>• Unlimited mocks</li>
                 <li>• Full section analytics</li>
@@ -754,21 +763,21 @@ export default function DashboardPage() {
                 <li>• Cancel anytime</li>
               </ul>
               <a href="mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Monthly%20plan"
-                className="mt-4 block w-full cursor-pointer rounded-xl py-2.5 text-center text-sm font-bold text-white"
+                className="mt-4 block w-full cursor-pointer rounded-xl py-2.5 text-center text-sm font-bold"
                 style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
                 Choose Monthly →
               </a>
             </div>
-            <div className="rounded-2xl bg-white px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
-              <div className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Annual</div>
-              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "#1e2952" }}>₹699 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>/year</span></div>
+            <div className="rounded-2xl card-bg px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
+              <div className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Annual</div>
+              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "var(--text)" }}>₹699 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>/year</span></div>
               <ul className="mt-3 space-y-1.5 text-[13px]" style={{ color: "var(--muted)" }}>
                 <li>• 12 months full access</li>
                 <li>• Everything in Monthly</li>
                 <li>• Priority support</li>
               </ul>
               <a href="mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Annual%20plan"
-                className="mt-4 block w-full cursor-pointer rounded-xl py-2.5 text-center text-sm font-bold text-white"
+                className="mt-4 block w-full cursor-pointer rounded-xl py-2.5 text-center text-sm font-bold"
                 style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
                 Choose Annual →
               </a>
@@ -785,11 +794,11 @@ export default function DashboardPage() {
           </p>
           {fbDone ? (
             <div
-              className="mt-4 max-w-lg rounded-2xl bg-white px-5 py-7 text-center"
+              className="mt-4 max-w-lg rounded-2xl card-bg px-5 py-7 text-center"
               style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
             >
               <div aria-hidden className="text-3xl">✅</div>
-              <div className="mt-2 text-sm font-extrabold" style={{ color: "#1e2952" }}>Message sent to the admin inbox</div>
+              <div className="mt-2 text-sm font-extrabold" style={{ color: "var(--text)" }}>Message sent to the admin inbox</div>
               <p className="mt-1 text-[12.5px] leading-6" style={{ color: "var(--muted)" }}>
                 Thanks — it is already visible in the admin panel. You can send another message after a minute
                 (spam guard).
@@ -797,25 +806,25 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setFbDone(false)}
-                className="mt-4 cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-extrabold text-white transition-transform hover:-translate-y-px"
-                style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                className="mt-4 cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-extrabold transition-transform hover:-translate-y-px"
+                style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
               >
                 Send another
               </button>
             </div>
           ) : (
             <div
-              className="mt-4 max-w-lg rounded-2xl bg-white px-5 py-5"
+              className="mt-4 max-w-lg rounded-2xl card-bg px-5 py-5"
               style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
             >
               <div className="grid gap-3">
                 <label className="grid gap-1.5">
-                  <span className="text-[12px] font-bold" style={{ color: "#1e2952" }}>Topic</span>
+                  <span className="text-[12px] font-bold" style={{ color: "var(--text)" }}>Topic</span>
                   <select
                     value={fb.category}
                     onChange={(e) => setFb({ ...fb, category: e.target.value })}
                     className="w-full cursor-pointer rounded-xl px-3 py-2.5 text-sm font-semibold"
-                    style={{ border: "1px solid var(--border)", background: "#fff", color: "#1e2952" }}
+                    style={{ border: "1px solid var(--border)", background: "var(--card)", color: "var(--text)" }}
                   >
                     <option value="general">General question</option>
                     <option value="test">Mock test issue</option>
@@ -825,18 +834,18 @@ export default function DashboardPage() {
                   </select>
                 </label>
                 <label className="grid gap-1.5">
-                  <span className="text-[12px] font-bold" style={{ color: "#1e2952" }}>Subject</span>
+                  <span className="text-[12px] font-bold" style={{ color: "var(--text)" }}>Subject</span>
                   <input
                     value={fb.subject}
                     onChange={(e) => setFb({ ...fb, subject: e.target.value })}
                     maxLength={140}
                     placeholder="One line — e.g. Q12 of Free Mock 1 looks wrong"
                     className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none"
-                    style={{ border: "1px solid var(--border)", background: "#fff", color: "#1e2952" }}
+                    style={{ border: "1px solid var(--border)", background: "var(--card)", color: "var(--text)" }}
                   />
                 </label>
                 <label className="grid gap-1.5">
-                  <span className="text-[12px] font-bold" style={{ color: "#1e2952" }}>Details</span>
+                  <span className="text-[12px] font-bold" style={{ color: "var(--text)" }}>Details</span>
                   <textarea
                     value={fb.message}
                     onChange={(e) => setFb({ ...fb, message: e.target.value })}
@@ -844,7 +853,7 @@ export default function DashboardPage() {
                     maxLength={4000}
                     placeholder="What happened? Include the test name and question number where possible."
                     className="w-full resize-y rounded-xl px-3.5 py-2.5 text-sm leading-6 outline-none"
-                    style={{ border: "1px solid var(--border)", background: "#fff", color: "#1e2952" }}
+                    style={{ border: "1px solid var(--border)", background: "var(--card)", color: "var(--text)" }}
                   />
                   <span className="text-right text-[11px]" style={{ color: "var(--muted)" }}>{fb.message.length}/4000</span>
                 </label>
@@ -858,8 +867,8 @@ export default function DashboardPage() {
                     type="button"
                     disabled={fbBusy}
                     onClick={sendFeedback}
-                    className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-extrabold text-white transition-transform hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                    className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-extrabold transition-transform hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
                   >
                     {fbBusy ? "Sending…" : "Send to admin"}
                   </button>

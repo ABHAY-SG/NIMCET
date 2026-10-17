@@ -17,6 +17,11 @@ export type SubmitResult = {
 
 type Q = MockQuestion;
 
+// In-progress runs (real, server-scored mocks only) are mirrored to
+// sessionStorage so an accidental refresh or a trip to another tab does not
+// silently destroy a half-finished attempt. Cleared when the run completes.
+const RUN_KEY = "nimcuet-run-v1";
+
 const QS: Q[] = [
   { tag: "MATHS • +12 / −3", stem: "If A is 3×3 with det(A) = 4, det(2A) = ?", opts: ["8", "16", "32", "64"], ans: 2, plus: 12, minus: -3, exp: "det(kA) = k³·det(A) for 3×3, so 8 × 4 = 32." },
   { tag: "MATHS • +12 / −3", stem: "Two fair dice are thrown. P(sum = 9) = ?", opts: ["1/9", "5/36", "1/6", "7/36"], ans: 0, plus: 12, minus: -3, exp: "Favourable: (3,6),(4,5),(5,4),(6,3) = 4 out of 36 → 1/9." },
@@ -31,8 +36,6 @@ const QS: Q[] = [
   { tag: "ENGLISH • +4 / −1", stem: "Choose the synonym of 'Candid'.", opts: ["Rude", "Frank", "Cunning", "Shy"], ans: 1, plus: 4, minus: -1, exp: "Candid = frank, straightforward." },
   { tag: "ENGLISH • +4 / −1", stem: "'To bite the dust' means —", opts: ["Eat quickly", "Suffer defeat", "Work hard", "Hide away"], ans: 1, plus: 4, minus: -1, exp: "Idiom: to fail or be defeated." },
 ];
-
-
 
 function fmt(s: number) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -68,44 +71,109 @@ export default function MockDemo({
   const [retryTick, setRetryTick] = useState(0);
   const savedRef = useRef(false);
   const localSavedRef = useRef(false);
+  // Wall-clock deadline: the timer keeps correct time even if the browser
+  // throttles timers in a background tab.
+  const endAtRef = useRef<number | null>(null);
+  const persist = !!onSubmit && !!testName;
+
+  // Restore a run interrupted by refresh/tab-switch (real mocks only).
+  useEffect(() => {
+    if (!persist) return;
+    try {
+      const raw = sessionStorage.getItem(RUN_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw) as { name?: string; answers?: Record<string, number>; idx?: number; endAt?: number };
+      if (s.name !== testName || typeof s.endAt !== "number" || s.endAt < Date.now() + 1000) {
+        sessionStorage.removeItem(RUN_KEY);
+        return;
+      }
+      if (s.answers && typeof s.answers === "object") {
+        const restored: Record<number, number> = {};
+        for (const [k, v] of Object.entries(s.answers)) {
+          const i = Number(k);
+          if (Number.isInteger(i) && i >= 0 && i < list.length && Number.isInteger(v) && v >= 0 && v <= 3) restored[i] = v;
+        }
+        setAnswers(restored);
+      }
+      if (Number.isInteger(s.idx) && (s.idx as number) >= 0 && (s.idx as number) < list.length) {
+        setIdx(s.idx as number);
+      }
+      endAtRef.current = s.endAt;
+      setLeft(Math.max(0, Math.ceil((s.endAt - Date.now()) / 1000)));
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!started || done) return;
-    if (left <= 0) { setDone(true); return; }
-    const t = setTimeout(() => setLeft((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [left, done, started]);
+    if (endAtRef.current == null) endAtRef.current = Date.now() + mins * 60_000;
+    const tick = () => {
+      const end = endAtRef.current ?? Date.now();
+      const remaining = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      setLeft(remaining);
+      if (remaining <= 0) setDone(true);
+    };
+    tick();
+    const t = setInterval(tick, 1000);
+    const onVis = () => { if (!document.hidden) tick(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [started, done, mins]);
+
+  // Mirror the run while it is live so a reload cannot silently discard it.
+  useEffect(() => {
+    if (!persist || !started || done) return;
+    const end = endAtRef.current;
+    if (end == null) return;
+    try {
+      sessionStorage.setItem(RUN_KEY, JSON.stringify({ name: testName, answers, idx, endAt: end }));
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persist, started, done, answers, idx, testName]);
+
+  // Warn before closing the tab mid-test (real mocks only).
+  useEffect(() => {
+    if (!persist || !started || done) return;
+    const h = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persist, started, done]);
 
   useEffect(() => {
     if (!done) return;
     if (savedRef.current) return;
     savedRef.current = true;
-    const record = {
-      test: testName ?? "Free sample mock (12Q)",
-      created_at: new Date().toISOString(),
-    };
-    // Local history always (works offline and logged-out).
-    if (!localSavedRef.current) {
-      localSavedRef.current = true;
-      try {
-        const s = summarize();
-        const raw = localStorage.getItem("nimcuet-attempts");
-        const arr = raw ? JSON.parse(raw) : [];
-        arr.unshift({ ...record, id: `local-${Date.now()}`, score: s.score, correct: s.correct, wrong: s.wrong, skipped: s.skip });
-        localStorage.setItem("nimcuet-attempts", JSON.stringify(arr.slice(0, 20)));
-      } catch {}
-    }
-    if (onSubmit) {
-      // Server scores from the answer key and records the attempt — the
-      // browser never sees correct answers before submitting.
-      onSubmit(answers)
-        .then((r) => {
-          setServerResult(r);
-          setSubmitError("");
-        })
-        .catch((e) => setSubmitError(e instanceof Error ? e.message : "Submit failed."));
-    } else {
-      // Homepage sample mock: self-contained local scoring.
+    if (!onSubmit) {
+      // Homepage sample: everything stays on this device. The bank-backed
+      // mocks never write a device-local record — the server owns their
+      // attempt history (and only the server holds the answer key, so a local
+      // score would be guesswork).
+      if (!localSavedRef.current) {
+        localSavedRef.current = true;
+        try {
+          const s = summarize();
+          const raw = localStorage.getItem("nimcuet-attempts");
+          const arr = raw ? JSON.parse(raw) : [];
+          arr.unshift({
+            test: testName ?? "Free sample mock (12Q)",
+            created_at: new Date().toISOString(),
+            id: `local-${Date.now()}`,
+            score: s.score,
+            correct: s.correct,
+            wrong: s.wrong,
+            skipped: s.skip,
+          });
+          localStorage.setItem("nimcuet-attempts", JSON.stringify(arr.slice(0, 20)));
+        } catch {}
+      }
+      try { sessionStorage.removeItem(RUN_KEY); } catch {}
       const s = summarize();
       setServerResult({
         score: s.score,
@@ -121,7 +189,17 @@ export default function MockDemo({
           ok: answers[i] != null && answers[i] === (q.ans ?? -1),
         })),
       });
+      return;
     }
+    // Server scores from the answer key and records the attempt — the
+    // browser never sees correct answers before submitting.
+    onSubmit(answers)
+      .then((r) => {
+        setServerResult(r);
+        setSubmitError("");
+        try { sessionStorage.removeItem(RUN_KEY); } catch {}
+      })
+      .catch((e) => setSubmitError(e instanceof Error ? e.message : "Submit failed."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done, retryTick]);
 
@@ -139,6 +217,8 @@ export default function MockDemo({
   const reset = () => {
     savedRef.current = false;
     localSavedRef.current = false;
+    endAtRef.current = null;
+    try { sessionStorage.removeItem(RUN_KEY); } catch {}
     setServerResult(null);
     setSubmitError("");
     setAnswers({});
@@ -195,7 +275,7 @@ export default function MockDemo({
             Your answers are kept — nothing was recorded. Check your connection and retry.
           </p>
           <div className="mt-4 flex justify-center gap-2">
-            <button type="button" onClick={retrySubmit} className="rounded-full px-5 py-2 text-sm font-bold text-white" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
+            <button type="button" onClick={retrySubmit} className="rounded-full px-5 py-2 text-sm font-bold" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
               Retry submit →
             </button>
             <button type="button" onClick={() => setDone(false)} className="rounded-full px-5 py-2 text-sm font-bold" style={{ border: "1px solid var(--border)" }}>
@@ -223,6 +303,8 @@ export default function MockDemo({
       };
     })();
     const pct = Math.max(0, Math.round((r.score / MAX) * 100));
+    const schemes = Array.from(new Set(list.map((q) => `+${q.plus} / −${Math.abs(q.minus)}`)));
+    const markingLabel = schemes.length === 1 ? `${schemes[0]} MARKING APPLIED` : "PER-SECTION MARKING APPLIED";
     return (
       <div className="overflow-hidden rounded-2xl backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
         <div className="p-5 text-center sm:p-6" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -234,7 +316,7 @@ export default function MockDemo({
             <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--accent)" }} />
           </div>
           <p className="mono mt-2 text-xs" style={{ color: "var(--muted)" }}>
-            {r.correct} CORRECT • {r.wrong} WRONG • {r.skipped} SKIPPED • +{list[0].plus}/−{Math.abs(list[0].minus)} MARKING APPLIED
+            {r.correct} CORRECT • {r.wrong} WRONG • {r.skipped} SKIPPED • {markingLabel}
           </p>
           <div className="mt-4 flex justify-center gap-2">
             <button type="button" onClick={reset} className="rounded-full px-5 py-2 text-sm font-bold" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
@@ -248,7 +330,7 @@ export default function MockDemo({
         <div className="max-h-96 overflow-y-auto p-4 sm:p-5">
           <p className="mono text-[11px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>SOLUTIONS</p>
           <div className="mt-2 space-y-3">
-                        {r.details.map((d, i) => {
+            {r.details.map((d, i) => {
               const ok = d.ok ?? (d.picked != null && d.picked === d.correct);
               return (
                 <div key={i} className="rounded-xl p-3.5 text-sm" style={{ border: "1px solid var(--border)" }}>
@@ -267,12 +349,23 @@ export default function MockDemo({
   }
 
   const q = list[idx];
+  const answered = Object.keys(answers).length;
   return (
     <div className="overflow-hidden rounded-2xl backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between gap-2 px-4 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
         <span className="mono text-[11px] font-bold" style={{ color: "var(--muted)" }}>{title} • Q{idx + 1}/{list.length}</span>
-        <span className="mono rounded-md px-2 py-0.5 text-xs font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>⏱ {fmt(left)}</span>
-        <button type="button" onClick={() => setDone(true)} className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: "#16a34a", color: "#fff" }}>Submit</button>
+        <span className="mono rounded-md px-2 py-0.5 text-xs font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }} aria-label={`Time left ${fmt(left)}`}>⏱ {fmt(left)}</span>
+        <button
+          type="button"
+          onClick={() => {
+            if (!window.confirm(`Submit the test now?\n\n${answered} of ${list.length} answered. You can't change answers after submitting.`)) return;
+            setDone(true);
+          }}
+          className="rounded-full px-3 py-1.5 text-xs font-bold text-white"
+          style={{ background: "#047857" }}
+        >
+          Submit
+        </button>
       </div>
       <div className="p-4 sm:p-5">
         <p className="mono text-[10px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.14em" }}>{q.tag}</p>
@@ -280,30 +373,43 @@ export default function MockDemo({
         <div className="mt-3 grid gap-1.5 text-sm">
           {q.opts.map((o, i) => (
             <button
-              key={o}
+              key={i}
               type="button"
               onClick={() => setAnswers((a) => ({ ...a, [idx]: i }))}
-              className="rounded-xl px-3 py-2 text-left transition-transform hover:-translate-y-px"
+              aria-pressed={answers[idx] === i}
+              className="rounded-xl px-3 py-2.5 text-left transition-transform hover:-translate-y-px"
               style={answers[idx] === i
-                ? { background: "var(--accent)", color: "#fff", fontWeight: 700 }
+                ? { background: "var(--accent)", color: "var(--accent-fg)", fontWeight: 700 }
                 : { border: "1px solid var(--border)" }}
             >
               <span className="mono mr-2 text-[11px] opacity-70">{String.fromCharCode(65 + i)}</span>{o}
             </button>
           ))}
         </div>
-        <div className="mt-3 flex items-center justify-between text-[13px]">
-          <button type="button" disabled={idx === 0} onClick={() => setIdx(idx - 1)} className="font-semibold disabled:opacity-30" style={{ color: "var(--muted)" }}>← Prev</button>
-          <div className="flex flex-wrap justify-center gap-1.5 px-2">
+        <div className="mt-3 flex items-center justify-between gap-2 text-[13px]">
+          <div className="flex items-center gap-3">
+            <button type="button" disabled={idx === 0} onClick={() => setIdx(idx - 1)} className="font-semibold disabled:opacity-30" style={{ color: "var(--muted)" }}>← Prev</button>
+            <button
+              type="button"
+              disabled={answers[idx] == null}
+              onClick={() => setAnswers((a) => { const n = { ...a }; delete n[idx]; return n; })}
+              className="font-semibold disabled:opacity-30"
+              style={{ color: "var(--muted)" }}
+            >
+              Clear
+            </button>
+          </div>
+          <div className="flex flex-wrap justify-center gap-1.5 px-1">
             {list.map((_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setIdx(i)}
-                aria-label={`Question ${i + 1}`}
-                className="mono h-7 w-7 rounded-lg text-xs font-bold"
+                aria-label={`Question ${i + 1}${answers[i] != null ? " (answered)" : ""}`}
+                aria-current={i === idx ? "true" : undefined}
+                className="mono h-9 w-9 rounded-lg text-xs font-bold"
                 style={answers[i] != null
-                  ? { background: "var(--accent)", color: "#fff" }
+                  ? { background: "var(--accent)", color: "var(--accent-fg)" }
                   : i === idx
                     ? { border: "1.5px solid var(--accent)" }
                     : { background: "var(--pill)", color: "var(--muted)" }}
