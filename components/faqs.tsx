@@ -63,8 +63,8 @@ export default function Faqs() {
             ))}
           </div>
         </Reveal>
-        <Reveal delay={0.08}>
-          <div className="premium-card relative overflow-hidden rounded-2xl p-6 text-center md:sticky md:top-24">
+        <Reveal delay={0.08} className="md:sticky md:top-24">
+          <div className="premium-card relative overflow-hidden rounded-2xl p-6 text-center">
             <span
               aria-hidden
               className="orb"

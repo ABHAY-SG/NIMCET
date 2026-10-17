@@ -35,8 +35,8 @@ export default function LegalPage({
       </div>
 
       <div className="mt-10 grid items-start gap-8 lg:grid-cols-[230px_minmax(0,1fr)]">
-        <Reveal className="hidden lg:block">
-          <aside className="premium-card sticky top-24 rounded-[22px] p-3.5">
+        <Reveal className="hidden lg:sticky lg:top-24 lg:block">
+          <aside className="premium-card rounded-[22px] p-3.5">
             <div className="px-2 pb-2 pt-1 text-[10px] font-extrabold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
               On this page
             </div>
