@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase, signOutAll } from "@/lib/supabase";
 import { safeNextPath } from "@/lib/admin";
@@ -74,6 +75,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     } catch {}
   };
 
+  // URL params exist only on the client; syncing them into state after mount
+  // is the hydration-safe pattern this compiler lint rule cannot see through.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("verified") === "1") {
@@ -113,6 +117,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       setMsg("We couldn’t complete authentication. Please try again.");
     }
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const pwLen = password.length >= 8;
@@ -312,9 +317,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       </div>
       <main className={`relative mx-auto flex w-full max-w-6xl flex-col justify-center px-4 py-4${mode === "in" ? " auth-lock" : " auth-signup"}`} style={{ minHeight: "100svh" }}>
       <ThemeFab />
-      <a href="/" className="auth-back-link mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
+      <Link href="/" className="auth-back-link mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
         <span aria-hidden>←</span> Back to home
-      </a>
+      </Link>
       <div
         className="auth-card relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[560px]"
         style={{ border: "1px solid var(--border)" }}

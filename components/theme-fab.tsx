@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { THEMES, applyTheme, readTheme, type ThemeId } from "@/lib/theme";
+import { useState } from "react";
+import { THEMES, applyTheme, useTheme, type ThemeId } from "@/lib/theme";
 
 export function ThemeIcon({ id }: { id: ThemeId }) {
   const paths: Record<ThemeId, React.ReactNode> = {
@@ -18,15 +18,10 @@ export function ThemeIcon({ id }: { id: ThemeId }) {
 }
 
 export default function ThemeFab() {
-  const [theme, setTheme] = useState<ThemeId>("light");
+  const theme = useTheme();
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    setTheme(readTheme());
-  }, []);
-
   const pick = (t: ThemeId) => {
-    setTheme(t);
     applyTheme(t);
     setOpen(false);
   };

@@ -51,7 +51,7 @@ export default function AdminContent() {
   const [delBusy, setDelBusy] = useState(false);
   const [preview, setPreview] = useState<Announcement | null>(null);
 
-  const rows = annData.data?.rows ?? [];
+  const rows = useMemo(() => annData.data?.rows ?? [], [annData.data]);
   const published = useMemo(() => rows.filter((r) => r.published).length, [rows]);
   const facets = facetsData.data;
 
@@ -333,7 +333,7 @@ export default function AdminContent() {
               <span className="text-[10.5px] font-extrabold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.12em" }}>
                 Notice · {fmtDateTime(preview.created_at)}
               </span>
-              {!preview.published && <Badge tone="amber">Draft — students don't see this</Badge>}
+              {!preview.published && <Badge tone="amber">Draft — students don&apos;t see this</Badge>}
             </div>
             <h3 className="mt-2 text-[15px] font-extrabold">{preview.title}</h3>
             <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-6" style={{ color: "var(--muted)" }}>

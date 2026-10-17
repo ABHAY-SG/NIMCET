@@ -1,11 +1,15 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import DashNav from "@/components/dash-nav";
 import PhotoCropper from "@/components/photo-cropper";
 import { getAuthClient, resolveAvatarUrl } from "@/lib/supabase";
 import { calcBestStreak, calcStreak, formatStreak, lastWeekActivity } from "@/lib/streak";
+
+// Hydration flag as an external store: false on the server, true right after
+// the first client paint — reads browser-only data without an effect setState.
+const subscribeNothing = () => () => {};
 
 type Attempt = {
   id: string;
@@ -131,21 +135,13 @@ export default function ProfilePage() {
   const [confirmPw, setConfirmPw] = useState("");
   const [busy, setBusy] = useState(false);
   const [formMsg, setFormMsg] = useState("");
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(subscribeNothing, () => true, () => false);
   const [localAttempts, setLocalAttempts] = useState<Attempt[]>([]);
-  const [streakSummary, setStreakSummary] = useState<{
-    current: number;
-    best: number;
-    week: Array<{ label: string; active: boolean; isToday: boolean }>;
-  }>({ current: 0, best: 0, week: [] });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem("nimcuet-attempts");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe read of a browser-only store.
       if (raw) setLocalAttempts(JSON.parse(raw));
     } catch {}
   }, []);
@@ -153,13 +149,16 @@ export default function ProfilePage() {
   // Same source rule as the dashboard: cloud first, this-device fallback.
   const histSrc = attempts.length > 0 ? attempts : localAttempts;
 
-  useEffect(() => {
-    setStreakSummary({
+  // Streak stats derive purely from attempt dates; the empty-source guard
+  // keeps date logic out of prerender.
+  const streakSummary = useMemo(() => {
+    if (histSrc.length === 0) return { current: 0, best: 0, week: [] as Array<{ label: string; active: boolean; isToday: boolean }> };
+    return {
       current: calcStreak(histSrc),
       best: calcBestStreak(histSrc),
       week: lastWeekActivity(histSrc),
-    });
-  }, [attempts, localAttempts]);
+    };
+  }, [histSrc]);
 
   useEffect(() => {
     (async () => {
@@ -215,7 +214,7 @@ export default function ProfilePage() {
       best: String(Math.max(...histSrc.map((a) => Number(a.score) || 0))),
       acc: answered === 0 ? "—" : `${Math.round((correct / answered) * 100)}%`,
     };
-  }, [attempts, localAttempts]);
+  }, [histSrc]);
 
   const openNameEditor = () => {
     const parts = displayName.trim().split(/\s+/).filter(Boolean);

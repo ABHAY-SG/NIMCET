@@ -429,9 +429,11 @@ export function ConfirmDialog({
   onConfirm: () => void;
 }) {
   const [typed, setTyped] = useState("");
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (open) setTyped("");
-  }, [open]);
+  }
   const ready = !requireText || typed.trim() === requireText;
 
   return (

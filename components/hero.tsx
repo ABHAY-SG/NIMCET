@@ -1,5 +1,6 @@
 "use client";
 import { useRef } from "react";
+import Link from "next/link";
 import Reveal from "@/components/reveal";
 import Constellation from "@/components/constellation";
 
@@ -46,20 +47,20 @@ export default function Hero() {
         </Reveal>
         <Reveal>
           <div className="rise mt-8 flex flex-wrap justify-center gap-3" style={{ animationDelay: "0.35s" }}>
-            <a
+            <Link
               href="/#demo"
               className="cta-glow rounded-full px-8 py-3.5 text-sm font-bold"
               style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
             >
               Start Free Mock <span className="carr">→</span>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/#pricing"
               className="rounded-full px-8 py-3.5 text-sm font-semibold"
               style={{ border: "1px solid var(--border)" }}
             >
               See Pricing
-            </a>
+            </Link>
           </div>
         </Reveal>
       </div>

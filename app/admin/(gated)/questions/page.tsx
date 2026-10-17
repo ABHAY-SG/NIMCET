@@ -19,7 +19,7 @@ import {
 } from "@/components/admin/ui";
 import { Icon } from "@/components/admin/icons";
 import { adminMutate, downloadFile, useAdminData, usePageSize } from "@/components/admin/hooks";
-import { fmtDate, fmtNum } from "@/lib/format";
+import { fmtDate } from "@/lib/format";
 
 type QRow = {
   id: string;
@@ -134,7 +134,7 @@ export default function AdminQuestions() {
   const [bulkDelOpen, setBulkDelOpen] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
 
-  const rows = data?.rows ?? [];
+  const rows = useMemo(() => data?.rows ?? [], [data]);
   const facets = facetsData.data;
 
   const filtered = useMemo(() => {

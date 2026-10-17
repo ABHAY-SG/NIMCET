@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { applyTheme, readTheme, type ThemeId } from "@/lib/theme";
+import { applyTheme, readTheme, useTheme, type ThemeId } from "@/lib/theme";
 
 // Shared client hooks for the admin panel.
 
@@ -30,21 +30,18 @@ export function useAdminData<T>(url: string | null): AdminData<T> {
   const prevUrl = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!url) {
-      setLoading(false);
-      return;
-    }
-    // A new query (different url) must not render the previous query's rows
-    // while its response is in flight. Manual reloads keep the old data so
-    // the table doesn't flash empty.
-    if (prevUrl.current !== url) {
-      prevUrl.current = url;
-      setData(null);
-    }
+    if (!url) return;
     let alive = true;
-    setLoading(true);
-    setError("");
     (async () => {
+      // A new query (different url) must not render the previous query's rows
+      // while its response is in flight. Manual reloads keep the old data so
+      // the table doesn't flash empty.
+      if (prevUrl.current !== url) {
+        prevUrl.current = url;
+        setData(null);
+      }
+      setLoading(true);
+      setError("");
       try {
         const r = await fetch(url, { credentials: "same-origin" });
         const j = (await r.json()) as T & { error?: string };
@@ -62,31 +59,16 @@ export function useAdminData<T>(url: string | null): AdminData<T> {
   }, [url, tick]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
-  return { data, error, loading, reload };
+  return { data, error, loading: url ? loading : false, reload };
 }
 
 // Theme state synced with the global theme system (lib/theme.ts).
 export function useAdminTheme(): { theme: ThemeId; setTheme: (t: ThemeId) => void } {
-  const [theme, setThemeState] = useState<ThemeId>("light");
+  const theme = useTheme();
 
-  useEffect(() => {
-    setThemeState(readTheme());
-    const on = (e: Event) => {
-      const d = (e as CustomEvent).detail;
-      setThemeState(typeof d === "string" ? (d as ThemeId) : readTheme());
-    };
-    window.addEventListener("mcamock-theme", on);
-    window.addEventListener("storage", on);
-    return () => {
-      window.removeEventListener("mcamock-theme", on);
-      window.removeEventListener("storage", on);
-    };
+  const setTheme = useCallback((t: ThemeId) => {
+    if (readTheme() !== t) applyTheme(t);
   }, []);
-
-  const setTheme = useCallback((t: ThemeId) => setThemeState((prev) => {
-    if (prev !== t) applyTheme(t);
-    return t;
-  }), []);
 
   return { theme, setTheme };
 }
@@ -155,7 +137,9 @@ export async function downloadFile(url: string, fallbackName: string): Promise<v
 
 export function useInterval(cb: () => void, ms: number | null) {
   const ref = useRef(cb);
-  ref.current = cb;
+  useEffect(() => {
+    ref.current = cb;
+  });
   useEffect(() => {
     if (ms === null) return;
     const id = setInterval(() => ref.current(), ms);

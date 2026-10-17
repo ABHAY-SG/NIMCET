@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOutAll } from "@/lib/supabase";
-import { THEMES, applyTheme, readTheme, type ThemeId } from "@/lib/theme";
+import { THEMES, applyTheme, useTheme, type ThemeId } from "@/lib/theme";
 import { formatStreak } from "@/lib/streak";
 import { ThemeIcon } from "@/components/theme-fab";
 
@@ -47,19 +47,18 @@ export default function DashNav({
 }) {
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell" | "theme">(null);
-  const [theme, setTheme] = useState<ThemeId>("light");
+  const theme = useTheme();
   const [imgOk, setImgOk] = useState(true);
 
-  useEffect(() => {
-    setTheme(readTheme());
-  }, []);
-
-  useEffect(() => {
+  // Reset the avatar fallback whenever the URL changes (React's documented
+  // adjust-during-render pattern — no effect needed).
+  const [prevAvatar, setPrevAvatar] = useState(avatarUrl);
+  if (prevAvatar !== avatarUrl) {
+    setPrevAvatar(avatarUrl);
     setImgOk(true);
-  }, [avatarUrl]);
+  }
 
   const pickTheme = (t: ThemeId) => {
-    setTheme(t);
     applyTheme(t);
     setOpenMenu(null);
   };

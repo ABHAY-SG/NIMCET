@@ -23,7 +23,7 @@ function readEnv(): { url: string; key: string } {
 // is handled by signOutAll() clearing this device's local data.)
 let client: Client | null = null;
 
-export function getSupabase(_persist = true): Client {
+export function getSupabase(): Client {
   const { url, key } = readEnv();
   if (!client) client = createBrowserClient(url, key);
   return client;

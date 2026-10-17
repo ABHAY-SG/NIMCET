@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 // Single source for the site theme: the same five modes everywhere.
 // Persisted across reloads via localStorage, applied via data-theme.
 export const THEMES = [
@@ -30,4 +32,21 @@ export function applyTheme(t: ThemeId) {
     // component re-renders with the new theme immediately.
     window.dispatchEvent(new CustomEvent("mcamock-theme", { detail: t }));
   } catch {}
+}
+
+function subscribeTheme(onChange: () => void) {
+  const on = () => onChange();
+  window.addEventListener("mcamock-theme", on);
+  window.addEventListener("storage", on);
+  return () => {
+    window.removeEventListener("mcamock-theme", on);
+    window.removeEventListener("storage", on);
+  };
+}
+
+// The current theme as an external store: the server (and the first
+// hydration pass) renders "light", then React syncs to the stored value —
+// no effect setState, no hydration mismatch.
+export function useTheme(): ThemeId {
+  return useSyncExternalStore(subscribeTheme, readTheme, () => "light" as ThemeId);
 }

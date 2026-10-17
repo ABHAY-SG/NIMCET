@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, type ComponentType } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getAuthClient } from "@/lib/supabase";
-import { applyTheme, readTheme, THEMES, type ThemeId } from "@/lib/theme";
+import { applyTheme, useTheme, THEMES, type ThemeId } from "@/lib/theme";
 
 function SunIcon() {
   return (
@@ -90,7 +91,7 @@ function LogoImg() {
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
-  const [theme, setTheme] = useState<ThemeId>("light");
+  const theme = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
@@ -103,7 +104,6 @@ export default function Navbar() {
   const isActive = (id: string) => (pathname === "/" ? active === id : pageId === id);
 
   useEffect(() => {
-    setTheme(readTheme());
     // Session-aware buttons: a logged-in visitor must see Dashboard, never a
     // misleading Log in prompt. Read-only check — touches no auth flow.
     (async () => {
@@ -136,7 +136,6 @@ export default function Navbar() {
 
   const pick = (t: ThemeId) => {
     applyTheme(t);
-    setTheme(t);
     setThemeOpen(false);
   };
 
@@ -185,9 +184,9 @@ export default function Navbar() {
           >
             {open ? "✕" : "☰"}
           </button>
-          <a href="/" className="flex items-center" aria-label="NimCuet home">
+          <Link href="/" className="flex items-center" aria-label="NimCuet home">
             <LogoImg />
-          </a>
+          </Link>
         </div>
 
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden lg:flex">

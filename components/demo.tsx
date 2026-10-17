@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Reveal from "@/components/reveal";
 import MockDemo from "@/components/mockdemo";
 
@@ -21,9 +22,9 @@ export default function Demo() {
             mock ends with a section-wise report, so you always know what to
             fix next.
           </p>
-          <a href="/#how" className="nlink nounder mt-4 inline-block text-sm font-bold">
+          <Link href="/#how" className="nlink nounder mt-4 inline-block text-sm font-bold">
             See how a mock flows →
-          </a>
+          </Link>
         </Reveal>
         <div>
           <Reveal>

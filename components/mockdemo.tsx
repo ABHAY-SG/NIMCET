@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 export type MockQuestion = {
   tag: string; stem: string; opts: string[]; ans?: number;
@@ -77,6 +78,7 @@ export default function MockDemo({
   const persist = !!onSubmit && !!testName;
 
   // Restore a run interrupted by refresh/tab-switch (real mocks only).
+  /* eslint-disable react-hooks/set-state-in-effect -- post-mount restore from sessionStorage; SSR has no storage to read. */
   useEffect(() => {
     if (!persist) return;
     try {
@@ -103,6 +105,7 @@ export default function MockDemo({
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!started || done) return;
@@ -131,7 +134,6 @@ export default function MockDemo({
     try {
       sessionStorage.setItem(RUN_KEY, JSON.stringify({ name: testName, answers, idx, endAt: end }));
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persist, started, done, answers, idx, testName]);
 
   // Warn before closing the tab mid-test (real mocks only).
@@ -143,7 +145,6 @@ export default function MockDemo({
     };
     window.addEventListener("beforeunload", h);
     return () => window.removeEventListener("beforeunload", h);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persist, started, done]);
 
   useEffect(() => {
@@ -175,6 +176,7 @@ export default function MockDemo({
       }
       try { sessionStorage.removeItem(RUN_KEY); } catch {}
       const s = summarize();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the on-device demo result is computed once when the run ends.
       setServerResult({
         score: s.score,
         correct: s.correct,
@@ -322,9 +324,9 @@ export default function MockDemo({
             <button type="button" onClick={reset} className="rounded-full px-5 py-2 text-sm font-bold" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
               Retry →
             </button>
-            <a href="/#pricing" className="rounded-full px-5 py-2 text-sm font-bold" style={{ border: "1px solid var(--border)" }}>
+            <Link href="/#pricing" className="rounded-full px-5 py-2 text-sm font-bold" style={{ border: "1px solid var(--border)" }}>
               Unlock all mocks
-            </a>
+            </Link>
           </div>
         </div>
         <div className="max-h-96 overflow-y-auto p-4 sm:p-5">

@@ -41,6 +41,9 @@ function CheckEmailContent() {
   }, [challengeId]);
 
   // Init: URL ?email=&challenge= wins, fallback to localStorage, then persist.
+  // URL params and localStorage exist only on the client; this post-mount sync
+  // is the hydration-safe pattern the compiler lint rule cannot see through.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
       const qEmail = (searchParams.get("email") ?? "").trim();
@@ -74,6 +77,7 @@ function CheckEmailContent() {
       } catch {}
     } catch {}
   }, [searchParams]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const checkOnce = useCallback(async () => {
     if (phaseRef.current !== "waiting") return false;

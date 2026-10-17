@@ -154,6 +154,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only clock text; rendering it during prerender would bake the build date into HTML.
       setTodayLine(new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }));
     } catch {}
   }, []);
@@ -161,6 +162,7 @@ export default function DashboardPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem("nimcuet-attempts");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe read of a browser-only store.
       if (raw) setLocalAttempts(JSON.parse(raw));
     } catch {}
   }, []);
@@ -246,9 +248,9 @@ export default function DashboardPage() {
     })();
   }, [router]);
 
-  // Stats + streak are derived from attempt dates, so they are computed in a
-  // client-only effect (never during prerender).
-  const [derived, setDerived] = useState<{
+  // Stats + streak are derived from attempt dates. The memo short-circuits
+  // while loading (and during prerender), so no date logic runs at build time.
+  const derived = useMemo<{
     total: string;
     best: string;
     avg: string;
@@ -257,12 +259,10 @@ export default function DashboardPage() {
     streak: number;
     bestStreak: number;
     week: Array<{ label: string; active: boolean; isToday: boolean }>;
-  } | null>(null);
-
-  useEffect(() => {
-    if (loading) return;
+  } | null>(() => {
+    if (loading) return null;
     const src = attempts.length > 0 ? attempts : localAttempts;
-    if (src.length === 0) { setDerived(null); return; }
+    if (src.length === 0) return null;
     const scores = src.map((a) => Number(a.score) || 0);
     const best = Math.max(...scores);
     const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
@@ -270,7 +270,7 @@ export default function DashboardPage() {
     const wrong = src.reduce((s, a) => s + (Number(a.wrong) || 0), 0);
     const skipped = src.reduce((s, a) => s + (Number(a.skipped) || 0), 0);
     const answered = correct + wrong;
-    setDerived({
+    return {
       total: String(src.length),
       best: String(Math.round(best * 10) / 10),
       avg: String(Math.round(avg * 10) / 10),
@@ -279,7 +279,7 @@ export default function DashboardPage() {
       streak: calcStreak(src),
       bestStreak: calcBestStreak(src),
       week: lastWeekActivity(src),
-    });
+    };
   }, [attempts, localAttempts, loading]);
 
   const statsLabel = attempts.length > 0 ? "saved to cloud" : "on this device";

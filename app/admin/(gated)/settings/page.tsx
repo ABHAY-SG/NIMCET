@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import AdminLayout from "@/components/admin-layout";
-import { Badge, Card, ErrorState, InfoRow, SectionCard, Skeleton, useToast } from "@/components/admin/ui";
+import { Badge, ErrorState, InfoRow, SectionCard, Skeleton, useToast } from "@/components/admin/ui";
 import { Icon } from "@/components/admin/icons";
 import { setStoredPageSize, useAdminData, useAdminTheme, usePageSize } from "@/components/admin/hooks";
 import { THEMES } from "@/lib/theme";

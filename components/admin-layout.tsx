@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getSupabase, signOutAll } from "@/lib/supabase";
 import { Icon, type IconName } from "./admin/icons";
-import { Avatar, Badge, Spinner, ToastProvider, useToast, cx } from "./admin/ui";
+import { Avatar, Badge, Spinner, ToastProvider, cx } from "./admin/ui";
 import { useAdminTheme, useInterval } from "./admin/hooks";
 import { relTime } from "@/lib/format";
 
@@ -74,6 +74,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the saved sidebar state after mount (the server has no value to match).
       setCollapsed(localStorage.getItem("admin-nav-collapsed") === "1");
     } catch {}
   }, []);
@@ -113,6 +114,7 @@ export default function AdminLayout({
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async loader defined above; every setNotif happens after its fetch resolves.
     loadNotif();
   }, []);
   useInterval(loadNotif, 60_000);

@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
       // Cookie-backed session only: the server gate and admin APIs read it.
       // Drop any session left from a previous login first so a failed admin
       // attempt can never keep someone else's session alive.
-      const sb = getSupabase(true);
+      const sb = getSupabase();
       try { await sb.auth.signOut({ scope: "local" }); } catch {}
       const { error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
       if (error) {

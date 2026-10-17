@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import AuthBg from "@/components/auth-bg";
 import ThemeFab from "@/components/theme-fab";
 
@@ -8,9 +9,9 @@ export default function LoginChoicePage() {
       <AuthBg />
       <main className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-center px-4 py-4">
         <ThemeFab />
-        <a href="/" className="mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
+        <Link href="/" className="mb-3 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1" style={{ color: "var(--muted)" }}>
           <span aria-hidden>←</span> Back to home
-        </a>
+        </Link>
         <div
           className="auth-card relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2"
           style={{ border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.22)" }}

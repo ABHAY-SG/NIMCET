@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Reveal from "@/components/reveal";
 
 const STEPS: Array<[string, string, string]> = [
@@ -25,9 +26,9 @@ export default function How() {
             No courses, no videos, no clutter. Four steps on repeat — that is
             the entire method behind every topper we aim to produce.
           </p>
-          <a href="/#pricing" className="nlink nounder mt-4 inline-block text-sm font-bold">
+          <Link href="/#pricing" className="nlink nounder mt-4 inline-block text-sm font-bold">
             Start the loop →
-          </a>
+          </Link>
         </Reveal>
         <div className="relative pl-8" style={{ borderLeft: "2px solid var(--border)" }}>
           {STEPS.map(([n, t, d]) => (

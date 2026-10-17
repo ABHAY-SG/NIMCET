@@ -2,7 +2,6 @@
 import { useMemo, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import {
-  Badge,
   Card,
   EmptyState,
   ErrorState,
@@ -326,7 +325,7 @@ export default function AdminAttempts() {
 
             <p className="text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
               Per-question answers are not stored on attempts by design, so corrections are manual: the
-              server validates the new score against the test's real mark range, requires a reason, and
+              server validates the new score against the test&apos;s real mark range, requires a reason, and
               writes before/after values to the audit log.
             </p>
           </div>

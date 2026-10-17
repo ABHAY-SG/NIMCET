@@ -96,8 +96,8 @@ export default function AdminTests() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDelOpen, setBulkDelOpen] = useState(false);
 
-  const tests = data?.rows ?? [];
-  const bank = bankData.data?.rows ?? [];
+  const tests = useMemo(() => data?.rows ?? [], [data]);
+  const bank = useMemo(() => bankData.data?.rows ?? [], [bankData.data]);
   const bankById = useMemo(() => new Map(bank.map((q) => [q.id, q])), [bank]);
 
   const filtered = useMemo(() => {
