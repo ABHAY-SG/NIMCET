@@ -5,32 +5,17 @@ import Link from "next/link";
 const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERATING SYSTEMS", "DBMS", "NETWORKS", "REASONING"];
 
 // Fixed navbar height (h-16). The cursor glow pins to this line whenever the
-// pointer rides over the bar, so the hover effect covers everything from the
+// pointer rides over the bar, so the hover light covers everything from the
 // navbar's bottom edge down — no dead strip at the top of the stage.
 const NAV_H = 64;
 
-// The compass dial: 60 tick marks, longer every fifth — a protractor for the
-// "precision preparation" idea. Positions are computed once at module load.
-const TICKS = Array.from({ length: 60 }, (_, i) => {
-  const a = (i * 6 * Math.PI) / 180;
-  const major = i % 5 === 0;
-  const r1 = 206;
-  const r2 = major ? 190 : 199;
-  return {
-    major,
-    x1: +(240 + r1 * Math.cos(a)).toFixed(1),
-    y1: +(240 + r1 * Math.sin(a)).toFixed(1),
-    x2: +(240 + r2 * Math.cos(a)).toFixed(1),
-    y2: +(240 + r2 * Math.sin(a)).toFixed(1),
-  };
-});
-
-// Four syllabus glyphs anchored inside the dial: maths, CS, logic, analysis.
-const GLYPHS: Array<[string, number, number]> = [
-  ["∑", 240, 114],
-  ["π", 366, 240],
-  ["λ", 240, 366],
-  ["∫", 114, 240],
+// OMR answer sheet — 2 columns × 7 questions. Each value is the filled bubble
+// index (0-3), or -1 for a blank. Row 05 draws a correction: the original
+// mark is struck through and the re-mark ringed in lime, so the sheet reads
+// like a paper already attempted, reviewed and fixed.
+const OMR: number[][] = [
+  [1, 3, 0, 2, 1, -1, 2],
+  [-1, 2, 1, 3, 0, 3, 1],
 ];
 
 export default function Hero() {
@@ -49,8 +34,6 @@ export default function Hero() {
       if (y < navLine) y = navLine;
       sec.style.setProperty("--mx", `${x}px`);
       sec.style.setProperty("--my", `${y}px`);
-      sec.style.setProperty("--nx", String((x / r.width - 0.5) * 2));
-      sec.style.setProperty("--ny", String((y / r.height - 0.5) * 2));
     };
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => window.removeEventListener("mousemove", onMove);
@@ -58,211 +41,166 @@ export default function Hero() {
 
   return (
     <section ref={secRef} className="hero relative flex min-h-[100svh] flex-col overflow-hidden">
-      {/* Stage: dot sheet, cursor glow, vignette — no blur filters anywhere */}
+      {/* Stage: aurora washes, dot sheet, cursor glow, vignette — no blur filters */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="hx-aur hx-aur-1" />
+        <div className="hx-aur hx-aur-2" />
+        <div className="hx-aur hx-aur-3" />
         <div className="hero-dots absolute inset-0" />
         <div className="hero-glow" />
         <div className="hero-vignette absolute inset-0" />
       </div>
 
-      <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-4 pb-12 pt-28 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:gap-10 lg:px-8 lg:pt-24">
-        {/* Editorial column */}
-        <div className="text-center lg:text-left">
-          <p
-            className="navfont track-in inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase"
-            style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)", color: "var(--muted)", letterSpacing: "0.18em" }}
+      {/* Centered poster: meta strip → giant headline → sub → CTAs → OMR sheet */}
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-4 pb-10 pt-28 text-center sm:px-6 lg:px-8 lg:pt-32">
+        <p
+          className="rise mono flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[10px] font-semibold uppercase"
+          style={{ color: "var(--hx-muted)", letterSpacing: "0.2em", animationDelay: "0.08s" }}
+        >
+          <span>NIMCET · 120 Q</span>
+          <span aria-hidden className="hidden sm:inline" style={{ opacity: 0.5 }}>—</span>
+          <span>CUET PG · 75 Q</span>
+          <span aria-hidden className="hidden sm:inline" style={{ opacity: 0.5 }}>—</span>
+          <span className="hidden sm:inline">Full length, real clock</span>
+        </p>
+
+        <h1 className="mt-6 sm:mt-8" style={{ fontSize: "clamp(2.5rem, 8.4vw, 7rem)", lineHeight: 1 }}>
+          <span className="hline">
+            <span
+              className="hx-outline block font-bold uppercase tracking-[-0.02em]"
+              style={{ fontFamily: '"Space Grotesk", "Inter", sans-serif', animationDelay: "0.16s" }}
+            >
+              The paper
+            </span>
+          </span>
+          <span className="hline">
+            <span
+              className="block font-bold uppercase tracking-[-0.02em]"
+              style={{ fontFamily: '"Space Grotesk", "Inter", sans-serif', animationDelay: "0.24s" }}
+            >
+              won’t feel
+            </span>
+          </span>
+          <span className="hline">
+            <span className="block" style={{ animationDelay: "0.32s" }}>
+              <span className="hx-serif italic" style={{ color: "var(--hx-lime)" }}>new to you.</span>
+            </span>
+          </span>
+        </h1>
+
+        <p
+          className="rise navfont mt-6 max-w-[620px] text-[15.5px] font-medium leading-[1.65]"
+          style={{ color: "var(--hx-muted)", animationDelay: "0.4s" }}
+        >
+          Full-length NIMCET and CUET PG papers under the real clock — true
+          negative marking, instant scorecard, section-wise analytics.
+        </p>
+
+        <div className="rise mt-8 flex flex-wrap items-center justify-center gap-3" style={{ animationDelay: "0.48s" }}>
+          <Link
+            href="/#demo"
+            className="navfont cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
+            style={{ background: "var(--hx-lime)", color: "#0b0d16", boxShadow: "0 22px 50px -20px color-mix(in srgb, var(--hx-lime) 55%, transparent)" }}
           >
-            <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "var(--accent)" }} />
-            NIMCET + CUET PG · nothing else
-          </p>
-
-          <h1 className="mt-5" style={{ fontSize: "clamp(1.9rem, 4.9vw, 4.6rem)", lineHeight: 1.06 }}>
-            <span className="hline">
-              <span
-                className="block font-extrabold tracking-tight"
-                style={{ fontFamily: '"Sora", "Space Grotesk", "Inter", sans-serif', whiteSpace: "nowrap" }}
-              >
-                The paper won’t
-              </span>
-            </span>
-            <span className="hline">
-              <span className="block" style={{ animationDelay: "0.12s", whiteSpace: "nowrap" }}>
-                <span className="display serif-it headline-warm">surprise you.</span>
-              </span>
-            </span>
-          </h1>
-
-          <div
-            className="rise mx-auto mt-6 h-px w-24 lg:mx-0"
-            style={{ background: "linear-gradient(90deg, transparent, var(--accent), transparent)", animationDelay: "0.3s" }}
-          />
-
-          <p className="navfont rise mx-auto mt-5 max-w-[440px] text-[15.5px] font-medium leading-[1.65] lg:mx-0" style={{ color: "var(--muted)", animationDelay: "0.38s" }}>
-            Full-length NIMCET and CUET PG papers under the real clock — true
-            negative marking, instant scorecard, section-wise analytics. Every
-            attempt shows exactly what to fix next.
-          </p>
-
-          <div className="rise mt-7 flex flex-wrap justify-center gap-3 lg:justify-start" style={{ animationDelay: "0.46s" }}>
-            <Link
-              href="/#demo"
-              className="navfont cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
-              style={{ background: "var(--btn-bg)", color: "var(--btn-text)", boxShadow: "var(--shadow-1)" }}
-            >
-              Attempt a full paper free <span className="carr">→</span>
-            </Link>
-            <Link
-              href="/#how"
-              className="navfont cta-line rounded-full px-7 py-3.5 text-sm font-semibold"
-              style={{ border: "1px solid var(--border)", background: "color-mix(in srgb, var(--nav-bg) 55%, transparent)" }}
-            >
-              See how it works
-            </Link>
-          </div>
-
-          <div className="rise mt-7 flex items-center justify-center gap-7 lg:justify-start" style={{ animationDelay: "0.54s" }}>
-            <div>
-              <div className="mono text-[24px] font-extrabold leading-none">120</div>
-              <div className="navfont mt-1.5 text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
-                NIMCET · full paper
-              </div>
-            </div>
-            <span aria-hidden className="h-8 w-px" style={{ background: "var(--border)" }} />
-            <div>
-              <div className="mono text-[24px] font-extrabold leading-none">75</div>
-              <div className="navfont mt-1.5 text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
-                CUET PG · full paper
-              </div>
-            </div>
-          </div>
+            Attempt a full paper free <span className="carr">→</span>
+          </Link>
+          <Link
+            href="/#how"
+            className="navfont cta-line rounded-full px-7 py-3.5 text-sm font-semibold"
+            style={{
+              border: "1px solid color-mix(in srgb, #ffffff 22%, transparent)",
+              background: "color-mix(in srgb, #ffffff 5%, transparent)",
+              color: "var(--hx-text)",
+            }}
+          >
+            See how it works
+          </Link>
         </div>
 
-        {/* Compass core — decor only */}
-        <div aria-hidden className="rise" style={{ animationDelay: "0.35s" }}>
-          <div className="hero-par-2 relative mx-auto w-[min(80vw,320px)] sm:w-[340px] lg:w-[400px]">
-            <div className="core-glow pointer-events-none absolute -inset-[16%]" />
-            <svg viewBox="0 0 480 480" className="relative block h-auto w-full">
-              <defs>
-                <linearGradient id="coreRing" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" className="core-stop-a" />
-                  <stop offset="1" className="core-stop-b" />
-                </linearGradient>
-                <radialGradient id="coreOrbG" cx="0.38" cy="0.3" r="0.92">
-                  <stop offset="0" className="core-stop-a" stopOpacity="0.34" />
-                  <stop offset="0.6" className="core-stop-a" stopOpacity="0.09" />
-                  <stop offset="1" className="core-stop-a" stopOpacity="0" />
-                </radialGradient>
-                <radialGradient id="coreShadowG" cx="0.5" cy="0.5" r="0.5">
-                  <stop offset="0" className="core-stop-a" stopOpacity="0.2" />
-                  <stop offset="1" className="core-stop-a" stopOpacity="0" />
-                </radialGradient>
-              </defs>
+        {/* The object: a real OMR answer sheet, mid-review */}
+        <div aria-hidden className="rise relative mt-14 w-[min(86vw,560px)]" style={{ animationDelay: "0.56s", rotate: "-2deg" }}>
+          <span
+            className="hx-stamp mono absolute -top-3 -right-1.5 z-10 rounded-[10px] px-3 py-1.5 text-[10px] font-bold"
+            style={{ rotate: "-7deg", letterSpacing: "0.22em" }}
+          >
+            REHEARSED
+          </span>
+          <div className="hx-paper hx-float px-5 py-5 text-left sm:px-8 sm:py-7">
+            <div className="flex items-center justify-between gap-3">
+              <span className="mono text-[10px] font-bold uppercase" style={{ color: "rgba(20,23,42,0.72)", letterSpacing: "0.16em" }}>
+                NIMCET — Mock 01
+              </span>
+              <span className="mono text-[10px] font-semibold uppercase" style={{ color: "rgba(20,23,42,0.45)", letterSpacing: "0.16em" }}>
+                Full length · 120 Q
+              </span>
+            </div>
+            <div className="mt-3 h-px w-full" style={{ background: "rgba(20,23,42,0.12)" }} />
 
-              {/* dial ticks */}
-              <g style={{ stroke: "color-mix(in srgb, var(--text) 14%, transparent)" }}>
-                {TICKS.map((t, i) => (
-                  <line
-                    key={i}
-                    x1={t.x1}
-                    y1={t.y1}
-                    x2={t.x2}
-                    y2={t.y2}
-                    strokeWidth={t.major ? 1.6 : 1}
-                    style={t.major ? { stroke: "color-mix(in srgb, var(--text) 32%, transparent)" } : undefined}
-                  />
-                ))}
-              </g>
-
-              {/* rotating dashed orbit */}
-              <g className="core-spin-c">
-                <circle
-                  cx="240"
-                  cy="240"
-                  r="178"
-                  fill="none"
-                  strokeWidth="1"
-                  strokeDasharray="2 7"
-                  strokeLinecap="round"
-                  style={{ stroke: "color-mix(in srgb, var(--text) 22%, transparent)" }}
-                />
-              </g>
-
-              {/* fixed inner circle + halo ring */}
-              <circle cx="240" cy="240" r="150" fill="none" strokeWidth="1" style={{ stroke: "color-mix(in srgb, var(--text) 12%, transparent)" }} />
-              <circle
-                cx="240"
-                cy="240"
-                r="112"
-                fill="none"
-                strokeWidth="1"
-                strokeDasharray="1 5"
-                strokeLinecap="round"
-                style={{ stroke: "color-mix(in srgb, var(--accent) 22%, transparent)" }}
-              />
-
-              {/* syllabus glyphs */}
-              <g className="mono" textAnchor="middle" style={{ fill: "color-mix(in srgb, var(--text) 26%, transparent)" }}>
-                {GLYPHS.map(([g, x, y]) => (
-                  <text key={g} x={x} y={y} fontSize="15" dominantBaseline="central">
-                    {g}
-                  </text>
-                ))}
-              </g>
-
-              {/* orbiting nodes */}
-              <g className="core-spin-a">
-                <circle cx="240" cy="62" r="12" style={{ fill: "color-mix(in srgb, var(--accent) 20%, transparent)" }} />
-                <circle cx="240" cy="62" r="5" style={{ fill: "var(--accent)" }} />
-              </g>
-              <g className="core-spin-b">
-                <circle cx="390" cy="240" r="4" style={{ fill: "var(--gold-3)" }} />
-              </g>
-
-              {/* monogram orb */}
-              <g className="core-breathe">
-                <circle cx="240" cy="240" r="88" strokeWidth="1" style={{ fill: "color-mix(in srgb, var(--nav-bg) 72%, transparent)", stroke: "var(--border)" }} />
-                <circle cx="240" cy="240" r="88" style={{ fill: "url(#coreOrbG)" }} />
-                <text
-                  x="240"
-                  y="240"
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize="98"
-                  className="display serif-it"
-                  style={{ fill: "url(#coreRing)" }}
-                >
-                  N
-                </text>
-                <text
-                  x="240"
-                  y="308"
-                  textAnchor="middle"
-                  fontSize="9.5"
-                  className="mono"
-                  style={{ fill: "color-mix(in srgb, var(--text) 40%, transparent)", letterSpacing: "0.34em" }}
-                >
-                  NimCuet
-                </text>
-              </g>
-
-              {/* ground reflection */}
-              <ellipse cx="240" cy="466" rx="132" ry="13" style={{ fill: "url(#coreShadowG)" }} />
+            <svg viewBox="0 0 368 228" className="mt-4 block h-auto w-full">
+              {OMR.map((col, c) =>
+                col.map((filled, r) => {
+                  const x = c * 216 + 8;
+                  const y = 22 + r * 31;
+                  const seq = c * 7 + r;
+                  const isCorrection = c === 0 && r === 4;
+                  const corrected = isCorrection ? 2 : -1;
+                  return (
+                    <g key={`${c}-${r}`}>
+                      <text x={x} y={y + 3.5} fontSize="10" className="mono" fill="rgba(20,23,42,0.5)">
+                        {String(seq + 1).padStart(2, "0")}
+                      </text>
+                      {[0, 1, 2, 3].map((k) => {
+                        const cx = x + 30 + k * 30;
+                        const showFilled = filled === k || corrected === k;
+                        return (
+                          <g key={k}>
+                            <circle cx={cx} cy={y} r="8.5" fill="none" stroke="rgba(20,23,42,0.3)" strokeWidth="1.4" />
+                            {showFilled && (
+                              <circle
+                                cx={cx}
+                                cy={y}
+                                r="7.5"
+                                fill="#14172a"
+                                className="hx-dot"
+                                style={{ animationDelay: `${0.75 + seq * 0.045}s` }}
+                              />
+                            )}
+                            {isCorrection && k === 1 && (
+                              <g className="hx-cross" stroke="var(--hx-amber)" strokeWidth="2.4" strokeLinecap="round">
+                                <line x1={cx - 6} y1={y - 6} x2={cx + 6} y2={y + 6} />
+                                <line x1={cx - 6} y1={y + 6} x2={cx + 6} y2={y - 6} />
+                              </g>
+                            )}
+                            {isCorrection && k === 2 && (
+                              <circle cx={cx} cy={y} r="13.5" fill="none" stroke="var(--hx-lime)" strokeWidth="2.2" className="hx-ring" />
+                            )}
+                          </g>
+                        );
+                      })}
+                    </g>
+                  );
+                })
+              )}
             </svg>
+
+            <div className="mt-3 flex items-end justify-between gap-3">
+              <span className="mono text-[10px] font-semibold uppercase" style={{ color: "rgba(20,23,42,0.45)", letterSpacing: "0.14em" }}>
+                Marking +4 / −1
+              </span>
+              <span className="hx-serif italic text-[20px] leading-none" style={{ color: "rgba(20,23,42,0.82)" }}>
+                attempt, review, repeat.
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Scroll cue */}
-      <div aria-hidden className="pointer-events-none absolute bottom-24 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 md:flex">
-        <span className="mono text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.3em" }}>
-          Scroll
-        </span>
-        <span className="scroll-line" />
       </div>
 
       {/* Subject ticker — loop math unchanged */}
-      <div aria-hidden className="marquee-mask relative overflow-hidden py-2.5" style={{ borderTop: "1px solid var(--border)" }}>
-        <div className="marquee mono gap-10 text-[11px] font-semibold" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
+      <div aria-hidden className="marquee-mask relative overflow-hidden py-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.09)" }}>
+        <div
+          className="marquee mono gap-10 text-[11px] font-semibold"
+          style={{ color: "color-mix(in srgb, var(--hx-muted) 80%, transparent)", letterSpacing: "0.18em" }}
+        >
           {[0, 1].map((k) => (
             <div key={k} className="flex shrink-0 gap-10 pr-10">
               {TICKER.map((t) => (
