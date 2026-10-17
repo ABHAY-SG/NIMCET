@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Reveal from "@/components/reveal";
 
 // Shared shell for Terms and Privacy: a viewport-height page that itself
@@ -15,10 +16,18 @@ export default function LegalPage({
   sections: Array<[string, string[]]>;
 }) {
   return (
-    <main data-legal className="relative mx-auto flex h-[100dvh] w-full max-w-5xl flex-col px-4 pb-6 pt-10 sm:px-6 lg:px-8">
+    <main data-legal className="relative mx-auto flex h-[100dvh] w-full max-w-5xl flex-col px-4 pb-6 pt-6 sm:px-6 lg:px-8">
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[380px] overflow-hidden">
         <span className="orb" style={{ left: "10%", top: "-30%", width: "22rem", height: "22rem", background: "color-mix(in srgb, var(--accent) 15%, transparent)" }} />
         <span className="orb" style={{ right: "6%", top: "-12%", width: "20rem", height: "20rem", background: "color-mix(in srgb, var(--gold-3) 11%, transparent)", animationDelay: "-12s" }} />
+      </div>
+
+      {/* These routes run without the navbar, so the way back lives here. */}
+      <div className="flex shrink-0 items-center pb-5">
+        <Link href="/" className="legal-back">
+          <span aria-hidden className="text-[13px] leading-none">←</span>
+          Back to home
+        </Link>
       </div>
 
       {/* Fixed heading — never scrolls */}
@@ -39,7 +48,7 @@ export default function LegalPage({
       </div>
 
       <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-8 md:grid-cols-[230px_minmax(0,1fr)]">
-        <aside className="premium-card hidden self-start rounded-[22px] p-3.5 md:block">
+        <aside className="premium-card admin-scroll hidden max-h-full self-start overflow-y-auto rounded-[22px] p-3.5 md:block">
           <div className="px-2 pb-2 pt-1 text-[10px] font-extrabold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
             On this page
           </div>

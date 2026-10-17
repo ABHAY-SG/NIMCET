@@ -9,32 +9,52 @@ export const metadata: Metadata = {
 
 const SECTIONS: Array<[string, string[]]> = [
   ["1. What NimCuet offers", [
-    "NimCuet provides online mock tests, previous-year-style question sets and performance reports for NIMCET and CUET PG (MCA).",
-    "The sample mock works without an account. Creating a free account saves your attempt history and gives you custom mocks from the question bank; paid plans cover unlimited published mocks for their billing period.",
+    "NimCuet is an independent online mock-test platform for NIMCET and CUET PG (MCA) aspirants. We are not affiliated with NTA, the NIMCET organising institutes or any university — exam names are used only to describe the papers our mocks simulate.",
+    "Our mocks replay the real paper: a 120-question NIMCET pattern and a 75-question CUET PG pattern, split into timed parts with auto-submit, resume support, instant scorecards, full solutions and analytics.",
+    "The sample mock works without an account. A free account saves your attempt history and unlocks custom mocks built from the question bank. Paid plans cover unlimited published mocks for their billing period.",
   ]],
-  ["2. Plans and payments", [
-    "Free — ₹0 forever: the sample mock, custom mocks from the bank and saved history. Monthly — ₹149 per month, unlimited published mocks and full analytics. Annual — ₹699 per year, 12 months full access.",
-    "Payments are collected over UPI. Your plan is activated on your registered email within one day of payment confirmation.",
-    "Prices include all taxes. We may revise prices for new purchases; active plans keep their price till renewal.",
+  ["2. Accounts and eligibility", [
+    "You need a valid email address to create an account, and the details you give us should be accurate. One account is for one person.",
+    "You are responsible for keeping your login secure and for all activity that happens under your account. If you think someone else has accessed it, tell us right away and change your password.",
+    "NimCuet is built for MCA aspirants who are generally 18 or older. Younger users may use it with the involvement of a parent or guardian.",
+    "We may suspend or close accounts that break these terms, attempt to abuse the platform, or put other users at risk.",
   ]],
-  ["3. Fair use", [
-    "Accounts and plans are for one person. Sharing logins, scraping questions or republishing content leads to suspension without refund.",
-    "Automated bulk attempting that degrades service for others is not allowed.",
+  ["3. Plans, payments and activation", [
+    "Free — ₹0 forever: the sample mock, custom mocks from the question bank and saved attempt history.",
+    "Monthly — ₹149 per month: unlimited published mocks and full analytics for the billing period.",
+    "Annual — ₹699 per year: the same full access for 12 months.",
+    "Payments are collected over UPI. Share the payment reference with us; your plan is activated on your registered email within one day of payment confirmation (usually much faster).",
+    "Prices include all taxes. We may revise prices for new purchases, but an active plan keeps the price you paid until it comes up for renewal. Plans are personal — they cannot be shared or transferred.",
   ]],
-  ["4. Content and ownership", [
-    "All questions, explanations, reports and site content belong to NimCuet and are for personal preparation use only.",
-    "Demo scores are illustrative of that question set — they are not predicted ranks or admission guarantees.",
+  ["4. Mock tests, scoring and results", [
+    "Mocks follow the official exam patterns as published. When NTA or the NIMCET organisers change a pattern or marking scheme, we update our papers to match.",
+    "Scores and analytics are practice tools. They are not predicted ranks, admission advice or a guarantee of any result in the real exam.",
+    "If we confirm an error in a question or key, we may correct or void it and adjust affected scores. If a genuine technical failure interrupts your attempt, contact us — we may reset that attempt.",
   ]],
-  ["5. Refunds", [
-    "Monthly plans can be refunded within 48 hours of purchase if fewer than 2 mocks were attempted — write to abhayincodingworld@gmail.com.",
-    "Annual plans can be refunded within 7 days under the same condition. Free plans are never charged.",
+  ["5. Fair use", [
+    "Accounts and plans are for one person. Sharing logins, scraping questions, bulk-downloading content or republishing it is not allowed.",
+    "Automated bulk attempting, attempts to bypass timers or gating, and anything that degrades the service for other users is also not allowed.",
+    "Breaking these rules can lead to suspension or closure of the account without a refund.",
   ]],
-  ["6. Liability", [
-    "Mock scores do not guarantee real-exam results. Exam patterns follow official notifications; if NTA or NIMCET changes a pattern, we update our mocks accordingly.",
-    "Service is provided as-is with best-effort uptime; we are not liable for indirect losses.",
+  ["6. Content and ownership", [
+    "All questions, explanations, reports, designs and site content belong to NimCuet and are provided for personal preparation use only. You may not copy, resell or redistribute them.",
+    "Exam names, logos and trademarks belong to their respective owners and are used only to describe the exams we cover.",
   ]],
-  ["7. Changes and contact", [
-    "We may update these terms; continued use after changes means acceptance. Questions: abhayincodingworld@gmail.com, +91-74250-97293.",
+  ["7. Refunds and cancellation", [
+    "Monthly plans can be refunded within 48 hours of purchase if fewer than 2 mocks were attempted. Annual plans can be refunded within 7 days under the same condition. Write to abhayincodingworld@gmail.com with your payment reference.",
+    "Approved refunds go back to the original payment method, usually within 7 working days.",
+    "You can stop renewing at any time — access simply runs to the end of the paid period. After the refund window, part-period refunds are not available. The free plan is never charged.",
+  ]],
+  ["8. Availability and liability", [
+    "We run the service on a best-effort basis and aim for high uptime, but maintenance, hosting issues or network problems can interrupt access. Where possible we give notice of planned downtime.",
+    "Mock scores do not guarantee real-exam results. To the extent permitted by law, we are not liable for indirect or consequential losses arising from use of the site.",
+  ]],
+  ["9. Changes to these terms", [
+    "We may update these terms as the product evolves. The date at the top of this page shows the latest revision, and material changes are flagged on the site.",
+    "Continuing to use NimCuet after an update means you accept the revised terms.",
+  ]],
+  ["10. Contact", [
+    "Questions about these terms: abhayincodingworld@gmail.com or +91-74250-97293. We usually reply within 2 working days.",
   ]],
 ];
 
