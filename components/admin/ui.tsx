@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from "react";
 import { Icon, type IconName } from "./icons";
 
 // Shared admin UI kit: cards, badges, skeletons, modals, form fields,
@@ -123,7 +123,7 @@ export function StatCard({
         {icon && (
           <span
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-            style={{ background: `color-mix(in srgb, ${c} 14%, transparent)`, color: c }}
+            style={{ background: `color-mix(in srgb, ${c} 14%, transparent)`, color: `color-mix(in srgb, ${c} 70%, var(--text))` }}
           >
             <Icon name={icon} size={17} />
           </span>
@@ -138,13 +138,16 @@ export function StatCard({
 export type BadgeTone = "neutral" | "green" | "red" | "amber" | "blue" | "violet";
 
 export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; children: React.ReactNode }) {
+  // Tint base hues toward the current text color so contrast holds in both
+  // light and dark themes (a fixed dark green fails on a near-black card).
+  const mix = (c: string, pct = 62) => `color-mix(in srgb, ${c} ${pct}%, var(--text))`;
   const styles: Record<BadgeTone, { bg: string; fg: string }> = {
     neutral: { bg: "var(--pill)", fg: "var(--muted)" },
-    green: { bg: "color-mix(in srgb, #10b981 15%, transparent)", fg: "#0d9b6c" },
-    red: { bg: "color-mix(in srgb, #ef4444 15%, transparent)", fg: "#dc2626" },
-    amber: { bg: "color-mix(in srgb, #f59e0b 17%, transparent)", fg: "#c2760a" },
-    blue: { bg: "color-mix(in srgb, #0ea5e9 15%, transparent)", fg: "#0284c7" },
-    violet: { bg: "color-mix(in srgb, #7c3aed 15%, transparent)", fg: "#7c3aed" },
+    green: { bg: "color-mix(in srgb, #10b981 15%, transparent)", fg: mix("#10b981") },
+    red: { bg: "color-mix(in srgb, #ef4444 15%, transparent)", fg: mix("#ef4444") },
+    amber: { bg: "color-mix(in srgb, #f59e0b 17%, transparent)", fg: mix("#f59e0b", 48) },
+    blue: { bg: "color-mix(in srgb, #0ea5e9 15%, transparent)", fg: mix("#0ea5e9") },
+    violet: { bg: "color-mix(in srgb, #7c3aed 15%, transparent)", fg: mix("#7c3aed") },
   };
   const s = styles[tone];
   return (
@@ -290,6 +293,7 @@ export function Modal({
   title,
   subtitle,
   width = "max-w-2xl",
+  busy = false,
   children,
   footer,
 }: {
@@ -298,20 +302,59 @@ export function Modal({
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   width?: string;
+  busy?: boolean;
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
   useEffect(() => {
     if (!open) return;
+    const restore = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      // Keep keyboard focus inside the dialog while it is open.
+      if (e.key !== "Tab") return;
+      const root = ref.current;
+      if (!root) return;
+      const focusables = root.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const current = document.activeElement;
+      if (e.shiftKey && (current === first || !root.contains(current))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (current === last || !root.contains(current))) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // Move focus into the dialog once it has painted.
+    const t = window.setTimeout(() => {
+      const root = ref.current;
+      if (!root) return;
+      const auto =
+        root.querySelector<HTMLElement>("[data-autofocus]") ??
+        root.querySelector<HTMLElement>('input, textarea, select, a[href], button:not([disabled])');
+      auto?.focus();
+    }, 0);
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
+      window.clearTimeout(t);
+      // Return focus to whatever had it before the dialog opened.
+      try {
+        restore?.focus();
+      } catch {}
     };
   }, [open, onClose]);
 
@@ -326,14 +369,17 @@ export function Modal({
         style={{ background: "rgba(0,0,0,0.5)" }}
       />
       <div
+        ref={ref}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-busy={busy || undefined}
         className={cx("menu-in relative w-full rounded-[22px]", width)}
         style={{ background: "var(--bg)", border: "1px solid var(--border)", boxShadow: "0 24px 80px -24px rgba(0,0,0,0.5)" }}
       >
         <div className="flex items-start justify-between gap-3 border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
           <div className="min-w-0">
-            <h3 className="truncate text-[16px] font-extrabold tracking-tight">{title}</h3>
+            <h3 id={titleId} className="truncate text-[16px] font-extrabold tracking-tight">{title}</h3>
             {subtitle && (
               <p className="mt-0.5 text-[12px]" style={{ color: "var(--muted)" }}>
                 {subtitle}
@@ -394,6 +440,7 @@ export function ConfirmDialog({
       onClose={onCancel}
       title={title}
       width="max-w-md"
+      busy={busy}
       footer={
         <>
           <button type="button" className="admin-btn" onClick={onCancel} disabled={busy}>
@@ -501,8 +548,8 @@ export function Avatar({ src, name, size = 36 }: { src?: string; name: string; s
   }
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full font-extrabold text-white"
-      style={{ width: size, height: size, background: "var(--accent)", fontSize: Math.max(11, Math.round(size * 0.38)) }}
+      className="flex shrink-0 items-center justify-center rounded-full font-extrabold"
+      style={{ width: size, height: size, background: "var(--accent)", color: "var(--accent-fg)", fontSize: Math.max(11, Math.round(size * 0.38)) }}
     >
       {initialsOf(name)}
     </span>

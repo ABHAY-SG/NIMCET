@@ -1,16 +1,8 @@
 "use client";
 import { useEffect, useState, type ComponentType } from "react";
+import { usePathname } from "next/navigation";
 import { getAuthClient } from "@/lib/supabase";
-
-const THEMES = [
-  { id: "light", name: "Light", dot: "#ffffff" },
-  { id: "midnight", name: "Midnight", dot: "#1e293b" },
-  { id: "ocean", name: "Ocean", dot: "#0284c7" },
-  { id: "forest", name: "Forest", dot: "#059669" },
-  { id: "sunset", name: "Sunset", dot: "#ea580c" },
-] as const;
-
-type ThemeId = (typeof THEMES)[number]["id"];
+import { applyTheme, readTheme, THEMES, type ThemeId } from "@/lib/theme";
 
 function SunIcon() {
   return (
@@ -100,18 +92,18 @@ export default function Navbar() {
   const [themeOpen, setThemeOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeId>("light");
   const [scrolled, setScrolled] = useState(false);
-  const [wide, setWide] = useState(true);
   const [active, setActive] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
+  const pathname = usePathname();
+
+  // Section anchors only exist on the landing page; other pages highlight
+  // their own nav entry instead of a wrong "Home".
+  const PAGE_IDS: Record<string, string> = { "/about": "about", "/faq": "faqs", "/contact": "contact" };
+  const pageId = pathname === "/" ? "" : PAGE_IDS[pathname] ?? "";
+  const isActive = (id: string) => (pathname === "/" ? active === id : pageId === id);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("mcamock-theme") as ThemeId | null;
-      if (saved) {
-        setTheme(saved);
-        document.documentElement.dataset.theme = saved;
-      }
-    } catch {}
+    setTheme(readTheme());
     // Session-aware buttons: a logged-in visitor must see Dashboard, never a
     // misleading Log in prompt. Read-only check — touches no auth flow.
     (async () => {
@@ -122,11 +114,8 @@ export default function Navbar() {
       } catch {}
     })();
     const onScroll = () => setScrolled(window.scrollY > 8);
-    const onResize = () => setWide(window.innerWidth >= 1280);
     onScroll();
-    onResize();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
     const spyIds = ["exams", "how", "pricing", "about", "faqs", "contact"];
     const onSpy = () => {
       if (window.scrollY < 200) { setActive("home"); return; }
@@ -142,21 +131,29 @@ export default function Navbar() {
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("scroll", onSpy);
-      window.removeEventListener("resize", onResize);
     };
   }, []);
 
   const pick = (t: ThemeId) => {
+    applyTheme(t);
     setTheme(t);
-    document.documentElement.dataset.theme = t;
-    try { localStorage.setItem("mcamock-theme", t); } catch {}
     setThemeOpen(false);
   };
+
+  // Escape closes the theme popover (keyboard parity with the close overlay).
+  useEffect(() => {
+    if (!themeOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setThemeOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [themeOpen]);
 
   const linkCls = "nlink shrink-0 rounded-full px-2.5 py-2 text-sm font-medium sm:px-3";
   const plainCls = "shrink-0 rounded-full px-2.5 py-2 text-sm font-medium text-[var(--muted)] transition-colors hover:text-[var(--text)] sm:px-3";
   const nav = (id: string, label: string, extra = "") => (
-    <a href={id === "home" ? "/" : `/#${id}`} className={`${linkCls}${active === id ? " active" : ""}${extra}`}>
+    <a href={id === "home" ? "/" : `/#${id}`} className={`${linkCls}${isActive(id) ? " active" : ""}${extra}`}>
       {label}
     </a>
   );
@@ -178,27 +175,30 @@ export default function Navbar() {
     >
       <div className="mx-auto flex h-16 w-full items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         <div className="flex shrink-0 items-center gap-1">
-          {!wide && (
-            <button type="button" onClick={() => setOpen((v) => !v)} aria-label="menu" className={plainCls}>
-              {open ? "✕" : "☰"}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            className={plainCls + " lg:hidden"}
+          >
+            {open ? "✕" : "☰"}
+          </button>
           <a href="/" className="flex items-center" aria-label="NimCuet home">
             <LogoImg />
           </a>
         </div>
 
-        {wide && (
-          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden lg:flex">
-            {nav("home", "Home")}
-            {nav("exams", "Exams")}
-            {nav("how", "How it works")}
-            {nav("pricing", "Pricing")}
-            {nav("about", "About Us")}
-            {nav("faqs", "FAQs")}
-            {nav("contact", "Contact Us")}
-          </nav>
-        )}
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden lg:flex">
+          {nav("home", "Home")}
+          {nav("exams", "Exams")}
+          {nav("how", "How it works")}
+          {nav("pricing", "Pricing")}
+          {nav("about", "About Us")}
+          {nav("faqs", "FAQs")}
+          {nav("contact", "Contact Us")}
+        </nav>
 
         <div className="flex shrink-0 items-center gap-1">
           <div className="relative">
@@ -269,8 +269,8 @@ export default function Navbar() {
         </div>
       </div>
 
-      {open && !wide && (
-        <nav className="mx-auto flex w-full flex-col px-4 pb-3 sm:px-6 lg:px-8">
+      {open && (
+        <nav id="mobile-menu" className="mx-auto flex w-full flex-col px-4 pb-3 sm:px-6 lg:hidden lg:px-8">
           {[
             ["home", "Home"],
             ["exams", "Exams"],
@@ -284,7 +284,7 @@ export default function Navbar() {
               key={id}
               href={id === "home" ? "/" : `/#${id}`}
               onClick={() => setOpen(false)}
-              className={`${linkCls} nounder${active === id ? " active" : ""}`}
+              className={`${linkCls} nounder${isActive(id) ? " active" : ""}`}
             >
               {label}
             </a>

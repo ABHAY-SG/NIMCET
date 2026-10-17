@@ -4,7 +4,7 @@ const PLANS = [
   {
     name: "Free", price: "₹0", per: "forever",
     lines: ["Free 12Q sample mock", "Solutions + scorecard", "No card • no login needed"],
-    cta: "Start free", hot: false, href: "/signup",
+    cta: "Try the free sample", hot: false, href: "/#demo",
   },
   {
     name: "Monthly", price: "₹149", per: "/month",
@@ -57,7 +57,7 @@ export default function Pricing() {
               {p.hot && (
                 <span
                   className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-extrabold uppercase"
-                  style={{ background: "var(--accent)", color: "#fff", letterSpacing: "0.14em" }}
+                  style={{ background: "var(--accent)", color: "var(--accent-fg)", letterSpacing: "0.14em" }}
                 >
                   Most Popular
                 </span>
@@ -81,7 +81,7 @@ export default function Pricing() {
                 className={`mt-6 block rounded-full py-2.5 text-center text-sm font-bold ${p.hot ? "" : "cta-glow"}`}
                 style={
                   p.hot
-                    ? { background: "var(--accent)", color: "#fff" }
+                    ? { background: "var(--accent)", color: "var(--accent-fg)" }
                     : { border: "1px solid var(--border)", color: "var(--text)" }
                 }
               >

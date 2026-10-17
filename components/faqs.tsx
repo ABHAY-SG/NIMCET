@@ -1,14 +1,7 @@
 "use client";
 import { useState } from "react";
 import Reveal from "@/components/reveal";
-
-const FAQS: Array<[string, string]> = [
-  ["What is the NIMCET pattern?", "120 MCQs, 1000 marks, 120 minutes. Maths 50×12, Reasoning 40×6, Computer 20×6, English 10×4. 25% negative marking, no penalty on skips."],
-  ["What is CUET PG MCA (SCQP09)?", "75 MCQs, 300 marks, 90 minutes. +4 correct, -1 wrong. Maths, Computer Science, and Thinking & Decision Making."],
-  ["Is there negative marking in demos?", "Yes — demos use the exact per-section marking of the real paper."],
-  ["Do I need an account?", "Not for demos. Accounts and saved history arrive with the next release."],
-  ["How do I contact you?", "Email abhayincodingworld@gmail.com or call +91-74250-97293."],
-];
+import { LANDING_FAQS as FAQS } from "@/lib/faq-data";
 
 function Item({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -17,6 +10,7 @@ function Item({ q, a }: { q: string; a: string }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         className="flex w-full items-center justify-between gap-4 py-4 text-left"
       >
         <span className={`text-[15px] font-bold transition-colors ${open ? "" : ""}`} style={open ? { color: "var(--accent)" } : undefined}>{q}</span>
@@ -24,7 +18,7 @@ function Item({ q, a }: { q: string; a: string }) {
           className="mono flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base"
           style={{
             background: open ? "var(--accent)" : "var(--pill)",
-            color: open ? "#fff" : "var(--text)",
+            color: open ? "var(--accent-fg)" : "var(--text)",
             transform: open ? "rotate(45deg)" : "none",
             transition: "transform 0.3s, background 0.3s",
           }}

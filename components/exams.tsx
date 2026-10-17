@@ -100,7 +100,7 @@ export default function Exams() {
                 </div>
                 <div className="mt-1.5 h-2.5 overflow-hidden rounded-full" style={{ background: "var(--pill)" }}>
                   <div
-                    className="grow h-full rounded-full"
+                    className="grow-bar h-full rounded-full"
                     style={{ width: `${Math.round((s.marks / s.total) * 100)}%`, background: "var(--accent)", animationDelay: `${i * 0.1}s` }}
                   />
                 </div>

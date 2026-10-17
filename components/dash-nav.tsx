@@ -151,7 +151,7 @@ export default function DashNav({
               {avatarUrl && imgOk ? (
                 <img src={`/api/avatar?src=${encodeURIComponent(avatarUrl)}`} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
               ) : (
-                <span className="flex h-full w-full items-center justify-center text-sm font-extrabold text-white">
+                <span className="flex h-full w-full items-center justify-center text-sm font-extrabold" style={{ color: "var(--accent-fg)" }}>
                   {initialsOf(displayName, email)}
                 </span>
               )}
@@ -173,11 +173,11 @@ export default function DashNav({
                   BEST {streak.best}d
                 </span>
               </div>
-              <div className="mt-3 flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}>
+              <div className="mt-3 flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}>
                 <span aria-hidden className="text-4xl">🔥</span>
                 <div>
-                  <div className="text-xl font-extrabold leading-tight text-white">{formatStreak(streak.current)}</div>
-                  <div className="mt-1 text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>
+                  <div className="text-xl font-extrabold leading-tight">{formatStreak(streak.current)}</div>
+                  <div className="mt-1 text-[11px] font-semibold" style={{ color: "color-mix(in srgb, var(--accent-fg) 85%, transparent)" }}>
                     {streak.current > 0 ? "in a row — keep it burning" : "attempt a mock to ignite it"}
                   </div>
                 </div>
@@ -188,7 +188,7 @@ export default function DashNav({
                     <span
                       className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-extrabold"
                       style={d.active
-                        ? { background: "linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "#fff", boxShadow: "0 8px 20px -8px var(--accent)" }
+                        ? { background: "linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)", boxShadow: "0 8px 20px -8px var(--accent)" }
                         : { background: "var(--pill)", color: "var(--muted)", border: d.isToday ? "2px solid var(--accent)" : "1px solid transparent" }}
                     >
                       {d.active ? "✓" : d.label}
@@ -245,21 +245,21 @@ export default function DashNav({
           {openMenu === "profile" && (
             <div className="menu-in absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl" style={panelStyle}>
               <div
-                className="flex items-center gap-3 px-4 pb-3.5 pt-4 text-white"
-                style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                className="flex items-center gap-3 px-4 pb-3.5 pt-4"
+                style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
               >
-                <span className="block h-11 w-11 shrink-0 overflow-hidden rounded-full" style={{ border: "2px solid rgba(255,255,255,0.6)" }}>
+                <span className="block h-11 w-11 shrink-0 overflow-hidden rounded-full" style={{ border: "2px solid color-mix(in srgb, var(--accent-fg) 60%, transparent)" }}>
                   {avatarUrl && imgOk ? (
                     <img src={`/api/avatar?src=${encodeURIComponent(avatarUrl)}`} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
                   ) : (
-                    <span className="flex h-full w-full items-center justify-center bg-white/20 text-base font-extrabold text-white">
+                    <span className="flex h-full w-full items-center justify-center text-base font-extrabold" style={{ background: "color-mix(in srgb, var(--accent-fg) 20%, transparent)" }}>
                       {initialsOf(displayName, email)}
                     </span>
                   )}
                 </span>
                 <div className="min-w-0">
                   <div className="truncate text-sm font-extrabold">{displayName || email.split("@")[0]}</div>
-                  <div className="truncate text-xs" style={{ color: "rgba(255,255,255,0.8)" }} title={email}>{email}</div>
+                  <div className="truncate text-xs" style={{ color: "color-mix(in srgb, var(--accent-fg) 80%, transparent)" }} title={email}>{email}</div>
                 </div>
               </div>
               <div className="p-1.5">

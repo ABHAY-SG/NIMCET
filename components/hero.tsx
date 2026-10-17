@@ -63,7 +63,7 @@ export default function Hero() {
           </div>
         </Reveal>
       </div>
-      <div className="relative overflow-hidden py-2.5" style={{ borderTop: "1px solid var(--border)" }}>
+      <div aria-hidden className="relative overflow-hidden py-2.5" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="marquee mono gap-10 text-[11px] font-semibold" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
           {[0, 1].map((k) => (
             <div key={k} className="flex shrink-0 gap-10 pr-10">

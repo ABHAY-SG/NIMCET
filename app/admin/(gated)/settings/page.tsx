@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import Link from "next/link";
 import AdminLayout from "@/components/admin-layout";
 import { Badge, Card, ErrorState, InfoRow, SectionCard, Skeleton, useToast } from "@/components/admin/ui";
@@ -31,8 +30,9 @@ function Ok({ ok, label }: { ok: boolean; label: string }) {
 export default function AdminSettings() {
   const toast = useToast();
   const { theme, setTheme } = useAdminTheme();
-  const currentPer = usePageSize(20);
-  const [per, setPer] = useState<number>(currentPer);
+  // Live value: setStoredPageSize dispatches an event the hook listens to, so
+  // the selected row count and the summary below always reflect reality.
+  const per = usePageSize(20);
   const config = useAdminData<Config>("/api/admin/settings/config");
 
   const chooseTheme = (id: (typeof THEMES)[number]["id"]) => {
@@ -41,7 +41,6 @@ export default function AdminSettings() {
   };
 
   const choosePer = (n: number) => {
-    setPer(n);
     setStoredPageSize(n);
     toast(`Tables will show ${n} rows per page.`);
   };
@@ -92,7 +91,7 @@ export default function AdminSettings() {
                 className="cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-extrabold transition-transform hover:-translate-y-0.5"
                 style={{
                   background: per === n ? "var(--btn-bg)" : "var(--pill)",
-                  color: per === n ? "var(--btn-text)" : "var(--fg, inherit)",
+                  color: per === n ? "var(--btn-text)" : undefined,
                   border: "1px solid var(--border)",
                 }}
                 aria-pressed={per === n}

@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "What NimCuet stores, why, and how to get it removed.",
+  alternates: { canonical: "/privacy" },
+};
+
 const SECTIONS: Array<[string, string[]]> = [
   ["1. Data we collect", [
     "Theme preference — stored only in your own browser (localStorage), never sent to us.",
-    "Demo attempts — stay on your device unless you create an account in a future release.",
+    "Attempt history — attempts taken while signed in are stored on our servers so your dashboard can show them; they are visible only to you and the NimCuet admin team. Sample-mock attempts taken without an account stay in your browser.",
+    "Account details — the name, email and optional profile photo you provide when registering.",
     "Contact messages — your email or phone when you write or call us, used only to reply.",
     "Payment confirmations — UPI reference and email, used only to activate your plan.",
   ]],

@@ -143,7 +143,7 @@ export default function PhotoCropper({
             Cancel
           </button>
           <button type="button" onClick={confirm} disabled={busy || size.w === 0}
-            className="cursor-pointer rounded-xl py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            className="cursor-pointer rounded-xl py-2.5 text-sm font-bold disabled:opacity-50"
             style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
             {busy ? "Saving…" : "Confirm"}
           </button>

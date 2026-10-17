@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import AdminLayout from "@/components/admin-layout";
 import PhotoCropper from "@/components/photo-cropper";
@@ -58,12 +58,13 @@ export default function AdminProfile() {
   const [pwBusy, setPwBusy] = useState(false);
 
   // Seed the editable fields once the real profile arrives.
-  if (data && !nameInit) {
+  useEffect(() => {
+    if (!data || nameInit) return;
     setFirst(data.first_name);
     setLast(data.last_name);
     setAvatar(data.custom_avatar);
     setNameInit(true);
-  }
+  }, [data, nameInit]);
 
   const displayName = useMemo(() => {
     const n = [data?.first_name, data?.last_name].filter(Boolean).join(" ").trim();

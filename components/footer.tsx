@@ -154,7 +154,7 @@ export default function Footer() {
         >
           <span>© 2026 NimCuet • Made in India</span>
           <span className="italic">“Consistency beats intensity — one mock at a time.”</span>
-          <a href="#top" className="nlink font-bold" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          <a href="#top" className="nlink font-bold">
             Back to top ↑
           </a>
         </div>

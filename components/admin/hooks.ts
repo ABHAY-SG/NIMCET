@@ -27,11 +27,19 @@ export function useAdminData<T>(url: string | null): AdminData<T> {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(!!url);
   const [tick, setTick] = useState(0);
+  const prevUrl = useRef<string | null>(null);
 
   useEffect(() => {
     if (!url) {
       setLoading(false);
       return;
+    }
+    // A new query (different url) must not render the previous query's rows
+    // while its response is in flight. Manual reloads keep the old data so
+    // the table doesn't flash empty.
+    if (prevUrl.current !== url) {
+      prevUrl.current = url;
+      setData(null);
     }
     let alive = true;
     setLoading(true);

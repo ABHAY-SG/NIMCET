@@ -1,10 +1,18 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms & Conditions",
+  description: "The rules for using NimCuet mock tests, plans and content.",
+  alternates: { canonical: "/terms" },
+};
+
 const SECTIONS: Array<[string, string[]]> = [
   ["1. What NimCuet offers", [
     "NimCuet provides online mock tests, previous-year-style question sets and performance reports for NIMCET and CUET PG (MCA).",
-    "Free demo tests are available without an account. Paid plans unlock unlimited mocks for their billing period.",
+    "The sample mock works without an account. Creating a free account saves your attempt history and gives you custom mocks from the question bank; paid plans cover unlimited published mocks for their billing period.",
   ]],
   ["2. Plans and payments", [
-    "Free — ₹0 forever, 5 mock tests per month. Monthly — ₹149 per month, unlimited mocks. Annual — ₹699 per year, 12 months full access.",
+    "Free — ₹0 forever: the sample mock, custom mocks from the bank and saved history. Monthly — ₹149 per month, unlimited published mocks and full analytics. Annual — ₹699 per year, 12 months full access.",
     "Payments are collected over UPI. Your plan is activated on your registered email within one day of payment confirmation.",
     "Prices include all taxes. We may revise prices for new purchases; active plans keep their price till renewal.",
   ]],
