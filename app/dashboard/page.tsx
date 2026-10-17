@@ -127,6 +127,12 @@ export default function DashboardPage() {
   const [todayLine, setTodayLine] = useState("");
   const [sideOpen, setSideOpen] = useState(false);
   const [view, setView] = useState<DashView>("home");
+  const [notices, setNotices] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
+  const [showAllNotices, setShowAllNotices] = useState(false);
+  const [fb, setFb] = useState({ category: "general", subject: "", message: "" });
+  const [fbBusy, setFbBusy] = useState(false);
+  const [fbMsg, setFbMsg] = useState("");
+  const [fbDone, setFbDone] = useState(false);
 
   // Dashboard scrolls without a visible scrollbar track.
   useEffect(() => {
@@ -152,6 +158,45 @@ export default function DashboardPage() {
       if (raw) setLocalAttempts(JSON.parse(raw));
     } catch {}
   }, []);
+
+  // Published notices from the admin panel. Drafts never reach this endpoint.
+  // Failure is silent: the section simply doesn't render.
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("/api/student/announcements", { credentials: "same-origin" });
+        const j = (await r.json()) as { rows?: Array<{ id: string; title: string; body: string; created_at: string }> };
+        if (r.ok && Array.isArray(j.rows)) setNotices(j.rows);
+      } catch {}
+    })();
+  }, []);
+
+  // Student → admin feedback. Identity comes from the session server-side;
+  // validation and rate limiting live in POST /api/student/feedback.
+  const sendFeedback = async () => {
+    const subject = fb.subject.trim();
+    const message = fb.message.trim();
+    if (subject.length < 3) { setFbMsg("Give the message a short subject (3+ characters)."); return; }
+    if (message.length < 10) { setFbMsg("Add a few more details (at least 10 characters)."); return; }
+    setFbBusy(true);
+    setFbMsg("");
+    try {
+      const r = await fetch("/api/student/feedback", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: fb.category, subject, message }),
+      });
+      const j = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) throw new Error(j.error || `Send failed (${r.status}).`);
+      setFbDone(true);
+      setFb({ category: "general", subject: "", message: "" });
+    } catch (e) {
+      setFbMsg(e instanceof Error ? e.message : "Send failed. Try again.");
+    } finally {
+      setFbBusy(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -431,6 +476,45 @@ export default function DashboardPage() {
         </section>
       </Reveal>
 
+      {notices.length > 0 && (
+        <Reveal>
+          <section
+            className="mt-4 rounded-2xl bg-white px-5 py-4"
+            style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm" style={{ background: "var(--pill)" }}>📢</span>
+                <h2 className="text-sm font-extrabold" style={{ color: "#1e2952" }}>Notices from admin</h2>
+              </div>
+              {notices.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllNotices((v) => !v)}
+                  className="cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold"
+                  style={{ border: "1px solid var(--border)", color: "var(--muted)" }}
+                >
+                  {showAllNotices ? "Show less" : `Show all (${notices.length})`}
+                </button>
+              )}
+            </div>
+            <div className="mt-3 grid gap-3">
+              {(showAllNotices ? notices : notices.slice(0, 2)).map((n) => (
+                <div key={n.id} className="rounded-xl px-4 py-3" style={{ background: "var(--pill)" }}>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="text-[13px] font-extrabold" style={{ color: "#1e2952" }}>{n.title}</span>
+                    <span className="text-[11px]" style={{ color: "var(--muted)" }}>
+                      {new Date(n.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-6" style={{ color: "var(--muted)" }}>{n.body}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+      )}
+
       <Reveal>
         <div
           className="mt-4 overflow-hidden rounded-2xl bg-white"
@@ -696,15 +780,104 @@ export default function DashboardPage() {
         <Reveal>
           <h1 className="text-2xl font-extrabold tracking-tight">Feedback</h1>
           <p className="mt-1 max-w-lg text-[13px] leading-6" style={{ color: "var(--muted)" }}>
-            Found a wrong answer, a confusing explanation, or have a feature idea? Write to us — every message is read, and question fixes ship into future mocks.
+            Found a wrong answer, a confusing explanation, or have a feature idea? Send it straight to the
+            admin inbox — every message is read, and question fixes ship into future mocks.
           </p>
-          <a
-            href="mailto:abhayincodingworld@gmail.com?subject=NIMCET%20feedback"
-            className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-3 text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
-            style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
-          >
-            Send feedback via email →
-          </a>
+          {fbDone ? (
+            <div
+              className="mt-4 max-w-lg rounded-2xl bg-white px-5 py-7 text-center"
+              style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+            >
+              <div aria-hidden className="text-3xl">✅</div>
+              <div className="mt-2 text-sm font-extrabold" style={{ color: "#1e2952" }}>Message sent to the admin inbox</div>
+              <p className="mt-1 text-[12.5px] leading-6" style={{ color: "var(--muted)" }}>
+                Thanks — it is already visible in the admin panel. You can send another message after a minute
+                (spam guard).
+              </p>
+              <button
+                type="button"
+                onClick={() => setFbDone(false)}
+                className="mt-4 cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-extrabold text-white transition-transform hover:-translate-y-px"
+                style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+              >
+                Send another
+              </button>
+            </div>
+          ) : (
+            <div
+              className="mt-4 max-w-lg rounded-2xl bg-white px-5 py-5"
+              style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+            >
+              <div className="grid gap-3">
+                <label className="grid gap-1.5">
+                  <span className="text-[12px] font-bold" style={{ color: "#1e2952" }}>Topic</span>
+                  <select
+                    value={fb.category}
+                    onChange={(e) => setFb({ ...fb, category: e.target.value })}
+                    className="w-full cursor-pointer rounded-xl px-3 py-2.5 text-sm font-semibold"
+                    style={{ border: "1px solid var(--border)", background: "#fff", color: "#1e2952" }}
+                  >
+                    <option value="general">General question</option>
+                    <option value="test">Mock test issue</option>
+                    <option value="content">Wrong answer / explanation</option>
+                    <option value="bug">App bug</option>
+                    <option value="other">Something else</option>
+                  </select>
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="text-[12px] font-bold" style={{ color: "#1e2952" }}>Subject</span>
+                  <input
+                    value={fb.subject}
+                    onChange={(e) => setFb({ ...fb, subject: e.target.value })}
+                    maxLength={140}
+                    placeholder="One line — e.g. Q12 of Free Mock 1 looks wrong"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none"
+                    style={{ border: "1px solid var(--border)", background: "#fff", color: "#1e2952" }}
+                  />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="text-[12px] font-bold" style={{ color: "#1e2952" }}>Details</span>
+                  <textarea
+                    value={fb.message}
+                    onChange={(e) => setFb({ ...fb, message: e.target.value })}
+                    rows={5}
+                    maxLength={4000}
+                    placeholder="What happened? Include the test name and question number where possible."
+                    className="w-full resize-y rounded-xl px-3.5 py-2.5 text-sm leading-6 outline-none"
+                    style={{ border: "1px solid var(--border)", background: "#fff", color: "#1e2952" }}
+                  />
+                  <span className="text-right text-[11px]" style={{ color: "var(--muted)" }}>{fb.message.length}/4000</span>
+                </label>
+                {fbMsg && (
+                  <p className="rounded-xl px-3.5 py-2.5 text-[12.5px] font-semibold" style={{ background: "rgba(239,68,68,0.08)", color: "#dc2626" }}>
+                    {fbMsg}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={fbBusy}
+                    onClick={sendFeedback}
+                    className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-extrabold text-white transition-transform hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                  >
+                    {fbBusy ? "Sending…" : "Send to admin"}
+                  </button>
+                  <a
+                    href="mailto:abhayincodingworld@gmail.com?subject=NIMCET%20feedback"
+                    className="text-[12.5px] font-bold underline"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    or email us directly
+                  </a>
+                </div>
+                <p className="text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
+                  Your message carries your account email automatically — no need to type it. Replies come to
+                  the email on your account.
+                </p>
+              </div>
+            </div>
+          )}
         </Reveal>
       )}
         </div>
