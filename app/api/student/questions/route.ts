@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/admin-server";
+import { errorPayload } from "@/lib/admin-queries";
 
 // Columns safe for students: no answer key, no explanations, no PII.
 const SAFE = "id,exam,section,topic,difficulty,stem,options,plus,minus";
@@ -41,9 +42,7 @@ export async function GET(req: Request) {
     if (error) throw error;
     return NextResponse.json({ rows: data ?? [] });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Load failed." },
-      { status: 500 }
-    );
+    const p = errorPayload(e, "Load failed.");
+    return NextResponse.json({ error: p.error }, { status: p.status });
   }
 }

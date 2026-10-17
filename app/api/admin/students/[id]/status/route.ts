@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, serverAdminEmails } from "@/lib/admin-server";
-import { errorPayload } from "@/lib/admin-queries";
+import { errorPayload, isUuid } from "@/lib/admin-queries";
 import { logAdminAction } from "@/lib/audit";
 
 // POST /api/admin/students/[id]/status — deliberate, audited account
@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { svc, user: actor } = ctx;
   try {
     const { id } = await params;
-    if (!id) return NextResponse.json({ error: "Missing student id." }, { status: 400 });
+    if (!isUuid(id)) return NextResponse.json({ error: "Invalid student id." }, { status: 400 });
 
     const body = (await req.json()) as { disabled?: unknown };
     if (typeof body.disabled !== "boolean") {

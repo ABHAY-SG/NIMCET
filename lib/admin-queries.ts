@@ -14,6 +14,21 @@ function errText(e: unknown): string {
   return String(e ?? "");
 }
 
+function errCode(e: unknown): string {
+  if (e && typeof e === "object" && "code" in e) {
+    const c = (e as { code?: unknown }).code;
+    if (typeof c === "string") return c;
+  }
+  return "";
+}
+
+// Route-handler segment ids are always UUIDs in this schema. Rejecting
+// malformed ids up front turns a Postgres 22P02 (which used to surface as a
+// 500 with raw error text) into a clean 400.
+export function isUuid(v: unknown): v is string {
+  return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+}
+
 // Map raw Postgres/PostgREST errors to an actionable setup message when the
 // root cause is an un-applied migration, instead of a cryptic failure.
 export function migrationHint(e: unknown): string | null {
@@ -27,10 +42,25 @@ export function migrationHint(e: unknown): string | null {
   return null;
 }
 
+// Error response policy (security): raw PostgREST/database messages never
+// reach the client. Database error codes are mapped to short, safe messages;
+// anything unexpected becomes the route's generic fallback and is logged
+// server-side only. Errors deliberately thrown by our own code (and SDK
+// errors such as GoTrue's user-facing messages) keep their text.
 export function errorPayload(e: unknown, fallback: string): { error: string; status: number } {
   const hint = migrationHint(e);
   if (hint) return { error: hint, status: 503 };
-  return { error: errText(e) || fallback, status: 500 };
+  if (e instanceof Error) return { error: e.message || fallback, status: 500 };
+  const code = errCode(e);
+  if (code === "22P02" || code === "22003" || code === "22007") {
+    return { error: "Invalid value in the request.", status: 400 };
+  }
+  if (code === "23505") return { error: "That record already exists.", status: 409 };
+  if (code === "23503") return { error: "A referenced record could not be found.", status: 400 };
+  if (code === "23514") return { error: "A value was rejected by a database rule.", status: 400 };
+  if (code === "PGRST116") return { error: "Record not found.", status: 404 };
+  console.error("[api]", errText(e) || fallback);
+  return { error: fallback, status: 500 };
 }
 
 // ============ users (Supabase Auth) ============

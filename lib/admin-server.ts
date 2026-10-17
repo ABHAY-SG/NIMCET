@@ -7,7 +7,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // bypasses RLS entirely; it lives only in server env (SUPABASE_SERVICE_ROLE_KEY)
 // and is never sent to the browser.
 
-export type SessionUser = { id: string; email: string };
+export type SessionUser = { id: string; email: string; emailVerified: boolean };
 
 function env(name: string): string {
   return (process.env[name] || "").trim();
@@ -51,7 +51,12 @@ export async function sessionUser(): Promise<SessionUser | null> {
   try {
     const { data: { user } } = await sb.auth.getUser();
     if (!user?.email) return null;
-    return { id: user.id, email: user.email };
+    // OAuth logins and confirmed email signups carry email_confirmed_at;
+    // pending signups do not. Client pages used to be the only place that
+    // enforced this — the flag now travels with the session so server routes
+    // can enforce it too (see requireUser).
+    const emailVerified = !!(user.email_confirmed_at || user.confirmed_at);
+    return { id: user.id, email: user.email, emailVerified };
   } catch {
     return null;
   }
@@ -131,12 +136,22 @@ export async function requireAdmin(): Promise<
 }
 
 // Any authenticated user (student or admin). Used by student-scoped routes.
+// Email verification is enforced HERE as well as in the dashboard UI: an
+// unverified session can no longer call student APIs directly.
 export async function requireUser(): Promise<
   { svc: SupabaseClient; user: SessionUser } | { error: NextResponse }
 > {
   const user = await sessionUser();
   if (!user) {
     return { error: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
+  }
+  if (!user.emailVerified) {
+    return {
+      error: NextResponse.json(
+        { error: "Verify your email first — open the confirmation link we sent, then retry." },
+        { status: 403 }
+      ),
+    };
   }
   const svc = serviceClient();
   if (!svc) {

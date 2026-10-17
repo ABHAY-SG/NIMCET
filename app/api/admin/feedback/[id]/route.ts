@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
-import { errorPayload } from "@/lib/admin-queries";
+import { errorPayload, isUuid } from "@/lib/admin-queries";
 import { logAdminAction } from "@/lib/audit";
 
 const STATUSES = ["new", "read", "in_progress", "resolved"];
@@ -13,7 +13,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { svc, user: actor } = ctx;
   try {
     const { id } = await params;
-    if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
+    if (!isUuid(id)) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
     const body = (await req.json()) as Record<string, unknown>;
 
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -37,8 +37,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
     }
 
-    const { error } = await svc.from("feedback").update(patch).eq("id", id);
+    const { data: updated, error } = await svc
+      .from("feedback")
+      .update(patch)
+      .eq("id", id)
+      .select("id");
     if (error) throw error;
+    if (!updated || updated.length === 0) {
+      return NextResponse.json({ error: "Feedback entry not found." }, { status: 404 });
+    }
 
     await logAdminAction(svc, {
       actor,

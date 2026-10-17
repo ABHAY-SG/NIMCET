@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { forgetMemorySession, getSupabase, markMemorySessionActive, signOutAll } from "@/lib/supabase";
+import { getSupabase, signOutAll } from "@/lib/supabase";
 import { safeNextPath } from "@/lib/admin";
 import ThemeFab from "@/components/theme-fab";
 
@@ -49,9 +49,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [show, setShow] = useState(false);
-  const [remember, setRemember] = useState(true);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
   const [touchedEmail, setTouchedEmail] = useState(false);
   const [showCheckEmailLink, setShowCheckEmailLink] = useState(false);
 
@@ -73,13 +73,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
       });
     } catch {}
   };
-
-  useEffect(() => {
-    const savedPreference = window.localStorage.getItem("nimcuet-remember-me");
-    if (savedPreference === "true" || savedPreference === "false") {
-      setRemember(savedPreference === "true");
-    }
-  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -133,10 +126,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     e.preventDefault();
     setMsg("");
     setShowCheckEmailLink(false);
-    // Fresh attempt under a single identity: drop any tab-scoped session so
-    // a stale memory login can never leak into the new attempt's result.
-    try { await getSupabase(false).auth.signOut(); } catch {}
-    forgetMemorySession();
+    // Fresh attempt under a single identity: end any cookie session left from
+    // a previous login so it can never leak into the new attempt's result.
+    try { await getSupabase().auth.signOut({ scope: "local" }); } catch {}
     const cleanEmail = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) { setMsg("Enter a valid email address (e.g. you@example.com)."); return; }
     if (mode === "up") {
@@ -147,7 +139,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     setBusy(true);
     try {
       const sb = getSupabase();
-      try { window.localStorage.setItem("nimcuet-remember-me", String(remember)); } catch {}
       if (mode === "up") {
         const challengeId = crypto.randomUUID();
         const { data, error } = await sb.auth.signUp({
@@ -205,9 +196,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         await insertChallengeRow(challengeId, data.user.id);
         router.push(`/auth/check-email?email=${encodeURIComponent(cleanEmail)}&challenge=${challengeId}`);
       } else {
-        // Remember-me OFF keeps the session tab-scoped (memory only):
-        // closing the tab ends it; a reload asks for login again.
-        const loginSb = getSupabase(remember);
+        const loginSb = getSupabase();
         const { data, error } = await loginSb.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
           if (/email not confirmed/i.test(error.message)) {
@@ -227,7 +216,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           });
           if (registryError && registryError.code !== "23505") throw registryError;
         }
-        if (!remember) markMemorySessionActive();
         try {
           router.push(safeNextPath(new URLSearchParams(window.location.search).get("next")) ?? "/dashboard");
         } catch {
@@ -248,10 +236,9 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
 
   const oauth = async (provider: "google" | "github") => {
     setMsg("");
-    // Drop any tab-scoped session so a stale memory login can never leak
+    // End any cookie session left from a previous login so it can never leak
     // into the OAuth result.
-    try { await getSupabase(false).auth.signOut(); } catch {}
-    forgetMemorySession();
+    try { await getSupabase().auth.signOut({ scope: "local" }); } catch {}
     // Remember where to return after the provider round-trip (e.g. /admin).
     // Timestamped so an abandoned attempt can't hijack a later login.
     try {
@@ -281,17 +268,25 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
   };
 
   const forgot = async () => {
-    if (!email) { setMsg("Type your email above first, then tap Forgot password."); return; }
+    const clean = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+      setMsg("Type a valid email address above first, then tap Forgot password.");
+      return;
+    }
+    if (forgotBusy) return;
     setMsg("");
+    setForgotBusy(true);
     try {
       const sb = getSupabase();
-      const { error } = await sb.auth.resetPasswordForEmail(email, {
+      const { error } = await sb.auth.resetPasswordForEmail(clean, {
         redirectTo: `${window.location.origin}/auth/callback?flow=recovery`,
       });
       if (error) throw error;
       setMsg("Reset link sent — check your inbox.");
     } catch (err: unknown) {
       setMsg(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setForgotBusy(false);
     }
   };
 
@@ -368,12 +363,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               <div className="mb-4 grid grid-cols-2 gap-2.5">
                 <div>
                   <label htmlFor="auth-first" className="mb-1.5 block text-[13px] font-bold">First name</label>
-                  <input id="auth-first" type="text" required autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Abhay" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
+                  <input id="auth-first" type="text" required maxLength={60} autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Abhay" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
                     style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
                 <div>
                   <label htmlFor="auth-last" className="mb-1.5 block text-[13px] font-bold">Last name</label>
-                  <input id="auth-last" type="text" required autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Singh" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
+                  <input id="auth-last" type="text" required maxLength={60} autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Singh" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
                     style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
               </div>
@@ -381,7 +376,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             <label htmlFor="auth-email" className="mb-1.5 block text-[13px] font-bold">Email</label>
             <div className="relative">
               <span aria-hidden className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px]" style={{ color: "var(--muted)" }}>✉</span>
-              <input id="auth-email" type="email" required autoComplete="email" value={email}
+              <input id="auth-email" type="email" required maxLength={254} autoComplete="email" value={email}
                 onChange={(e) => { setEmail(e.target.value); setTouchedEmail(true); }}
                 placeholder="Enter your email" aria-invalid={touchedEmail && email !== "" && !emailValid} className={inputCls}
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
@@ -394,8 +389,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
             <div className="mb-1.5 mt-4 flex items-center justify-between">
               <label htmlFor="auth-pass" className="text-[13px] font-bold">Password</label>
               {mode === "in" && (
-                <button type="button" onClick={forgot} className="cursor-pointer text-xs font-bold" style={{ color: "var(--accent)" }}>
-                  Forgot password?
+                <button type="button" onClick={forgot} disabled={forgotBusy} className="cursor-pointer text-xs font-bold disabled:opacity-50" style={{ color: "var(--accent)" }}>
+                  {forgotBusy ? "Sending…" : "Forgot password?"}
                 </button>
               )}
             </div>
@@ -403,7 +398,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="4" y="10" width="16" height="10" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
               </span>
-              <input id="auth-pass" type={show ? "text" : "password"} required minLength={8} autoComplete={mode === "in" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === "in" ? "Enter your password" : "Min. 8 characters + a number"} className={inputCls}
+              <input id="auth-pass" type={show ? "text" : "password"} required minLength={mode === "up" ? 8 : undefined} maxLength={128} autoComplete={mode === "in" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === "in" ? "Enter your password" : "Min. 8 characters + a number"} className={inputCls}
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
               <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Hide password" : "Show password"} className="absolute right-3.5 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "var(--muted)" }}>
                 <EyeIcon off={!show} />
@@ -445,21 +440,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
                 <span>I agree to the <a href="/terms" className="font-bold" style={{ color: "var(--accent)" }}>Terms</a> and <a href="/privacy" className="font-bold" style={{ color: "var(--accent)" }}>Privacy Policy</a></span>
               </label>
             )}
-            {mode === "in" && (
-              <label className="mt-3 flex cursor-pointer items-center gap-2 text-[13px]" style={{ color: "var(--muted)" }}>
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setRemember(checked);
-                    window.localStorage.setItem("nimcuet-remember-me", String(checked));
-                  }}
-                  className="h-4 w-4 accent-current"
-                />
-                Remember me
-              </label>
-            )}
             {msg && (
               <p role="status" aria-live="polite" className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
             )}
@@ -476,8 +456,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
 
             <button
               type="submit" disabled={busy}
-              className="mt-4 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold text-white transition-all hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
-              style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", boxShadow: "0 14px 30px -12px color-mix(in srgb, var(--accent) 60%, transparent)" }}
+              className="mt-4 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold transition-all hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
+              style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)", boxShadow: "0 14px 30px -12px color-mix(in srgb, var(--accent) 60%, transparent)" }}
             >
               {busy ? "Please wait…" : mode === "in" ? "Log in →" : "Create account →"}
             </button>

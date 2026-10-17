@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
-import { errorPayload } from "@/lib/admin-queries";
+import { errorPayload, isUuid } from "@/lib/admin-queries";
 import { logAdminAction } from "@/lib/audit";
 
 const DIFFS = ["Easy", "Medium", "Hard"];
@@ -56,7 +56,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { svc, user: actor } = ctx;
   try {
     const { id } = await params;
-    if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
+    if (!isUuid(id)) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
     const body = (await req.json()) as Record<string, unknown>;
     const bad = validate(body);
     if (bad) return NextResponse.json({ error: bad }, { status: 400 });
@@ -64,8 +64,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
     }
-    const { error } = await svc.from("questions").update(patch).eq("id", id);
+    const { data: updated, error } = await svc
+      .from("questions")
+      .update(patch)
+      .eq("id", id)
+      .select("id");
     if (error) throw error;
+    if (!updated || updated.length === 0) {
+      return NextResponse.json({ error: "Question not found." }, { status: 404 });
+    }
 
     await logAdminAction(svc, {
       actor,
@@ -92,7 +99,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { svc, user: actor } = ctx;
   try {
     const { id } = await params;
-    if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
+    if (!isUuid(id)) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
     const { count, error: refErr } = await svc
       .from("tests")
       .select("id", { count: "exact", head: true })
@@ -105,6 +112,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       );
     }
     const { data: row } = await svc.from("questions").select("stem").eq("id", id).maybeSingle();
+    if (!row) return NextResponse.json({ error: "Question not found." }, { status: 404 });
     const { error } = await svc.from("questions").delete().eq("id", id);
     if (error) throw error;
 

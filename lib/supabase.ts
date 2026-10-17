@@ -1,5 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Client = SupabaseClient;
 
@@ -14,39 +14,24 @@ function readEnv(): { url: string; key: string } {
   return { url, key };
 }
 
-// Persisted client: cookie storage via @supabase/ssr, readable server-side.
-// Memory client: supabase-js with persistSession:false — tab-scoped only,
-// used when the user unchecks "Remember me" at login.
-let persisted: Client | null = null;
-let memory: Client | null = null;
-let memoryActive = false;
+// ONE browser client, cookie-backed via @supabase/ssr. Cookies are the only
+// session store the Next.js server can read, so every auth action must go
+// through this client. (An earlier "Remember me OFF = in-memory session" mode
+// produced sessions the server could not see — every student API answered 401
+// — and let a stale cookie session from a previous login leak into the next
+// one. Both problems disappear with a single store; privacy on shared devices
+// is handled by signOutAll() clearing this device's local data.)
+let client: Client | null = null;
 
-export function getSupabase(persist = true): Client {
+export function getSupabase(_persist = true): Client {
   const { url, key } = readEnv();
-  if (persist) {
-    if (!persisted) persisted = createBrowserClient(url, key);
-    return persisted;
-  }
-  if (!memory) {
-    memory = createClient(url, key, {
-      auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: false },
-    });
-  }
-  return memory;
+  if (!client) client = createBrowserClient(url, key);
+  return client;
 }
 
-// Client that sees the current login, whichever storage backs it.
+// Client that sees the current login. Kept for API compatibility.
 export function getAuthClient(): Client {
-  if (memoryActive && memory) return memory;
-  return getSupabase(true);
-}
-
-export function markMemorySessionActive() {
-  memoryActive = true;
-}
-
-export function forgetMemorySession() {
-  memoryActive = false;
+  return getSupabase();
 }
 
 // The ONLY avatar the app ever displays: the user's own uploaded photo.
@@ -58,12 +43,24 @@ export function resolveAvatarUrl(meta: unknown): string {
   return typeof m.custom_avatar === "string" ? m.custom_avatar : "";
 }
 
+// Device-local data written by the student flows. Cleared on sign-out so a
+// shared computer never shows one student's local attempts, pending-signup
+// email, or redirect target to the next account.
+const DEVICE_KEYS = [
+  "nimcuet-attempts",
+  "nimcuet-pending-email",
+  "nimcuet-pending-challenge",
+  "nimcuet-pending-at",
+  "nimcuet-post-login-redirect",
+  "nimcuet-remember-me",
+];
+
 export async function signOutAll(): Promise<void> {
   try {
-    await getSupabase(true).auth.signOut();
+    await getSupabase().auth.signOut();
   } catch {}
   try {
-    if (memory) await memory.auth.signOut();
+    for (const k of DEVICE_KEYS) window.localStorage.removeItem(k);
+    window.sessionStorage.removeItem("nimcuet-run-v1");
   } catch {}
-  memoryActive = false;
 }

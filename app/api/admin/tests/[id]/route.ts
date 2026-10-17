@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
-import { errorPayload, fetchAllTests } from "@/lib/admin-queries";
+import { errorPayload, fetchAllTests, isUuid } from "@/lib/admin-queries";
 import { logAdminAction } from "@/lib/audit";
 
 function validate(body: Record<string, unknown>): string | null {
@@ -51,7 +51,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { svc, user: actor } = ctx;
   try {
     const { id } = await params;
-    if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
+    if (!isUuid(id)) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
     const body = (await req.json()) as Record<string, unknown>;
     const bad = validate(body);
     if (bad) return NextResponse.json({ error: bad }, { status: 400 });
@@ -113,7 +113,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { svc, user: actor } = ctx;
   try {
     const { id } = await params;
-    if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
+    if (!isUuid(id)) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
     const { data: t, error: tErr } = await svc.from("tests").select("title").eq("id", id).maybeSingle();
     if (tErr) throw tErr;
     if (!t) return NextResponse.json({ error: "Test not found." }, { status: 404 });

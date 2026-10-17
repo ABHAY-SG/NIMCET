@@ -167,6 +167,15 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Record<string, unknown>;
     const bad = validate(body);
     if (bad) return NextResponse.json({ error: bad }, { status: 400 });
+    // POST creates a complete row; the partial-update rules above are not
+    // enough on their own (omitted options used to crash into a 500).
+    const missing = (["exam", "stem", "options", "answer"] as const).filter((k) => body[k] === undefined);
+    if (missing.length > 0) {
+      return NextResponse.json(
+        { error: "Exam, question text, all 4 options and the correct answer are required." },
+        { status: 400 }
+      );
+    }
     const s = (v: unknown, d = "") => (typeof v === "string" ? v : d);
     const { data, error } = await svc
       .from("questions")

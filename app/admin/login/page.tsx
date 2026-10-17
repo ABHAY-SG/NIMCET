@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { forgetMemorySession, getSupabase, signOutAll } from "@/lib/supabase";
+import { getSupabase, signOutAll } from "@/lib/supabase";
 
 // Admin login. Authentication is the same Supabase sign-in as everywhere
 // else; AUTHORIZATION is checked by the server (GET /api/admin/session),
@@ -54,8 +54,10 @@ export default function AdminLoginPage() {
     setBusy(true);
     try {
       // Cookie-backed session only: the server gate and admin APIs read it.
-      forgetMemorySession();
+      // Drop any session left from a previous login first so a failed admin
+      // attempt can never keep someone else's session alive.
       const sb = getSupabase(true);
+      try { await sb.auth.signOut({ scope: "local" }); } catch {}
       const { error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
       if (error) {
         if (/email not confirmed/i.test(error.message)) {
@@ -106,7 +108,7 @@ export default function AdminLoginPage() {
       >
         <label htmlFor="admin-email" className="mb-1.5 block text-[13px] font-bold">Email</label>
         <input
-          id="admin-email" type="email" required autoComplete="email" value={email}
+          id="admin-email" type="email" required maxLength={254} autoComplete="email" value={email}
           onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com"
           className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
           style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
@@ -114,7 +116,7 @@ export default function AdminLoginPage() {
         <label htmlFor="admin-pass" className="mb-1.5 mt-4 block text-[13px] font-bold">Password</label>
         <div className="relative">
           <input
-            id="admin-pass" type={show ? "text" : "password"} required autoComplete="current-password" value={password}
+            id="admin-pass" type={show ? "text" : "password"} required maxLength={128} autoComplete="current-password" value={password}
             onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password"
             className="w-full rounded-xl py-2.5 pl-4 pr-11 text-sm outline-none focus:ring-2"
             style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
@@ -129,8 +131,8 @@ export default function AdminLoginPage() {
         )}
         <button
           type="submit" disabled={busy}
-          className="mt-4 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold text-white disabled:opacity-50"
-          style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+          className="mt-4 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold disabled:opacity-50"
+          style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
         >
           {busy ? "Please wait…" : "Log in →"}
         </button>

@@ -5,6 +5,7 @@ import {
   errorPayload,
   fetchAllQuestionsLite,
   fetchAllTests,
+  isUuid,
   normTitle,
   round1,
 } from "@/lib/admin-queries";
@@ -29,7 +30,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { svc } = ctx;
   try {
     const { id } = await params;
-    if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
+    if (!isUuid(id)) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
 
     const [attemptRes, testsRes, questions] = await Promise.all([
       svc.from("attempts").select("*").eq("id", id).maybeSingle(),
@@ -63,7 +64,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { svc, user: actor } = ctx;
   try {
     const { id } = await params;
-    if (!id) return NextResponse.json({ error: "Missing id." }, { status: 400 });
+    if (!isUuid(id)) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
 
     const body = (await req.json()) as Record<string, unknown>;
     const reason = typeof body.reason === "string" ? body.reason.trim() : "";

@@ -5,6 +5,7 @@ import {
   errorPayload,
   fetchAllQuestionsLite,
   fetchAllTests,
+  isUuid,
   normTitle,
   pctOf,
   round1,
@@ -20,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { svc } = ctx;
   try {
     const { id } = await params;
-    if (!id) return NextResponse.json({ error: "Missing student id." }, { status: 400 });
+    if (!isUuid(id)) return NextResponse.json({ error: "Invalid student id." }, { status: 400 });
 
     const [userRes, attemptsRes, testsRes, questions] = await Promise.all([
       svc.auth.admin.getUserById(id),
