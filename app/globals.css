@@ -213,11 +213,11 @@ footer .nlink::after { display: none; }
 }
 .rv.in { opacity: 1; transform: none; }
 
-/* ---- hero stage v3: full-bleed exam stage — ghost wordmark + script,
-   rising sparks, cursor glow, scroll-lag, 3D-tilting HUD collage ---- */
-.hero { --mx: 50vw; --my: 38vh; --nx: 0; --ny: 0; --sy: 0; }
+/* ---- hero stage v4: precision-instrument stage — dot sheet, single
+   cursor glow (navbar-clamped), rotating compass core. Zero blur filters. ---- */
+.hero { --mx: 50vw; --my: 38vh; --nx: 0; --ny: 0; }
 .hero-dots {
-  background-image: radial-gradient(color-mix(in srgb, var(--text) 11%, transparent) 1.1px, transparent 1.5px);
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 10%, transparent) 1.1px, transparent 1.5px);
   background-size: 26px 26px;
   -webkit-mask-image: radial-gradient(120% 92% at 50% 26%, #000 30%, transparent 74%);
   mask-image: radial-gradient(120% 92% at 50% 26%, #000 30%, transparent 74%);
@@ -227,83 +227,22 @@ footer .nlink::after { display: none; }
 .hero-vignette {
   background: radial-gradient(130% 100% at 50% 0%, transparent 52%, color-mix(in srgb, var(--text) 6%, transparent));
 }
-.hero-word {
-  font-weight: 620;
-  font-size: clamp(5.2rem, 19vw, 15rem);
-  line-height: 0.86;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  background: linear-gradient(100deg, color-mix(in srgb, var(--accent) 26%, transparent), color-mix(in srgb, var(--gold-3) 22%, transparent) 55%, color-mix(in srgb, var(--accent-2) 26%, transparent));
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-stroke: 1px color-mix(in srgb, var(--text) 26%, transparent);
-  animation: word-drift 19s ease-in-out infinite alternate, grad-pan 15s ease-in-out infinite;
-}
-@keyframes word-drift { from { transform: translate3d(-1.4%, 0, 0); } to { transform: translate3d(1.4%, -1.8%, 0); } }
-.hero-script {
-  position: absolute;
-  right: 9%;
-  top: 60%;
-  opacity: 0.85;
-  font-size: clamp(2.4rem, 4.4vw, 3.9rem);
-  color: var(--accent);
-  text-shadow: 0 12px 34px color-mix(in srgb, var(--accent) 30%, transparent);
-  animation: script-sway 9s ease-in-out infinite;
-}
-@keyframes script-sway {
-  0%, 100% { transform: rotate(-6deg) translateY(0); }
-  50% { transform: rotate(-4.2deg) translateY(-7px); }
-}
-.aura { border-radius: 50%; filter: blur(52px); opacity: 0.5; animation: aura-breathe 13s ease-in-out infinite; }
-@keyframes aura-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.16); } }
-.spark {
-  position: absolute;
-  top: 106%;
-  border-radius: 9999px;
-  opacity: 0;
-  animation: spark-rise 12s linear infinite;
-  will-change: transform, opacity;
-}
-@keyframes spark-rise {
-  0% { transform: translate3d(0, 0, 0) scale(0.6); opacity: 0; }
-  10% { opacity: 0.7; }
-  80% { opacity: 0.25; }
-  100% { transform: translate3d(18px, -104vh, 0) scale(1.05); opacity: 0; }
-}
 .hero-glow {
   position: absolute; left: 0; top: 0; width: 880px; height: 880px; border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 24%, transparent), transparent 72%);
-  filter: blur(26px);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent 72%);
   transform: translate3d(calc(var(--mx) - 440px), calc(var(--my) - 440px), 0);
   transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
-.hero-sy-1 { transform: translate3d(0, calc(var(--sy) * 0.4px), 0); }
-.hero-par-1, .hero-par-2, .hero-tilt { transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
-.hero-par-1 { transform: translate3d(calc(var(--nx) * -18px), calc(var(--ny) * -12px), 0); }
-.hero-par-2 { transform: translate3d(calc(var(--nx) * 12px), calc(var(--ny) * 10px), 0); }
-.hero-tilt {
-  transform: perspective(1000px) translate3d(calc(var(--nx) * 8px), calc(var(--ny) * 6px), 0)
-    rotateX(calc(var(--ny) * -3deg)) rotateY(calc(var(--nx) * 4.5deg));
-  transform-style: preserve-3d;
-}
-.hero-hud-glow {
-  background: radial-gradient(60% 55% at 52% 42%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 72%);
-  filter: blur(30px);
+.hero-par-2 {
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(calc(var(--nx) * 7px), calc(var(--ny) * 6px), 0);
 }
 .hline { display: block; overflow: hidden; padding-bottom: 0.12em; margin-bottom: -0.12em; }
-.hline > span { display: block; transform: translateY(112%); animation: line-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.hline > span { display: block; transform: translateY(118%); animation: line-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
 @keyframes line-up { to { transform: translateY(0); } }
 .track-in { animation: track-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
 @keyframes track-in { from { opacity: 0; letter-spacing: 0.42em; filter: blur(5px); } to { opacity: 1; letter-spacing: 0.22em; filter: none; } }
-.float-a { animation: float-a 7.5s ease-in-out infinite; }
-.float-b { animation: float-b 9.5s ease-in-out infinite; }
-@keyframes float-a { 0%, 100% { transform: translateY(-6px); } 50% { transform: translateY(8px); } }
-@keyframes float-b { 0%, 100% { transform: translateY(7px); } 50% { transform: translateY(-8px); } }
-.ring-draw { stroke-dasharray: 289; stroke-dashoffset: 289; animation: ring-draw 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both; }
-@keyframes ring-draw { to { stroke-dashoffset: 72; } }
 .scroll-line {
   position: relative;
   width: 1px;
@@ -319,6 +258,19 @@ footer .nlink::after { display: none; }
   animation: cue-drop 2.2s ease-in-out infinite;
 }
 @keyframes cue-drop { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
+
+/* compass core — the hero centerpiece (pure SVG + CSS transforms) */
+.core-glow {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent-2) 7%, transparent) 58%, transparent 78%);
+}
+.core-spin-a { transform-box: view-box; transform-origin: 240px 240px; animation: core-spin 46s linear infinite; }
+.core-spin-b { transform-box: view-box; transform-origin: 240px 240px; animation: core-spin 34s linear infinite reverse; }
+.core-spin-c { transform-box: view-box; transform-origin: 240px 240px; animation: core-spin 64s linear infinite; }
+@keyframes core-spin { to { transform: rotate(360deg); } }
+.core-breathe { animation: core-breathe 7.5s ease-in-out infinite; }
+@keyframes core-breathe { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
+.core-stop-a { stop-color: var(--accent); }
+.core-stop-b { stop-color: var(--accent-2); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto !important; }
@@ -338,14 +290,11 @@ footer .nlink::after { display: none; }
   .menu-in { animation: none; }
   .tmenu, .tmenu .tdot { transition: none; }
   .orb, .bg-pan, .headline-warm, .scroll-cue, .chart-bar, .pop,
-  .ring-grad::before, .hero-dots, .hero-word, .aura, .track-in,
-  .float-a, .float-b, .ring-draw, .hline > span, .spark,
-  .hero-script { animation: none; }
+  .ring-grad::before, .hero-dots, .track-in, .hline > span,
+  .core-spin-a, .core-spin-b, .core-spin-c, .core-breathe { animation: none; }
   .hline > span { transform: none; }
-  .hero-sy-1 { transform: none; }
-  .ring-draw { stroke-dashoffset: 72; }
   .scroll-line::after { animation: none; }
-  .hero-glow, .hero-par-1, .hero-par-2, .hero-tilt { transition: none; }
+  .hero-glow, .hero-par-2 { transition: none; }
 }
 
 /* CTA: lift + sheen sweep, no glow */
