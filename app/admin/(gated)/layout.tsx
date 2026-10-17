@@ -43,7 +43,6 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
   if (session.status === "unconfigured") {
     return (
       <main
-        data-theme="midnight"
         className="mx-auto max-w-lg px-4 pb-20 pt-28 text-center"
         style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100svh" }}
       >
@@ -76,7 +75,6 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
 function GateSkeleton() {
   return (
     <div
-      data-theme="midnight"
       className="mx-auto w-full max-w-6xl px-4 pt-28 sm:px-6"
       style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100svh" }}
       aria-busy="true"

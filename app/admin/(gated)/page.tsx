@@ -1,306 +1,255 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import AdminLayout from "@/components/admin-layout";
+import { BarChart, Donut, LineChart } from "@/components/admin/charts";
+import { Badge, Card, EmptyState, ErrorState, SectionCard, Skeleton, StatCard } from "@/components/admin/ui";
+import { useAdminData } from "@/components/admin/hooks";
+import { Icon } from "@/components/admin/icons";
+import { fmtNum, fmtPct, relTime } from "@/lib/format";
 
-type AttemptRow = { user_id: string; test: string; score: number; created_at: string };
-type TestRow = { id: string; title: string; published: boolean; created_at: string; question_ids: string[] };
+type Overview = {
+  students: { total: number; active30: number; new30: number };
+  tests: { total: number; published: number; migrated: boolean };
+  questions: { total: number };
+  attempts: { total: number; last30: number; avgScore: number; avgPct: number | null; unmapped: number };
+  feedback: { unread: number; available: boolean };
+  scoreDist: Array<{ label: string; value: number }>;
+  trends: { labels: string[]; registrations: number[]; attempts: number[] };
+  recentAttempts: Array<{ id: string; email: string; test: string; score: number; created_at: string }>;
+  recentTests: Array<{ id: string; title: string; published: boolean; created_at: string; questions: number }>;
+  status: { feedback: boolean; announcements: boolean; auditLog: boolean; avatars: boolean };
+};
 
-const RANGES = [7, 14, 30] as const;
+const DIST_COLORS = ["#ef4444", "#f59e0b", "#eab308", "#84cc16", "#10b981"];
 
-function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+export default function AdminOverview() {
+  const { data, error, loading, reload } = useAdminData<Overview>("/api/admin/overview");
 
-function shortUid(id: string): string {
-  return id.length > 10 ? `${id.slice(0, 8)}…` : id;
-}
-
-function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="rounded-2xl px-5 py-4 backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}>
-      <div className="mono text-[11px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>{label}</div>
-      <div className="mono mt-1 text-3xl font-extrabold" style={{ color: "var(--text)" }}>{value}</div>
-      <div className="mt-1 text-[11px]" style={{ color: "var(--muted)" }}>{sub}</div>
-    </div>
-  );
-}
-
-function Bars({ data, color }: { data: Array<{ label: string; value: number }>; color: string }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
-  const W = 560, H = 150, PAD = 8;
-  const bw = (W - PAD * 2) / Math.max(data.length, 1);
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img">
-      {data.map((d, i) => {
-        const h = Math.max(3, ((H - 34) * d.value) / max);
-        const x = PAD + i * bw + bw * 0.22;
-        return (
-          <g key={d.label}>
-            <rect x={x} y={H - 20 - h} width={Math.max(4, bw * 0.56)} height={h} rx="4" fill={color} opacity={0.85}>
-              <title>{`${d.label}: ${d.value}`}</title>
-            </rect>
-            {data.length <= 14 && (
-              <text x={x + bw * 0.28} y={H - 6} textAnchor="middle" fontSize="9" fill="var(--muted)">
-                {d.label.slice(5)}
-              </text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-export default function AdminHome() {
-  const [attempts, setAttempts] = useState<AttemptRow[]>([]);
-  const [tests, setTests] = useState<TestRow[]>([]);
-  const [qCount, setQCount] = useState<number | null>(null);
-  const [attCount, setAttCount] = useState<number | null>(null);
-  const [range, setRange] = useState<(typeof RANGES)[number]>(14);
-  const [loading, setLoading] = useState(true);
-  const [note, setNote] = useState("");
-  // Anchor date is client-only: `new Date()` during render breaks static
-  // prerender, so every date-derived value below waits for mount.
-  const [now, setNow] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setNow(new Date());
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        // Aggregates + capped lists come from the service-role overview
-        // endpoint (server-side allowlist); the browser never queries raw
-        // cross-user rows directly.
-        const r = await fetch("/api/admin/overview", { credentials: "same-origin" });
-        const j = (await r.json()) as {
-          error?: string;
-          counts?: { questions: number; attempts: number };
-          tests?: TestRow[];
-          attempts?: AttemptRow[];
-        };
-        if (!r.ok) throw new Error(j.error || "Load failed.");
-        setAttempts((j.attempts ?? []) as AttemptRow[]);
-        setTests((j.tests ?? []) as TestRow[]);
-        setQCount(j.counts?.questions ?? 0);
-        setAttCount(j.counts?.attempts ?? 0);
-      } catch (e) {
-        setNote(e instanceof Error ? e.message : "Could not load stats.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  const cutoff = useMemo(() => {
-    if (!now) return new Date(0);
-    const d = new Date(now);
-    d.setDate(d.getDate() - (range - 1));
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, [now, range]);
-
-  // Distinct users + first-seen dates (proxy: users table is not readable
-  // with the anon key, so activity history stands in — labeled as such).
-  const users = useMemo(() => {
-    const first = new Map<string, Date>();
-    for (const a of attempts) {
-      const d = new Date(a.created_at);
-      if (!a.user_id || Number.isNaN(d.getTime())) continue;
-      if (!first.has(a.user_id) || d < (first.get(a.user_id) as Date)) first.set(a.user_id, d);
-    }
-    return first;
-  }, [attempts]);
-
-  const inRangeAttempts = useMemo(
-    () => attempts.filter((a) => new Date(a.created_at) >= cutoff),
-    [attempts, cutoff]
-  );
-
-  const newUsers7 = useMemo(() => {
-    if (!now) return 0;
-    const week = new Date(now);
-    week.setDate(week.getDate() - 6);
-    week.setHours(0, 0, 0, 0);
-    let n = 0;
-    users.forEach((d) => { if (d >= week) n++; });
-    return n;
-  }, [users, now]);
-
-  const published = useMemo(() => tests.filter((t) => t.published), [tests]);
-  const drafts = useMemo(() => tests.filter((t) => !t.published), [tests]);
-
-  const avgScore = useMemo(() => {
-    if (attempts.length === 0) return "—";
-    const m = attempts.reduce((s, a) => s + (Number(a.score) || 0), 0) / attempts.length;
-    return String(Math.round(m * 10) / 10);
-  }, [attempts]);
-
-  const days = useMemo(() => {
-    if (!now) return [] as Array<{ key: string; label: string }>;
-    const arr: Array<{ key: string; label: string }> = [];
-    for (let i = range - 1; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      arr.push({ key: dayKey(d), label: dayKey(d) });
-    }
-    return arr;
-  }, [now, range]);
-
-  const attemptsByDay = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const a of inRangeAttempts) {
-      const d = new Date(a.created_at);
-      if (Number.isNaN(d.getTime())) continue;
-      const k = dayKey(d);
-      m.set(k, (m.get(k) ?? 0) + 1);
-    }
-    return days.map((d) => ({ label: d.label, value: m.get(d.key) ?? 0 }));
-  }, [inRangeAttempts, days]);
-
-  const usersByDay = useMemo(() => {
-    const m = new Map<string, number>();
-    users.forEach((d) => {
-      if (d < cutoff) return;
-      const k = dayKey(d);
-      m.set(k, (m.get(k) ?? 0) + 1);
-    });
-    return days.map((d) => ({ label: d.label, value: m.get(d.key) ?? 0 }));
-  }, [users, days, cutoff]);
-
-  const topTests = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const a of inRangeAttempts) m.set(a.test, (m.get(a.test) ?? 0) + 1);
-    return Array.from(m.entries()).sort((x, y) => y[1] - x[1]).slice(0, 5)
-      .map(([label, value]) => ({ label: label.length > 22 ? `${label.slice(0, 21)}…` : label, value }));
-  }, [inRangeAttempts]);
-
-  const recent = attempts.slice(0, 5);
-
-  const cardStyle: React.CSSProperties = {
-    background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)",
-    border: "1px solid var(--border)",
-  };
-
-  return (
-    <AdminLayout title="Overview" crumbs={["Overview"]}>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>Range:</span>
-        {RANGES.map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => setRange(r)}
-            className="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold"
-            style={range === r ? { background: "var(--btn-bg)", color: "var(--btn-text)" } : { border: "1px solid var(--border)", color: "var(--muted)" }}
-          >
-            {r}d
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="mt-4 animate-pulse space-y-2.5" aria-label="Loading">
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-24 rounded-2xl" style={{ background: "var(--pill)" }} />
-            ))}
-          </div>
+  if (loading && !data) {
+    return (
+      <AdminLayout>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-[92px]" />
+          ))}
         </div>
-      ) : (
-        <>
-          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="ACTIVE USERS" value={String(users.size)} sub="distinct attempt makers" />
-            <Stat label="NEW (7D)" value={String(newUsers7)} sub="first seen this week" />
-            <Stat label="PUBLISHED" value={String(published.length)} sub="live mock tests" />
-            <Stat label="QUESTIONS" value={qCount === null ? "—" : String(qCount)} sub="in the bank" />
-            <Stat label="ATTEMPTS" value={attCount === null ? "—" : String(attCount)} sub="mock finishes saved" />
-            <Stat label="AVG SCORE" value={avgScore} sub="last ≤1000 attempts" />
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <Skeleton className="h-[260px]" />
+          <Skeleton className="h-[260px]" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout
+      actions={
+        <button type="button" className="admin-btn" onClick={reload}>
+          <Icon name="refresh" size={14} /> Refresh
+        </button>
+      }
+    >
+      {error && (
+        <div className="mb-3">
+          <ErrorState message={error} onRetry={reload} />
+        </div>
+      )}
+      {data && (
+        <div className="space-y-3">
+          {!data.tests.migrated && (
+            <Card className="flex items-center gap-3 px-4 py-3 text-[13px] font-semibold">
+              <span style={{ color: "#f59e0b" }}>
+                <Icon name="alert" size={16} />
+              </span>
+              Test description/instructions columns are missing — run{" "}
+              <code className="mono">supabase/migrations/0005_admin.sql</code> in the Supabase SQL
+              Editor to unlock the full test editor.
+            </Card>
+          )}
+
+          {/* stat cards */}
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              label="Total students"
+              value={fmtNum(data.students.total)}
+              sub={`${fmtNum(data.students.active30)} active in last 30 days`}
+              icon="students"
+              tone="blue"
+            />
+            <StatCard
+              label="New registrations"
+              value={fmtNum(data.students.new30)}
+              sub="In the last 30 days"
+              icon="pulse"
+              tone="green"
+            />
+            <StatCard
+              label="Mock tests"
+              value={fmtNum(data.tests.total)}
+              sub={`${fmtNum(data.tests.published)} published`}
+              icon="tests"
+              tone="violet"
+            />
+            <StatCard
+              label="Question bank"
+              value={fmtNum(data.questions.total)}
+              sub="Total questions"
+              icon="book"
+              tone="amber"
+            />
+            <StatCard
+              label="Total attempts"
+              value={fmtNum(data.attempts.total)}
+              sub={`${fmtNum(data.attempts.last30)} in last 30 days`}
+              icon="attempts"
+              tone="accent"
+            />
+            <StatCard
+              label="Avg score (30d)"
+              value={fmtNum(data.attempts.avgScore, 1)}
+              sub={
+                data.attempts.avgPct !== null
+                  ? `≈ ${fmtPct(data.attempts.avgPct)} of max marks`
+                  : "No attempts with a matched test"
+              }
+              icon="analytics"
+              tone="green"
+            />
+            <Link href="/admin/feedback" className="block">
+              <StatCard
+                label="Unread feedback"
+                value={fmtNum(data.feedback.unread)}
+                sub={data.feedback.available ? "Open the feedback inbox" : "Feedback table missing"}
+                icon="feedback"
+                tone={data.feedback.unread > 0 ? "red" : "accent"}
+              />
+            </Link>
+            <StatCard
+              label="Tests awaiting publish"
+              value={fmtNum(Math.max(0, data.tests.total - data.tests.published))}
+              sub="Drafts not visible to students"
+              icon="lock"
+              tone="amber"
+            />
           </div>
 
-          <div className="mt-4 grid gap-2.5 lg:grid-cols-2">
-            <div className="rounded-2xl p-5" style={cardStyle}>
-              <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Attempts per day</h2>
-              {attemptsByDay.every((d) => d.value === 0) ? (
-                <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No attempts in this range yet.</p>
+          {/* trends */}
+          <div className="grid gap-3 lg:grid-cols-2">
+            <SectionCard title="Registrations — last 30 days" subtitle="New student accounts per day (UTC)">
+              {data.trends.registrations.some((v) => v > 0) ? (
+                <LineChart labels={data.trends.labels} values={data.trends.registrations} suffix=" signups" />
               ) : (
-                <Bars data={attemptsByDay} color="var(--accent)" />
+                <EmptyState icon="students" title="No registrations in this window" hint="Daily signups will plot here." />
               )}
-            </div>
-            <div className="rounded-2xl p-5" style={cardStyle}>
-              <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>First-seen users per day</h2>
-              {usersByDay.every((d) => d.value === 0) ? (
-                <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No new users in this range yet.</p>
+            </SectionCard>
+            <SectionCard title="Attempts — last 30 days" subtitle="Mock submissions per day (UTC)">
+              {data.trends.attempts.some((v) => v > 0) ? (
+                <BarChart labels={data.trends.labels} values={data.trends.attempts} suffix=" attempts" />
               ) : (
-                <Bars data={usersByDay} color="#16a34a" />
+                <EmptyState icon="attempts" title="No attempts in this window" hint="Submissions will plot here." />
               )}
-            </div>
+            </SectionCard>
           </div>
 
-          <div className="mt-4 grid gap-2.5 lg:grid-cols-2">
-            <div className="rounded-2xl p-5" style={cardStyle}>
-              <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Most attempted tests</h2>
-              {topTests.length === 0 ? (
-                <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No attempts in this range yet.</p>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {/* score distribution */}
+            <SectionCard title="Score distribution (30d)" subtitle="Share of maximum marks, from real test marks">
+              <Donut
+                slices={data.scoreDist.map((s, i) => ({ ...s, color: DIST_COLORS[i] }))}
+                centerLabel={fmtNum(data.scoreDist.reduce((a, b) => a + b.value, 0))}
+                centerSub="attempts"
+              />
+              <p className="mt-3 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
+                Based on attempts submitted in the last 30 days. Attempts whose test is no longer
+                found are excluded from this chart (never estimated).
+              </p>
+            </SectionCard>
+
+            {/* recent activity */}
+            <SectionCard title="Recent student activity" subtitle="Latest submissions" bodyClassName="px-2 py-2">
+              {data.recentAttempts.length === 0 ? (
+                <EmptyState icon="attempts" title="No attempts yet" />
               ) : (
-                <div className="mt-3 space-y-2.5">
-                  {topTests.map((t) => (
-                    <div key={t.label}>
-                      <div className="flex justify-between text-xs font-bold">
-                        <span className="truncate" style={{ color: "var(--text)" }}>{t.label}</span>
-                        <span className="mono ml-2" style={{ color: "var(--accent)" }}>{t.value}</span>
-                      </div>
-                      <div className="mt-1 h-1.5 overflow-hidden rounded-full" style={{ background: "var(--pill)" }}>
-                        <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round((t.value / Math.max(topTests[0].value, 1)) * 100))}%`, background: "var(--accent)" }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="rounded-2xl p-5" style={cardStyle}>
-              <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Draft tests</h2>
-              {drafts.length === 0 ? (
-                <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No drafts — everything published is live.</p>
-              ) : (
-                <ul className="mt-2 space-y-2 text-sm">
-                  {drafts.slice(0, 5).map((t) => (
-                    <li key={t.id} className="flex items-center justify-between gap-2">
-                      <span className="truncate font-bold" style={{ color: "var(--text)" }}>{t.title}</span>
-                      <span className="mono shrink-0 text-[11px]" style={{ color: "var(--muted)" }}>
-                        {Array.isArray(t.question_ids) ? t.question_ids.length : 0}Q • DRAFT
+                <ul>
+                  {data.recentAttempts.map((a) => (
+                    <li
+                      key={a.id}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2"
+                      style={{ borderBottom: "1px solid var(--border)" }}
+                    >
+                      <span
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold"
+                        style={{ background: "var(--pill)", color: "var(--accent)" }}
+                      >
+                        {fmtNum(a.score)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-bold">{a.email || "unknown"}</span>
+                        <span className="block truncate text-[11.5px]" style={{ color: "var(--muted)" }}>
+                          {a.test} · {relTime(a.created_at)}
+                        </span>
                       </span>
                     </li>
                   ))}
                 </ul>
               )}
+            </SectionCard>
+
+            {/* recent tests + system status */}
+            <div className="space-y-3">
+              <SectionCard title="Recent mocks" subtitle="Newest first" bodyClassName="px-2 py-2">
+                {data.recentTests.length === 0 ? (
+                  <EmptyState icon="tests" title="No tests created yet" />
+                ) : (
+                  <ul>
+                    {data.recentTests.map((t) => (
+                      <li key={t.id} className="flex items-center gap-2.5 rounded-xl px-3 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-bold">{t.title}</span>
+                          <span className="block text-[11.5px]" style={{ color: "var(--muted)" }}>
+                            {t.questions} question{t.questions === 1 ? "" : "s"} · {relTime(t.created_at)}
+                          </span>
+                        </span>
+                        <Badge tone={t.published ? "green" : "amber"}>{t.published ? "Live" : "Draft"}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </SectionCard>
+
+              <SectionCard title="System status" subtitle="Safe configuration visibility — no secrets shown">
+                <ul className="space-y-2 text-[13px]">
+                  {[
+                    { ok: true, label: "Admin authorization (server-side allowlist)" },
+                    { ok: true, label: "Service-role database access (server-only)" },
+                    { ok: data.status.avatars, label: "Avatars storage bucket" },
+                    { ok: data.status.feedback, label: "Feedback table" },
+                    { ok: data.status.announcements, label: "Announcements table" },
+                    { ok: data.status.auditLog, label: "Audit log table" },
+                  ].map((s) => (
+                    <li key={s.label} className="flex items-center gap-2.5">
+                      <span
+                        className="flex h-5 w-5 items-center justify-center rounded-full"
+                        style={{
+                          background: s.ok ? "color-mix(in srgb, #10b981 16%, transparent)" : "color-mix(in srgb, #ef4444 14%, transparent)",
+                          color: s.ok ? "#10b981" : "#ef4444",
+                        }}
+                      >
+                        <Icon name={s.ok ? "check" : "alert"} size={11} strokeWidth={3} />
+                      </span>
+                      <span className="flex-1">{s.label}</span>
+                    </li>
+                  ))}
+                </ul>
+                {!data.status.feedback && (
+                  <p className="mt-3 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
+                    Missing tables are created by <code className="mono">supabase/migrations/0005_admin.sql</code>.
+                  </p>
+                )}
+              </SectionCard>
             </div>
           </div>
-
-          <div className="mt-4 rounded-2xl p-5" style={cardStyle}>
-            <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Recent attempts</h2>
-            {recent.length === 0 ? (
-              <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>No attempts yet.</p>
-            ) : (
-              <ul className="mt-2 divide-y text-sm" style={{ borderColor: "var(--border)" }}>
-                {recent.map((a, i) => (
-                  <li key={`${a.user_id}-${a.created_at}-${i}`} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                    <span className="mono text-xs" style={{ color: "var(--muted)" }} title={a.user_id}>{shortUid(a.user_id)}</span>
-                    <span className="min-w-0 flex-1 truncate font-bold" style={{ color: "var(--text)" }}>{a.test}</span>
-                    <span className="mono text-xs font-extrabold" style={{ color: "var(--accent)" }}>{a.score}</span>
-                    <span className="mono text-[11px]" style={{ color: "var(--muted)" }}>
-                      {new Date(a.created_at).toLocaleString("en-IN")}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </>
-      )}
-      {note && (
-        <p className="mt-4 rounded-xl px-4 py-3 text-[13px]" style={{ background: "var(--pill)" }}>{note}</p>
+        </div>
       )}
     </AdminLayout>
   );
