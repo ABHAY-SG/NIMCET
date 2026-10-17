@@ -56,6 +56,13 @@ html, body {
   overscroll-behavior-x: none;
 }
 
+/* Legal pages (Terms / Privacy): the outer page is frozen — the sections
+   box scrolls inside itself instead. */
+html:has([data-legal]),
+body:has([data-legal]) {
+  overflow: hidden;
+}
+
 /* Hidden scrollbars: scrolling still works (wheel/touch/keys), no visible track. */
 .noscroll {
   scrollbar-width: none;
