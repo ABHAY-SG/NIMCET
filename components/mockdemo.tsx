@@ -1,11 +1,21 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import {
+  activePartAt,
+  partDeadline,
+  partRanges,
+  parseParts,
+  totalMs,
+  RUN_KEY,
+  LEGACY_RUN_KEY,
+  type ExamPart,
+} from "@/lib/exam-parts";
 
 export type MockQuestion = {
   tag: string; stem: string; opts: string[]; ans?: number;
   plus: number; minus: number; exp?: string;
-  qid?: string;
+  qid?: string; section?: string;
 };
 
 export type SubmitResult = {
@@ -21,7 +31,6 @@ type Q = MockQuestion;
 // In-progress runs (real, server-scored mocks only) are mirrored to
 // sessionStorage so an accidental refresh or a trip to another tab does not
 // silently destroy a half-finished attempt. Cleared when the run completes.
-const RUN_KEY = "nimcuet-run-v1";
 
 const QS: Q[] = [
   { tag: "MATHS • +12 / −3", stem: "If A is 3×3 with det(A) = 4, det(2A) = ?", opts: ["8", "16", "32", "64"], ans: 2, plus: 12, minus: -3, exp: "det(kA) = k³·det(A) for 3×3, so 8 × 4 = 32." },
@@ -42,7 +51,51 @@ function fmt(s: number) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
+function fmtMarks(n: number): string {
+  return String(Math.round(n * 10) / 10);
+}
+
 type Summary = { score: number; correct: number; wrong: number; skip: number };
+
+// Shape of the sessionStorage run mirror (see RUN_KEY in lib/exam-parts).
+type SavedRun = {
+  name?: string;
+  answers?: Record<string, number>;
+  marked?: Record<string, true>;
+  idx?: number;
+  startAt?: number;
+};
+
+type SectionStat = { label: string; qs: number; correct: number; wrong: number; skipped: number; score: number };
+
+// Section-wise table for the scorecard. Returns null unless every submitted
+// question is section-labelled AND the detail rows align 1:1 with the list,
+// so a partial/incorrect table can never be shown.
+function sectionBreakdown(list: Q[], details: SubmitResult["details"]): SectionStat[] | null {
+  if (details.length !== list.length) return null;
+  const acc = new Map<string, SectionStat>();
+  list.forEach((qq, i) => {
+    const label = (qq.section ?? "").trim();
+    const d = details[i];
+    if (!label || !d) return;
+    const st = acc.get(label) ?? { label, qs: 0, correct: 0, wrong: 0, skipped: 0, score: 0 };
+    st.qs += 1;
+    if (d.picked == null) st.skipped += 1;
+    else if (d.ok ?? d.picked === d.correct) {
+      st.correct += 1;
+      st.score += qq.plus;
+    } else {
+      st.wrong += 1;
+      st.score += qq.minus;
+    }
+    acc.set(label, st);
+  });
+  if (acc.size === 0) return null;
+  let total = 0;
+  for (const st of acc.values()) total += st.qs;
+  if (total !== list.length) return null;
+  return Array.from(acc.values());
+}
 
 export default function MockDemo({
   questions,
@@ -51,6 +104,7 @@ export default function MockDemo({
   testName,
   autoStart = false,
   onSubmit,
+  parts: partSpec,
 }: {
   questions?: MockQuestion[];
   title?: string;
@@ -58,34 +112,60 @@ export default function MockDemo({
   testName?: string;
   autoStart?: boolean;
   onSubmit?: (picks: Record<number, number>) => Promise<SubmitResult>;
+  parts?: ExamPart[];
 } = {}) {
   const list = questions && questions.length > 0 ? questions : QS;
   const MAX = list.reduce((a, q) => a + q.plus, 0);
   const mins = minutes ?? 12;
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [marked, setMarked] = useState<Record<number, true>>({});
   const [left, setLeft] = useState(mins * 60);
+  const [part, setPart] = useState(0);
   const [done, setDone] = useState(false);
   const [started, setStarted] = useState(autoStart);
   const [serverResult, setServerResult] = useState<SubmitResult | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [retryTick, setRetryTick] = useState(0);
+  const [timeTaken, setTimeTaken] = useState<number | null>(null);
   const savedRef = useRef(false);
   const localSavedRef = useRef(false);
-  // Wall-clock deadline: the timer keeps correct time even if the browser
-  // throttles timers in a background tab.
-  const endAtRef = useRef<number | null>(null);
+  // Wall-clock run start: the timer keeps correct time even if the browser
+  // throttles timers in a background tab, and refreshes never pause the clock.
+  const startAtRef = useRef<number | null>(null);
+  const partRef = useRef(0);
   const persist = !!onSubmit && !!testName;
+  // The saved payload is read from sessionStorage exactly once (lazily, on the
+  // first restore pass) and remembered here: StrictMode re-runs mount effects,
+  // and a second storage read would see the mirror effect's just-written
+  // initial state (empty answers) instead of the payload being restored.
+  const restoredRef = useRef<SavedRun | null | undefined>(undefined);
+
+  // Optional timed parts (contiguous question blocks with their own clocks,
+  // e.g. NIMCET 70/30/20). Invalid data simply keeps the continuous timer.
+  const timed = useMemo(() => (partSpec ? parseParts(partSpec, list.length) : null), [partSpec, list.length]);
+  const ranges = useMemo(() => (timed ? partRanges(timed) : null), [timed]);
+  const examMs = useMemo(() => (timed ? totalMs(timed) : mins * 60_000), [timed, mins]);
 
   // Restore a run interrupted by refresh/tab-switch (real mocks only).
   /* eslint-disable react-hooks/set-state-in-effect -- post-mount restore from sessionStorage; SSR has no storage to read. */
   useEffect(() => {
     if (!persist) return;
     try {
-      const raw = sessionStorage.getItem(RUN_KEY);
-      if (!raw) return;
-      const s = JSON.parse(raw) as { name?: string; answers?: Record<string, number>; idx?: number; endAt?: number };
-      if (s.name !== testName || typeof s.endAt !== "number" || s.endAt < Date.now() + 1000) {
+      sessionStorage.removeItem(LEGACY_RUN_KEY);
+    } catch {}
+    if (restoredRef.current === undefined) {
+      try {
+        const raw = sessionStorage.getItem(RUN_KEY);
+        restoredRef.current = raw ? (JSON.parse(raw) as SavedRun) : null;
+      } catch {
+        restoredRef.current = null;
+      }
+    }
+    try {
+      const s = restoredRef.current;
+      if (!s) return;
+      if (s.name !== testName || typeof s.startAt !== "number" || s.startAt + examMs <= Date.now()) {
         sessionStorage.removeItem(RUN_KEY);
         return;
       }
@@ -97,11 +177,26 @@ export default function MockDemo({
         }
         setAnswers(restored);
       }
-      if (Number.isInteger(s.idx) && (s.idx as number) >= 0 && (s.idx as number) < list.length) {
+      if (s.marked && typeof s.marked === "object") {
+        const restoredMarked: Record<number, true> = {};
+        for (const k of Object.keys(s.marked)) {
+          const i = Number(k);
+          if (Number.isInteger(i) && i >= 0 && i < list.length) restoredMarked[i] = true;
+        }
+        setMarked(restoredMarked);
+      }
+      if (timed && ranges) {
+        const ap = activePartAt(timed, Date.now() - s.startAt);
+        partRef.current = ap;
+        setPart(ap);
+        const r = ranges[ap];
+        const saved = s.idx;
+        setIdx(Number.isInteger(saved) && (saved as number) >= r.start && (saved as number) < r.end ? (saved as number) : r.start);
+      } else if (Number.isInteger(s.idx) && (s.idx as number) >= 0 && (s.idx as number) < list.length) {
         setIdx(s.idx as number);
       }
-      endAtRef.current = s.endAt;
-      setLeft(Math.max(0, Math.ceil((s.endAt - Date.now()) / 1000)));
+      startAtRef.current = s.startAt;
+      setLeft(Math.max(0, Math.ceil((s.startAt + examMs - Date.now()) / 1000)));
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -109,12 +204,27 @@ export default function MockDemo({
 
   useEffect(() => {
     if (!started || done) return;
-    if (endAtRef.current == null) endAtRef.current = Date.now() + mins * 60_000;
+    if (startAtRef.current == null) startAtRef.current = Date.now();
     const tick = () => {
-      const end = endAtRef.current ?? Date.now();
-      const remaining = Math.max(0, Math.ceil((end - Date.now()) / 1000));
-      setLeft(remaining);
-      if (remaining <= 0) setDone(true);
+      const startAt = startAtRef.current ?? Date.now();
+      const now = Date.now();
+      if (timed && ranges) {
+        // Timed parts: the visible clock and the reachable question range
+        // follow the current part. Expired parts are locked (no going back)
+        // and the run auto-submits when the last part ends.
+        const ap = activePartAt(timed, now - startAt);
+        if (ap !== partRef.current) {
+          partRef.current = ap;
+          setPart(ap);
+          setIdx(ranges[ap].start);
+        }
+        setLeft(Math.max(0, Math.ceil((partDeadline(timed, startAt, ap) - now) / 1000)));
+        if (now - startAt >= totalMs(timed)) setDone(true);
+      } else {
+        const remaining = Math.max(0, Math.ceil((startAt + examMs - now) / 1000));
+        setLeft(remaining);
+        if (remaining <= 0) setDone(true);
+      }
     };
     tick();
     const t = setInterval(tick, 1000);
@@ -124,17 +234,20 @@ export default function MockDemo({
       clearInterval(t);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [started, done, mins]);
+  }, [started, done, timed, ranges, examMs]);
 
   // Mirror the run while it is live so a reload cannot silently discard it.
+  // Writing on the mount pass is intentional (it persists the run start time
+  // immediately); it cannot poison the restore above because that reads the
+  // stored payload through restoredRef exactly once.
   useEffect(() => {
     if (!persist || !started || done) return;
-    const end = endAtRef.current;
-    if (end == null) return;
+    const startAt = startAtRef.current;
+    if (startAt == null) return;
     try {
-      sessionStorage.setItem(RUN_KEY, JSON.stringify({ name: testName, answers, idx, endAt: end }));
+      sessionStorage.setItem(RUN_KEY, JSON.stringify({ name: testName, answers, marked, idx, startAt }));
     } catch {}
-  }, [persist, started, done, answers, idx, testName]);
+  }, [persist, started, done, answers, marked, idx, testName]);
 
   // Warn before closing the tab mid-test (real mocks only).
   useEffect(() => {
@@ -151,6 +264,7 @@ export default function MockDemo({
     if (!done) return;
     if (savedRef.current) return;
     savedRef.current = true;
+    setTimeTaken((v) => v ?? (startAtRef.current == null ? null : Math.max(0, Math.min(Math.round(examMs / 1000), Math.round((Date.now() - startAtRef.current) / 1000)))));
     if (!onSubmit) {
       // Homepage sample: everything stays on this device. The bank-backed
       // mocks never write a device-local record — the server owns their
@@ -176,7 +290,6 @@ export default function MockDemo({
       }
       try { sessionStorage.removeItem(RUN_KEY); } catch {}
       const s = summarize();
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- the on-device demo result is computed once when the run ends.
       setServerResult({
         score: s.score,
         correct: s.correct,
@@ -219,14 +332,18 @@ export default function MockDemo({
   const reset = () => {
     savedRef.current = false;
     localSavedRef.current = false;
-    endAtRef.current = null;
+    startAtRef.current = null;
+    partRef.current = 0;
     try { sessionStorage.removeItem(RUN_KEY); } catch {}
     setServerResult(null);
     setSubmitError("");
     setAnswers({});
+    setMarked({});
     setIdx(0);
+    setPart(0);
     setLeft(mins * 60);
     setDone(false);
+    setTimeTaken(null);
   };
 
   const retrySubmit = () => {
@@ -305,6 +422,7 @@ export default function MockDemo({
       };
     })();
     const pct = Math.max(0, Math.round((r.score / MAX) * 100));
+    const secStats = sectionBreakdown(list, r.details);
     const schemes = Array.from(new Set(list.map((q) => `+${q.plus} / −${Math.abs(q.minus)}`)));
     const markingLabel = schemes.length === 1 ? `${schemes[0]} MARKING APPLIED` : "PER-SECTION MARKING APPLIED";
     return (
@@ -319,7 +437,45 @@ export default function MockDemo({
           </div>
           <p className="mono mt-2 text-xs" style={{ color: "var(--muted)" }}>
             {r.correct} CORRECT • {r.wrong} WRONG • {r.skipped} SKIPPED • {markingLabel}
+            {timeTaken != null ? ` • TIME ${fmt(timeTaken)}` : ""}
           </p>
+          {secStats && (
+            <div className="mx-auto mt-4 max-w-md text-left">
+              <p className="mono text-[10px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>SECTION-WISE RESULT</p>
+              <table className="mt-1.5 w-full text-[12.5px]">
+                <thead>
+                  <tr className="mono text-[10px]" style={{ color: "var(--muted)" }}>
+                    <th className="py-1 pr-2 text-left font-bold">SECTION</th>
+                    <th className="px-1 py-1 text-right font-bold">Q</th>
+                    <th className="px-1 py-1 text-right font-bold">✓</th>
+                    <th className="px-1 py-1 text-right font-bold">✗</th>
+                    <th className="px-1 py-1 text-right font-bold">SKIP</th>
+                    <th className="py-1 pl-2 text-right font-bold">SCORE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {secStats.map((s) => (
+                    <tr key={s.label} style={{ borderTop: "1px solid var(--border)" }}>
+                      <td className="py-1.5 pr-2 font-semibold">{s.label}</td>
+                      <td className="mono px-1 py-1.5 text-right">{s.qs}</td>
+                      <td className="mono px-1 py-1.5 text-right" style={{ color: "#16a34a" }}>{s.correct}</td>
+                      <td className="mono px-1 py-1.5 text-right" style={{ color: "#dc2626" }}>{s.wrong}</td>
+                      <td className="mono px-1 py-1.5 text-right" style={{ color: "var(--muted)" }}>{s.skipped}</td>
+                      <td className="mono py-1.5 pl-2 text-right font-bold">{fmtMarks(s.score)}</td>
+                    </tr>
+                  ))}
+                  <tr style={{ borderTop: "1.5px solid var(--border)" }}>
+                    <td className="py-1.5 pr-2 font-extrabold">Total</td>
+                    <td className="mono px-1 py-1.5 text-right font-extrabold">{list.length}</td>
+                    <td className="mono px-1 py-1.5 text-right font-extrabold">{r.correct}</td>
+                    <td className="mono px-1 py-1.5 text-right font-extrabold">{r.wrong}</td>
+                    <td className="mono px-1 py-1.5 text-right font-extrabold">{r.skipped}</td>
+                    <td className="mono py-1.5 pl-2 text-right font-extrabold">{fmtMarks(r.score)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
           <div className="mt-4 flex justify-center gap-2">
             <button type="button" onClick={reset} className="rounded-full px-5 py-2 text-sm font-bold" style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
               Retry →
@@ -352,10 +508,31 @@ export default function MockDemo({
 
   const q = list[idx];
   const answered = Object.keys(answers).length;
+  const markedCount = Object.keys(marked).length;
+  const cur = ranges ? ranges[part] : null;
+  const qPos = cur ? idx - cur.start + 1 : idx + 1;
+  const qTotal = cur ? cur.end - cur.start : list.length;
+  const atStart = idx === (cur ? cur.start : 0);
+  const atEnd = idx === (cur ? cur.end - 1 : list.length - 1);
+  const goto = (i: number) => {
+    if (cur && (i < cur.start || i >= cur.end)) return;
+    setIdx(i);
+  };
+  const toggleMark = () => {
+    setMarked((m) => {
+      const next = { ...m };
+      if (next[idx]) delete next[idx];
+      else next[idx] = true;
+      return next;
+    });
+  };
+  const paletteIdx = cur ? list.slice(cur.start, cur.end).map((_, j) => cur.start + j) : list.map((_, i) => i);
   return (
     <div className="overflow-hidden rounded-2xl backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between gap-2 px-4 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
-        <span className="mono text-[11px] font-bold" style={{ color: "var(--muted)" }}>{title} • Q{idx + 1}/{list.length}</span>
+        <span className="mono text-[11px] font-bold" style={{ color: "var(--muted)" }}>
+          {title}{timed ? ` • PART ${part + 1}/${timed.length}` : ""} • Q{qPos}/{qTotal}
+        </span>
         <span className="mono rounded-md px-2 py-0.5 text-xs font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }} aria-label={`Time left ${fmt(left)}`}>⏱ {fmt(left)}</span>
         <button
           type="button"
@@ -369,7 +546,17 @@ export default function MockDemo({
           Submit
         </button>
       </div>
-      <div className="p-4 sm:p-5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-2 pb-1">
+        {timed && (
+          <span className="mono text-[10px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.12em" }}>
+            {timed[part].label.toUpperCase()} • {timed[part].minutes} MIN
+          </span>
+        )}
+        <span className="mono text-[10px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.08em" }}>
+          ANSWERED {answered} • NOT ANSWERED {list.length - answered} • MARKED {markedCount}
+        </span>
+      </div>
+      <div className="p-4 pt-2 sm:p-5 sm:pt-2">
         <p className="mono text-[10px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.14em" }}>{q.tag}</p>
         <p className="mt-1.5 font-bold leading-6">{q.stem}</p>
         <div className="mt-3 grid gap-1.5 text-sm">
@@ -390,7 +577,7 @@ export default function MockDemo({
         </div>
         <div className="mt-3 flex items-center justify-between gap-2 text-[13px]">
           <div className="flex items-center gap-3">
-            <button type="button" disabled={idx === 0} onClick={() => setIdx(idx - 1)} className="font-semibold disabled:opacity-30" style={{ color: "var(--muted)" }}>← Prev</button>
+            <button type="button" disabled={atStart} onClick={() => setIdx(idx - 1)} className="font-semibold disabled:opacity-30" style={{ color: "var(--muted)" }}>← Prev</button>
             <button
               type="button"
               disabled={answers[idx] == null}
@@ -400,29 +587,44 @@ export default function MockDemo({
             >
               Clear
             </button>
+            <button
+              type="button"
+              onClick={toggleMark}
+              aria-pressed={!!marked[idx]}
+              className="font-semibold"
+              style={{ color: marked[idx] ? "#b45309" : "var(--muted)", fontWeight: marked[idx] ? 800 : 600 }}
+            >
+              {marked[idx] ? "⚑ Marked" : "⚐ Mark for review"}
+            </button>
           </div>
           <div className="flex flex-wrap justify-center gap-1.5 px-1">
-            {list.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setIdx(i)}
-                aria-label={`Question ${i + 1}${answers[i] != null ? " (answered)" : ""}`}
-                aria-current={i === idx ? "true" : undefined}
-                className="mono h-9 w-9 rounded-lg text-xs font-bold"
-                style={answers[i] != null
-                  ? { background: "var(--accent)", color: "var(--accent-fg)" }
-                  : i === idx
-                    ? { border: "1.5px solid var(--accent)" }
-                    : { background: "var(--pill)", color: "var(--muted)" }}
-              >
-                {i + 1}
-              </button>
-            ))}
+            {paletteIdx.map((i) => {
+              const isMarked = !!marked[i];
+              const isAnswered = answers[i] != null;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => goto(i)}
+                  aria-label={`Question ${(cur ? i - cur.start : i) + 1}${isAnswered ? " (answered)" : ""}${isMarked ? " (marked for review)" : ""}`}
+                  aria-current={i === idx ? "true" : undefined}
+                  className="mono h-9 w-9 rounded-lg text-xs font-bold"
+                  style={isMarked
+                    ? { border: "1.5px solid #d97706", background: isAnswered ? "color-mix(in srgb, var(--accent) 18%, transparent)" : "transparent", color: "var(--text)" }
+                    : isAnswered
+                      ? { background: "var(--accent)", color: "var(--accent-fg)" }
+                      : i === idx
+                        ? { border: "1.5px solid var(--accent)" }
+                        : { background: "var(--pill)", color: "var(--muted)" }}
+                >
+                  {(cur ? i - cur.start : i) + 1}
+                </button>
+              );
+            })}
           </div>
           <button
             type="button"
-            disabled={idx === list.length - 1}
+            disabled={atEnd}
             onClick={() => setIdx(idx + 1)}
             className="font-bold disabled:opacity-30"
             style={{ color: "var(--accent)" }}
