@@ -179,7 +179,7 @@ export default function MockDemo({
         const restored: Record<number, number> = {};
         for (const [k, v] of Object.entries(s.answers)) {
           const i = Number(k);
-          if (Number.isInteger(i) && i >= 0 && i < list.length && Number.isInteger(v) && v >= 0 && v <= 3) restored[i] = v;
+          if (Number.isInteger(i) && i >= 0 && i < list.length && Number.isInteger(v) && v >= 0 && v <= 4) restored[i] = v;
         }
         setAnswers(restored);
       }
