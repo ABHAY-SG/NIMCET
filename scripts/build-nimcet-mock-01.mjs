@@ -130,7 +130,7 @@ if (rows.length !== 120 && problems.length === 0) problems.push(`loaded ${rows.l
 console.log(`Loaded ${rows.length} questions.`);
 for (const [section, acc] of perSection) {
   console.log(
-    `  ${section.padEnd(22)} ${String(acc.count).padStart(3)} Q · ${String(acc.marks).padStart(4)} marks · answers A/B/C/D ${acc.answers.join("/")} · difficulty ${JSON.stringify(acc.diffs)}`
+    `  ${section.padEnd(22)} ${String(acc.count).padStart(3)} Q · ${String(acc.marks).padStart(4)} marks · answers A/B/C/D/E ${acc.answers.join("/")} · difficulty ${JSON.stringify(acc.diffs)}`
   );
 }
 console.log(`  TOTAL ${totalQuestions} Q · ${totalMarks} max marks`);
