@@ -19,8 +19,8 @@ export default function How() {
           >
             How It Works
           </p>
-          <h2 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-            One loop, <span style={{ color: "var(--accent)" }}>repeated till rank.</span>
+          <h2 className="display mt-2.5 text-3xl sm:text-4xl">
+            One loop, <em style={{ color: "var(--accent)" }}>repeated till rank.</em>
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm leading-7 md:mx-0" style={{ color: "var(--muted)" }}>
             No courses, no videos, no clutter. Four steps on repeat — that is
@@ -30,13 +30,18 @@ export default function How() {
             Start the loop →
           </Link>
         </Reveal>
-        <div className="relative pl-8" style={{ borderLeft: "2px solid var(--border)" }}>
-          {STEPS.map(([n, t, d]) => (
-            <Reveal key={n}>
+        <div className="relative pl-8">
+          <span
+            aria-hidden
+            className="absolute bottom-3 left-0 top-3 w-[2px] rounded-full"
+            style={{ background: "linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 25%, transparent) 78%, transparent)" }}
+          />
+          {STEPS.map(([n, t, d], i) => (
+            <Reveal key={n} delay={i * 0.08}>
               <div className="group relative pb-8 last:pb-0">
                 <span
                   className="mono absolute top-0 flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-extrabold transition-transform duration-300 group-hover:scale-110"
-                  style={{ left: "-50px", background: "var(--btn-bg)", color: "var(--btn-text)" }}
+                  style={{ left: "-50px", background: "linear-gradient(135deg, var(--accent), var(--accent-2))", color: "var(--accent-fg)", boxShadow: "0 12px 26px -12px var(--accent)" }}
                 >
                   {n}
                 </span>

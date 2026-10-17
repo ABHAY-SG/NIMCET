@@ -11,7 +11,7 @@ function Item({ q, a }: { q: string; a: string }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-4 py-4 text-left"
+        className="row-hover -mx-2 flex w-full items-center justify-between gap-4 rounded-xl px-2 py-4 text-left"
       >
         <span className={`text-[15px] font-bold transition-colors ${open ? "" : ""}`} style={open ? { color: "var(--accent)" } : undefined}>{q}</span>
         <span
@@ -51,8 +51,8 @@ export default function Faqs() {
         >
           FAQs
         </p>
-        <h2 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-          Asked often, <span style={{ color: "var(--accent)" }}>answered plainly.</span>
+        <h2 className="display mt-2.5 text-3xl sm:text-4xl">
+          Asked often, <em style={{ color: "var(--accent)" }}>answered plainly.</em>
         </h2>
       </Reveal>
       <div className="mt-6 grid items-start gap-6 md:grid-cols-[1.6fr_1fr]">
@@ -63,21 +63,20 @@ export default function Faqs() {
             ))}
           </div>
         </Reveal>
-        <Reveal>
-          <div
-            className="rounded-2xl p-6 text-center backdrop-blur-xl md:sticky md:top-24"
-            style={{
-              background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <p className="logo-script text-3xl" style={{ transform: "rotate(-2deg)" }}>still stuck?</p>
-            <p className="mx-auto mt-2 max-w-[220px] text-[13px] leading-6" style={{ color: "var(--muted)" }}>
+        <Reveal delay={0.08}>
+          <div className="premium-card relative overflow-hidden rounded-2xl p-6 text-center md:sticky md:top-24">
+            <span
+              aria-hidden
+              className="orb"
+              style={{ left: "-30%", top: "-45%", width: "16rem", height: "16rem", background: "color-mix(in srgb, var(--accent) 22%, transparent)" }}
+            />
+            <p className="logo-script relative text-3xl" style={{ transform: "rotate(-2deg)" }}>still stuck?</p>
+            <p className="relative mx-auto mt-2 max-w-[220px] text-[13px] leading-6" style={{ color: "var(--muted)" }}>
               Ask us directly — a human replies within a day.
             </p>
             <a
               href="#contact"
-              className="cta-glow mt-4 inline-block rounded-full px-6 py-2.5 text-sm font-bold"
+              className="cta-glow relative mt-4 inline-block rounded-full px-6 py-2.5 text-sm font-bold"
               style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
             >
               Contact us →

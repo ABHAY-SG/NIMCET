@@ -184,7 +184,7 @@ export default function Navbar() {
           >
             {open ? "✕" : "☰"}
           </button>
-          <Link href="/" className="flex items-center" aria-label="NimCuet home">
+          <Link href="/" className="flex items-center transition-transform duration-300 hover:scale-[1.02]" aria-label="NimCuet home">
             <LogoImg />
           </Link>
         </div>

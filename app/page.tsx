@@ -18,9 +18,14 @@ function Divider() {
   return (
     <div aria-hidden className="mx-auto w-full max-w-6xl px-4">
       <div
-        className="mb-12 h-px"
+        className="relative mb-12 h-px"
         style={{ background: "linear-gradient(90deg, transparent, var(--border), transparent)" }}
-      />
+      >
+        <span
+          className="absolute left-1/2 top-1/2 block h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rotate-45"
+          style={{ background: "var(--accent)", boxShadow: "0 0 14px color-mix(in srgb, var(--accent) 65%, transparent)" }}
+        />
+      </div>
     </div>
   );
 }

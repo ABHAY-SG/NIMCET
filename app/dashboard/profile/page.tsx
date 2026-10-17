@@ -372,7 +372,7 @@ export default function ProfilePage() {
                 ) : (
                   <span
                     className="flex h-full w-full items-center justify-center text-3xl font-extrabold"
-                    style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
+                    style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}
                   >
                     {initialsOf(displayName, email)}
                   </span>
@@ -598,7 +598,7 @@ export default function ProfilePage() {
                       className="h-full rounded-full"
                       style={{
                         width: `${Math.min(100, Math.round((streakSummary.current / Math.max(streakSummary.best, 1)) * 100))}%`,
-                        background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))",
+                        background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))",
                       }}
                     />
                   </div>

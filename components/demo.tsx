@@ -13,8 +13,8 @@ export default function Demo() {
           >
             The Experience
           </p>
-          <h2 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-            Feel the <span style={{ color: "var(--accent)" }}>exam hall.</span>
+          <h2 className="display mt-2.5 text-3xl sm:text-4xl">
+            Feel the <em style={{ color: "var(--accent)" }}>exam hall.</em>
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm leading-7 md:mx-0" style={{ color: "var(--muted)" }}>
             The same screen you will meet on exam day — palette, timer and
@@ -24,8 +24,7 @@ export default function Demo() {
           </p>
           <Link href="/#how" className="nlink nounder mt-4 inline-block text-sm font-bold">
             See how a mock flows →
-          </Link>
-        </Reveal>
+          </Link>        </Reveal>
         <div>
           <Reveal>
             <MockDemo />

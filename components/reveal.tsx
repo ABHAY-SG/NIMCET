@@ -1,7 +1,15 @@
 "use client";
 import { useEffect, useRef } from "react";
 
-export default function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export default function Reveal({
+  children,
+  className = "",
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -18,7 +26,11 @@ export default function Reveal({ children, className = "" }: { children: React.R
     return () => io.disconnect();
   }, []);
   return (
-    <div ref={ref} className={`rv ${className}`}>
+    <div
+      ref={ref}
+      className={`rv ${className}`}
+      style={delay ? { transitionDelay: `${delay}s` } : undefined}
+    >
       {children}
     </div>
   );

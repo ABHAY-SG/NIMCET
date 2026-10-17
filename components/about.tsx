@@ -16,9 +16,9 @@ export default function About() {
         >
           About Us
         </p>
-        <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-extrabold leading-[1.15] tracking-tight sm:text-4xl">
+        <h2 className="display mx-auto mt-3 max-w-2xl text-4xl sm:text-5xl">
           Ranks are built in timed mocks with honest feedback —{" "}
-          <span style={{ color: "var(--accent)" }}>not in marathon video lectures.</span>
+          <em style={{ color: "var(--accent)" }}>not in marathon video lectures.</em>
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-7" style={{ color: "var(--muted)" }}>
           NimCuet exists for two exams and nothing else. Realistic papers,
@@ -30,9 +30,14 @@ export default function About() {
         </p>
       </Reveal>
       <div className="mt-8 grid gap-6 text-left sm:grid-cols-3">
-        {PILLARS.map(([t, d]) => (
-          <Reveal key={t}>
-            <div className="border-t-2 pt-4" style={{ borderColor: "var(--accent)" }}>
+        {PILLARS.map(([t, d], i) => (
+          <Reveal key={t} delay={i * 0.08}>
+            <div className="lift relative h-full overflow-hidden rounded-2xl px-4 py-5" style={{ background: "color-mix(in srgb, var(--nav-bg) 40%, transparent)" }}>
+              <span
+                aria-hidden
+                className="absolute inset-x-0 top-0 h-[2px]"
+                style={{ background: "linear-gradient(90deg, var(--accent), var(--accent-2))" }}
+              />
               <div className="font-extrabold tracking-tight">{t}</div>
               <div className="mt-1.5 text-[13px] leading-6" style={{ color: "var(--muted)" }}>{d}</div>
             </div>
@@ -46,10 +51,7 @@ export default function About() {
       </Reveal>
       <div className="mt-4 grid gap-4 text-left sm:grid-cols-2">
         <Reveal>
-          <div
-            className="h-full rounded-2xl p-6 backdrop-blur-xl"
-            style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
-          >
+          <div className="premium-card h-full rounded-2xl p-6">
             <div className="text-[11px] font-bold uppercase" style={{ color: "var(--accent)", letterSpacing: "0.18em" }}>Our Mission</div>
             <p className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>
               Make MCA entrance prep honest and affordable. Every aspirant —
@@ -60,10 +62,7 @@ export default function About() {
           </div>
         </Reveal>
         <Reveal>
-          <div
-            className="h-full rounded-2xl p-6 backdrop-blur-xl"
-            style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
-          >
+          <div className="premium-card h-full rounded-2xl p-6">
             <div className="text-[11px] font-bold uppercase" style={{ color: "var(--accent)", letterSpacing: "0.18em" }}>Our Commitment</div>
             <ul className="mt-2 space-y-2 text-sm leading-6" style={{ color: "var(--muted)" }}>
               <li className="flex gap-2"><span style={{ color: "var(--accent)" }}>✓</span> Patterns updated every exam cycle, never stale.</li>

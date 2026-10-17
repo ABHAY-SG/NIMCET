@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import LegalPage from "@/components/legal-page";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -37,23 +38,5 @@ const SECTIONS: Array<[string, string[]]> = [
 ];
 
 export default function PrivacyPage() {
-  return (
-    <main className="mx-auto max-w-3xl px-4 pb-20 pt-28">
-      <p className="text-center text-[11px] font-semibold uppercase" style={{ color: "var(--accent)", letterSpacing: "0.22em" }}>
-        Legal
-      </p>
-      <h1 className="mt-2 text-center text-3xl font-extrabold tracking-tight sm:text-4xl">Privacy Policy</h1>
-      <p className="mt-2 text-center text-sm" style={{ color: "var(--muted)" }}>Last updated: October 2026</p>
-      <div className="mt-8 space-y-7">
-        {SECTIONS.map(([t, ps]) => (
-          <section key={t}>
-            <h2 className="text-lg font-extrabold tracking-tight">{t}</h2>
-            {ps.map((p, i) => (
-              <p key={i} className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>{p}</p>
-            ))}
-          </section>
-        ))}
-      </div>
-    </main>
-  );
+  return <LegalPage title="Privacy Policy" updated="October 2026" sections={SECTIONS} />;
 }

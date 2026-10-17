@@ -1,7 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
+import AuthBg from "@/components/auth-bg";
+import ThemeFab from "@/components/theme-fab";
 
 // Only reachable with a real session (the recovery link creates one through
 // /auth/callback?flow=recovery). Opening this page cold — no link, no session
@@ -58,76 +61,91 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-md px-4 pb-20 pt-28">
-      <div className="text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight">Set new password</h1>
-        <p className="mt-1.5 text-sm" style={{ color: "var(--muted)" }}>
-          Choose a fresh 8+ character password with a number.
-        </p>
-      </div>
-      {checked && !hasSession ? (
+    <>
+      <AuthBg />
+      <main className="relative mx-auto flex min-h-[100svh] w-full max-w-md flex-col justify-center px-4 py-10">
+        <ThemeFab />
+        <Link
+          href="/login-choice"
+          className="mb-4 inline-flex w-fit items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1"
+          style={{ color: "var(--muted)" }}
+        >
+          <span aria-hidden>←</span> Back to login
+        </Link>
         <div
-          className="mt-6 rounded-[22px] p-6 text-center backdrop-blur-2xl sm:p-7"
-          style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}
+          className="pop rounded-[26px] p-7 backdrop-blur-[28px] backdrop-saturate-150 sm:p-8"
+          style={{
+            background: "color-mix(in srgb, var(--bg) 72%, transparent)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 40px 100px -30px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.22)",
+          }}
         >
-          <p className="text-sm font-bold">This page needs a reset link.</p>
-          <p className="mt-2 text-[13px] leading-6" style={{ color: "var(--muted)" }}>
-            Open the link we emailed you, or request a fresh one from the login page — then come back here.
+          <h1 className="display text-3xl">Set new password</h1>
+          <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
+            Choose a fresh 8+ character password with a number.
           </p>
-          <a
-            href="/login-choice"
-            className="mt-4 inline-block rounded-full px-6 py-3 text-sm font-bold"
-            style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
-          >
-            Go to login →
-          </a>
-        </div>
-      ) : (
-        <form
-          onSubmit={submit}
-          className="mt-6 rounded-[22px] p-6 backdrop-blur-2xl sm:p-7"
-          style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}
-        >
-          <label htmlFor="reset-pass" className="mb-1.5 block text-[13px] font-bold">New password</label>
-          <input
-            id="reset-pass"
-            type="password"
-            required
-            minLength={8}
-            maxLength={128}
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Min. 8 characters + a number"
-            className="w-full rounded-xl px-4 py-3 text-sm outline-none focus:ring-2"
-            style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
-          />
-          <label htmlFor="reset-confirm" className="mb-1.5 mt-4 block text-[13px] font-bold">Confirm new password</label>
-          <input
-            id="reset-confirm"
-            type="password"
-            required
-            maxLength={128}
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Retype your password"
-            className="w-full rounded-xl px-4 py-3 text-sm outline-none focus:ring-2"
-            style={{ background: "var(--pill)", border: confirm && password !== confirm ? "1px solid #dc2626" : "1px solid var(--border)", color: "var(--text)" }}
-          />
-          {msg && (
-            <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
+          {checked && !hasSession ? (
+            <div className="mt-6 rounded-2xl p-5 text-center" style={{ background: "var(--pill)", border: "1px dashed var(--border)" }}>
+              <p className="text-sm font-bold">This page needs a reset link.</p>
+              <p className="mt-2 text-[13px] leading-6" style={{ color: "var(--muted)" }}>
+                Open the link we emailed you, or request a fresh one from the login page — then come back here.
+              </p>
+              <a
+                href="/login-choice"
+                className="cta-glow mt-4 inline-block rounded-full px-6 py-3 text-sm font-bold"
+                style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+              >
+                Go to login →
+              </a>
+            </div>
+          ) : (
+            <form onSubmit={submit} className="mt-5">
+              <label htmlFor="reset-pass" className="mb-1.5 block text-[13px] font-bold">New password</label>
+              <input
+                id="reset-pass"
+                type="password"
+                required
+                minLength={8}
+                maxLength={128}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Min. 8 characters + a number"
+                className="inp w-full rounded-xl px-4 py-3 text-sm"
+                style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
+              />
+              <label htmlFor="reset-confirm" className="mb-1.5 mt-4 block text-[13px] font-bold">Confirm new password</label>
+              <input
+                id="reset-confirm"
+                type="password"
+                required
+                maxLength={128}
+                autoComplete="new-password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="Retype your password"
+                className="inp w-full rounded-xl px-4 py-3 text-sm"
+                style={{ background: "var(--pill)", border: confirm && password !== confirm ? "1px solid #dc2626" : "1px solid var(--border)", color: "var(--text)" }}
+              />
+              {msg && (
+                <p className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>{msg}</p>
+              )}
+              <button
+                type="submit"
+                disabled={busy}
+                className="cta-glow mt-5 w-full cursor-pointer rounded-xl py-3.5 text-sm font-extrabold transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+                style={{
+                  background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))",
+                  color: "var(--accent-fg)",
+                  boxShadow: "0 14px 30px -12px color-mix(in srgb, var(--accent) 60%, transparent)",
+                }}
+              >
+                {busy ? "Please wait…" : "Save new password →"}
+              </button>
+            </form>
           )}
-          <button
-            type="submit"
-            disabled={busy}
-            className="mt-4 w-full cursor-pointer rounded-xl py-3.5 text-sm font-extrabold disabled:opacity-50"
-            style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
-          >
-            {busy ? "Please wait…" : "Save new password →"}
-          </button>
-        </form>
-      )}
-    </main>
+        </div>
+      </main>
+    </>
   );
 }

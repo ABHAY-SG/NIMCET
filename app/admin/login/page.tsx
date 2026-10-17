@@ -132,7 +132,7 @@ export default function AdminLoginPage() {
         <button
           type="submit" disabled={busy}
           className="mt-4 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold disabled:opacity-50"
-          style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
+          style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}
         >
           {busy ? "Please wait…" : "Log in →"}
         </button>

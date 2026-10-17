@@ -36,14 +36,24 @@ export default function ContactStrip() {
             className="pointer-events-none absolute inset-x-0 top-0 h-[3px]"
             style={{ background: "linear-gradient(90deg, transparent, var(--accent), transparent)" }}
           />
+          <span
+            aria-hidden
+            className="orb"
+            style={{ left: "8%", top: "-35%", width: "18rem", height: "18rem", background: "color-mix(in srgb, var(--accent) 18%, transparent)", zIndex: -1 }}
+          />
+          <span
+            aria-hidden
+            className="orb"
+            style={{ right: "6%", bottom: "-45%", width: "20rem", height: "20rem", background: "color-mix(in srgb, var(--accent-2) 16%, transparent)", animationDelay: "-12s", zIndex: -1 }}
+          />
           <p
             className="text-[11px] font-semibold uppercase"
             style={{ color: "var(--accent)", letterSpacing: "0.22em" }}
           >
             Contact Us
           </p>
-          <h2 className="mx-auto mt-2 max-w-lg text-2xl font-extrabold tracking-tight sm:text-3xl">
-            Still stuck? <span style={{ color: "var(--accent)" }}>Talk to us.</span>
+          <h2 className="display mx-auto mt-2 max-w-lg text-3xl sm:text-4xl">
+            Still stuck? <em style={{ color: "var(--accent)" }}>Talk to us.</em>
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-6" style={{ color: "var(--muted)" }}>
             Syllabus confusion, plan help, or a bug in a mock — one message

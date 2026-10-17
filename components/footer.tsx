@@ -73,6 +73,7 @@ const COLS: Array<{ title: string; links: Array<[string, string]> }> = [
 export default function Footer() {
   return (
     <footer style={{ borderTop: "1px solid var(--border)", background: "color-mix(in srgb, var(--nav-bg) 80%, transparent)" }}>
+      <div aria-hidden className="h-[2px] w-full" style={{ background: "linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 60%, transparent), transparent)" }} />
       <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="flex flex-col items-center justify-between gap-4 py-7 sm:flex-row">
@@ -109,7 +110,10 @@ export default function Footer() {
           <div className="grid gap-8 py-8 sm:grid-cols-3" style={{ borderTop: "1px solid var(--border)" }}>
             {COLS.map((c) => (
               <div key={c.title}>
-                <div className="text-[12px] font-bold uppercase" style={{ letterSpacing: "0.14em" }}>{c.title}</div>
+                <div className="flex items-center gap-2 text-[12px] font-bold uppercase" style={{ letterSpacing: "0.14em" }}>
+                  <span aria-hidden className="inline-block h-1 w-1 rotate-45" style={{ background: "var(--accent)" }} />
+                  {c.title}
+                </div>
                 <ul className="mt-4 space-y-2.5 text-sm">
                   {c.links.map(([label, href]) => (
                     <li key={label}>
@@ -119,6 +123,11 @@ export default function Footer() {
                 </ul>
               </div>
             ))}
+          </div>
+        </Reveal>
+        <Reveal>
+          <div className="relative overflow-hidden pb-2 pt-6 text-center" style={{ borderTop: "1px solid var(--border)" }}>
+            <span className="wordmark block text-[clamp(3.4rem,13vw,9rem)]">NimCuet</span>
           </div>
         </Reveal>
         <div

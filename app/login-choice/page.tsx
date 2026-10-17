@@ -13,7 +13,7 @@ export default function LoginChoicePage() {
           <span aria-hidden>←</span> Back to home
         </Link>
         <div
-          className="auth-card relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2"
+          className="auth-card pop relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2"
           style={{ border: "1px solid var(--border)", boxShadow: "0 40px 100px -30px rgba(0,0,0,0.55), inset 0 1px 0 0 rgba(255,255,255,0.22)" }}
         >
           <div className="auth-photo relative z-10 hidden flex-col justify-end p-8 md:flex">
@@ -37,26 +37,30 @@ export default function LoginChoicePage() {
             <div className="mt-5 grid gap-2.5">
               <a
                 href="/login"
-                className="block cursor-pointer rounded-2xl p-5 text-white transition-transform hover:-translate-y-px"
-                style={{ background: "linear-gradient(120deg, #141b34 0%, #2b3a7a 55%, var(--accent) 130%)", boxShadow: "0 20px 45px -20px rgba(20, 27, 52, 0.7)" }}
+                className="group block cursor-pointer rounded-2xl p-5 text-white transition-transform duration-300 hover:-translate-y-1"
+                style={{ background: "linear-gradient(120deg, #141b34 0%, #2b3a7a 55%, var(--accent) 130%)", boxShadow: "0 20px 45px -20px rgba(20, 27, 52, 0.7)", backgroundSize: "160% 160%" }}
               >
                 <div className="text-[11px] font-bold uppercase" style={{ letterSpacing: "0.18em", color: "rgba(255,255,255,0.7)" }}>
                   Students
                 </div>
-                <div className="mt-1.5 text-lg font-extrabold tracking-tight">Student Login →</div>
+                <div className="mt-1.5 text-lg font-extrabold tracking-tight">
+                  Student Login <span aria-hidden className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+                </div>
                 <p className="mt-1 text-[13px] leading-5" style={{ color: "rgba(255,255,255,0.82)" }}>
                   Practice mock tests and track your progress.
                 </p>
               </a>
               <a
                 href="/admin/login"
-                className="block cursor-pointer rounded-2xl bg-white p-5 transition-transform hover:-translate-y-px"
+                className="group block cursor-pointer rounded-2xl bg-white p-5 transition-transform duration-300 hover:-translate-y-1"
                 style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
               >
                 <div className="text-[11px] font-bold uppercase" style={{ letterSpacing: "0.18em", color: "var(--muted)" }}>
                   Staff
                 </div>
-                <div className="mt-1.5 text-lg font-extrabold tracking-tight" style={{ color: "#1e2952" }}>Admin Login →</div>
+                <div className="mt-1.5 text-lg font-extrabold tracking-tight" style={{ color: "#1e2952" }}>
+                  Admin Login <span aria-hidden className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+                </div>
                 <p className="mt-1 text-[13px] leading-5" style={{ color: "var(--muted)" }}>
                   Manage questions, mock tests, and users.
                 </p>

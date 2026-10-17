@@ -28,8 +28,8 @@ export default function Pricing() {
         >
           Pricing
         </p>
-        <h2 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-          Simple pricing in <span style={{ color: "var(--accent)" }}>rupees.</span>
+        <h2 className="display mt-2.5 text-3xl sm:text-4xl">
+          Simple pricing in <em style={{ color: "var(--accent)" }}>rupees.</em>
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm leading-6" style={{ color: "var(--muted)" }}>
           Start free. Upgrade when you need unlimited reps. Pay once via UPI —
@@ -37,27 +37,13 @@ export default function Pricing() {
         </p>
       </Reveal>
       <div className="mt-6 grid items-stretch gap-4 md:grid-cols-3">
-        {PLANS.map((p) => (
-          <Reveal key={p.name} className="h-full">
-            <div
-              className="relative flex h-full flex-col rounded-[22px] p-6 backdrop-blur-xl transition-transform duration-300 hover:-translate-y-1"
-              style={
-                p.hot
-                  ? {
-                      background: "color-mix(in srgb, var(--nav-bg) 85%, transparent)",
-                      border: "1.5px solid var(--accent)",
-                      boxShadow: "0 24px 60px -28px rgba(0,0,0,0.45), inset 0 1px 0 0 rgba(255,255,255,0.15)",
-                    }
-                  : {
-                      background: "color-mix(in srgb, var(--nav-bg) 60%, transparent)",
-                      border: "1px solid var(--border)",
-                    }
-              }
-            >
+        {PLANS.map((p, i) => (
+          <Reveal key={p.name} className="h-full" delay={i * 0.08}>
+            <div className={`relative flex h-full flex-col rounded-[22px] p-6 ${p.hot ? "premium-card premium-hi ring-grad" : "premium-card"}`}>
               {p.hot && (
                 <span
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-extrabold uppercase"
-                  style={{ background: "var(--accent)", color: "var(--accent-fg)", letterSpacing: "0.14em" }}
+                  className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-extrabold uppercase"
+                  style={{ background: "linear-gradient(100deg, var(--accent), var(--accent-2))", color: "var(--accent-fg)", letterSpacing: "0.14em", boxShadow: "0 10px 26px -12px var(--accent)" }}
                 >
                   Most Popular
                 </span>
@@ -78,10 +64,10 @@ export default function Pricing() {
               </ul>
               <a
                 href={p.href}
-                className={`mt-6 block rounded-full py-2.5 text-center text-sm font-bold ${p.hot ? "" : "cta-glow"}`}
+                className="cta-glow mt-6 block rounded-full py-2.5 text-center text-sm font-bold"
                 style={
                   p.hot
-                    ? { background: "var(--accent)", color: "var(--accent-fg)" }
+                    ? { background: "linear-gradient(100deg, var(--accent), var(--accent-2))", color: "var(--accent-fg)" }
                     : { border: "1px solid var(--border)", color: "var(--text)" }
                 }
               >

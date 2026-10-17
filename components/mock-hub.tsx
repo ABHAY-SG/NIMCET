@@ -477,7 +477,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
                 onClick={startCustom}
                 disabled={pool.length === 0}
                 className="w-full cursor-pointer rounded-xl py-2.5 text-sm font-extrabold text-white transition-transform hover:-translate-y-px disabled:opacity-50"
-                style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }}
+                style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))" }}
               >
                 {pool.length === 0 ? "No questions" : `Start (${Math.min(count, pool.length)}Q)`}
               </button>

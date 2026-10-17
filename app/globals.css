@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Alex+Brush&family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
 :root, [data-theme="light"] {
@@ -7,6 +7,7 @@
   --btn-bg: #131316; --btn-text: #fff; --accent: #635bdb;
   --card: #ffffff; --accent-fg: #ffffff;
   --glow-1: rgba(99, 102, 241, 0.16); --glow-2: rgba(34, 211, 238, 0.14);
+  --accent-2: #7c3aed;
 }
 [data-theme="midnight"] {
   --bg: #070b18; --nav-bg: rgba(10,17,40,0.66); --text: #edf1fc;
@@ -14,6 +15,7 @@
   --btn-bg: #22d3ee; --btn-text: #04222b; --accent: #22d3ee;
   --card: #0c1428; --accent-fg: #04222b;
   --glow-1: rgba(99, 102, 241, 0.28); --glow-2: rgba(34, 211, 238, 0.18);
+  --accent-2: #6366f1;
 }
 [data-theme="ocean"] {
   --bg: #f0f9ff; --nav-bg: rgba(255,255,255,0.75); --text: #0c2a3f;
@@ -21,6 +23,7 @@
   --btn-bg: #0369a1; --btn-text: #fff; --accent: #0369a1;
   --card: #ffffff; --accent-fg: #ffffff;
   --glow-1: rgba(2, 132, 199, 0.16); --glow-2: rgba(34, 211, 238, 0.16);
+  --accent-2: #38bdf8;
 }
 [data-theme="forest"] {
   --bg: #0b1512; --nav-bg: rgba(11,21,18,0.7); --text: #e8f5ee;
@@ -28,6 +31,7 @@
   --btn-bg: #34d399; --btn-text: #04241a; --accent: #34d399;
   --card: #0f1d18; --accent-fg: #04241a;
   --glow-1: rgba(5, 150, 105, 0.25); --glow-2: rgba(52, 211, 153, 0.14);
+  --accent-2: #14b8a6;
 }
 [data-theme="sunset"] {
   --bg: #fff7ed; --nav-bg: rgba(255,255,255,0.75); --text: #431407;
@@ -35,6 +39,16 @@
   --btn-bg: #c2410c; --btn-text: #fff; --accent: #c2410c;
   --card: #fffaf3; --accent-fg: #ffffff;
   --glow-1: rgba(234, 88, 12, 0.14); --glow-2: rgba(251, 191, 36, 0.16);
+  --accent-2: #f59e0b;
+}
+
+/* Shared design tokens: gold display palette, elevation, easing. */
+:root {
+  --gold-1: #b45309; --gold-2: #ea580c; --gold-3: #f59e0b; --gold-4: #d97706;
+  --shadow-1: 0 1px 2px rgba(2, 6, 23, 0.04), 0 10px 30px -18px rgba(2, 6, 23, 0.22);
+  --shadow-2: 0 2px 6px rgba(2, 6, 23, 0.05), 0 24px 54px -26px rgba(2, 6, 23, 0.34);
+  --shadow-3: 0 34px 90px -40px rgba(2, 6, 23, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html, body {
@@ -90,7 +104,7 @@ h1, h2, h3 {
   font-family: "Sora", "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.03em;
 }
-/* gradient theme background */
+/* gradient theme background + fine grain texture */
 body::before {
   content: "";
   position: fixed;
@@ -102,6 +116,17 @@ body::before {
     radial-gradient(720px 380px at 88% 2%, var(--glow-2), transparent 65%),
     radial-gradient(900px 500px at 50% 110%, var(--glow-1), transparent 60%);
 }
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+[data-theme="midnight"] body::after,
+[data-theme="forest"] body::after { opacity: 0.07; }
 
 /* links: motion on hover, no glow */
 .nlink {
@@ -154,12 +179,18 @@ footer .nlink::after { display: none; }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .marquee { display: flex; width: max-content; animation: marquee 30s linear infinite; }
 
-/* warm gradient headline (editorial accent) */
+/* warm gold gradient headline (editorial accent, slowly panning) */
 .headline-warm {
-  background: linear-gradient(100deg, #c2410c, #ea580c 45%, #f59e0b 75%, #ea580c);
+  background: linear-gradient(100deg, var(--gold-1), var(--gold-2) 38%, var(--gold-3) 68%, var(--gold-4));
+  background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  animation: grad-pan 9s ease-in-out infinite;
+}
+@keyframes grad-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 /* weight bar grow (renamed from .grow so it can never collide with
@@ -199,6 +230,8 @@ footer .nlink::after { display: none; }
   .rise { opacity: 1; animation: none; }
   .menu-in { animation: none; }
   .tmenu, .tmenu .tdot { transition: none; }
+  .orb, .bg-pan, .headline-warm, .scroll-cue, .chart-bar, .pop,
+  .ring-grad::before { animation: none; }
 }
 
 /* CTA: lift + sheen sweep, no glow */
@@ -250,6 +283,164 @@ footer .nlink::after { display: none; }
   font-style: italic;
   font-weight: 500;
   letter-spacing: 0;
+}
+
+/* ============ premium editorial utilities ============ */
+
+/* Fraunces display serif for marketing headings — tight, optical, balanced. */
+.display {
+  font-family: "Fraunces", "Space Grotesk", Georgia, serif;
+  font-variation-settings: "opsz" 110;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+.display b, .display strong { font-weight: 600; }
+.display em { font-style: italic; font-weight: 440; }
+
+/* Oversized footer wordmark, fading into the page. */
+.wordmark {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "opsz" 144;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.86;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--text) 22%, transparent), color-mix(in srgb, var(--text) 3%, transparent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  user-select: none;
+}
+
+/* Slow-drifting ambient orbs (GPU-cheap; static under reduced motion). */
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+  opacity: 0.55;
+  pointer-events: none;
+  animation: orb-drift 24s ease-in-out infinite;
+}
+@keyframes orb-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(4%, -7%, 0) scale(1.09); }
+  66% { transform: translate3d(-5%, 5%, 0) scale(0.94); }
+}
+
+/* Card hover: rise + deepened elevation. */
+.lift {
+  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), border-color 0.4s var(--ease);
+}
+.lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
+
+/* Premium glass card — styles live in CSS so :hover elevation can win. */
+.premium-card {
+  background: color-mix(in srgb, var(--nav-bg) 62%, transparent);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+  backdrop-filter: blur(20px) saturate(1.3);
+  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), border-color 0.4s var(--ease);
+}
+.premium-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-2); }
+.premium-hi {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--nav-bg) 88%, transparent);
+  box-shadow: 0 26px 64px -30px color-mix(in srgb, var(--accent) 42%, rgba(0, 0, 0, 0.45));
+}
+.premium-hi:hover { box-shadow: 0 36px 84px -34px color-mix(in srgb, var(--accent) 55%, rgba(0, 0, 0, 0.5)); }
+
+/* Animated gradient ring (for the featured plan / spotlight cards). */
+.ring-grad { position: relative; }
+.ring-grad::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(115deg, var(--accent), var(--accent-2), var(--accent), var(--accent-2), var(--accent));
+  background-size: 400% 400%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: grad-pan 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Slowly panning gradient banners (inline background stays as-is). */
+.bg-pan {
+  background-size: 180% 180% !important;
+  animation: bg-pan 16s ease-in-out infinite;
+}
+@keyframes bg-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* SVG bar charts: bars rise from the baseline on mount. */
+.chart-bar {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: bar-rise 0.9s var(--ease) both;
+}
+@keyframes bar-rise {
+  from { transform: scaleY(0.05); opacity: 0.35; }
+  to { transform: none; opacity: 1; }
+}
+
+/* One-shot entrance for panels and menus. */
+.pop { animation: pop-in 0.55s var(--ease) both; }
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Gentle bouncing scroll cue. */
+.scroll-cue { animation: cue-bounce 1.9s var(--ease) infinite; }
+@keyframes cue-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.75; }
+  50% { transform: translateY(6px); opacity: 1; }
+}
+
+/* Edge-faded marquee. */
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+}
+
+/* Top scroll progress hairline. */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 80;
+  height: 2.5px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  pointer-events: none;
+}
+
+/* Inputs: focus halo that layers over inline borders. */
+.inp { transition: box-shadow 0.25s, background 0.25s; }
+.inp:focus, .inp:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* subtle row hover tint for list-like blocks */
+.row-hover {
+  border-radius: 14px;
+  transition: background 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.row-hover:hover { background: var(--pill); }
+
+/* Frosted panel helper. */
+.glass {
+  background: color-mix(in srgb, var(--nav-bg) 70%, transparent);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(24px) saturate(1.4);
 }
 
 /* login page: locked viewport, no page scroll (scoped to login mode only) */

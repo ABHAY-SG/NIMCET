@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Chrome, { NavGate } from "@/components/chrome";
+import ScrollProgress from "@/components/scroll-progress";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://nimcet-eta.vercel.app").replace(/\/+$/, "");
 const SITE_DESCRIPTION =
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeInit() }} />
       </head>
       <body id="top" className="flex min-h-screen flex-col antialiased">
+        <ScrollProgress />
         <NavGate />
         <div className="flex-1">{children}</div>
         <Chrome />

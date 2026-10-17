@@ -51,8 +51,8 @@ export default function Exams() {
         >
           Exams
         </p>
-        <h2 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-          Know the paper <span style={{ color: "var(--accent)" }}>before you sit it.</span>
+        <h2 className="display mt-2.5 text-3xl sm:text-4xl">
+          Know the paper <em style={{ color: "var(--accent)" }}>before you sit it.</em>
         </h2>
       </Reveal>
       <Reveal>
@@ -74,16 +74,21 @@ export default function Exams() {
       </Reveal>
       <Reveal key={key}>
         <div
-          className="mx-auto mt-5 max-w-4xl rounded-[22px] p-6 backdrop-blur-2xl sm:p-8"
+          className="relative mx-auto mt-5 max-w-4xl rounded-[22px] p-6 backdrop-blur-2xl sm:p-8"
           style={{
             background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)",
             border: "1px solid var(--border)",
             boxShadow: "0 28px 70px -34px rgba(0,0,0,0.4), inset 0 1px 0 0 rgba(255,255,255,0.16)",
           }}
         >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-8 top-0 h-[2px] rounded-full"
+            style={{ background: "linear-gradient(90deg, transparent, var(--accent), transparent)" }}
+          />
           <p className="mono text-[11px] font-semibold" style={{ color: "var(--accent)", letterSpacing: "0.2em" }}>{e.code}</p>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-6 gap-y-1">
-            <h3 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{e.name}</h3>
+            <h3 className="display text-3xl sm:text-4xl">{e.name}</h3>
             <div className="mono flex gap-5 text-sm">
               {e.stats.map(([v, l]) => (
                 <span key={l}><strong className="text-base">{v}</strong> <span style={{ color: "var(--muted)" }}>{l}</span></span>
@@ -93,7 +98,7 @@ export default function Exams() {
           <p className="mt-2 max-w-2xl text-sm leading-6" style={{ color: "var(--muted)" }}>{e.desc}</p>
           <div className="mt-5 space-y-3.5">
             {e.sections.map((s, i) => (
-              <div key={s.name}>
+              <div key={s.name} className="row-hover -mx-2.5 px-2.5 py-1">
                 <div className="flex items-baseline justify-between gap-3 text-sm">
                   <span className="font-bold">{s.name}</span>
                   <span className="mono text-xs" style={{ color: "var(--muted)" }}>{s.detail}</span>
@@ -101,7 +106,7 @@ export default function Exams() {
                 <div className="mt-1.5 h-2.5 overflow-hidden rounded-full" style={{ background: "var(--pill)" }}>
                   <div
                     className="grow-bar h-full rounded-full"
-                    style={{ width: `${Math.round((s.marks / s.total) * 100)}%`, background: "var(--accent)", animationDelay: `${i * 0.1}s` }}
+                    style={{ width: `${Math.round((s.marks / s.total) * 100)}%`, background: "linear-gradient(90deg, var(--accent), var(--accent-2))", animationDelay: `${i * 0.1}s` }}
                   />
                 </div>
                 <div className="mono mt-1 text-[11px]" style={{ color: "var(--muted)" }}>{s.marks} MARKS</div>

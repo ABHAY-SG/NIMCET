@@ -65,7 +65,7 @@ function Row({
 }) {
   const cls = `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-transform hover:-translate-y-px`;
   const style = active
-    ? { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)", boxShadow: "0 12px 28px -12px var(--accent)" }
+    ? { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)", boxShadow: "0 12px 28px -12px var(--accent)" }
     : undefined;
   const inner = (
     <>
@@ -139,7 +139,7 @@ export default function DashSide({
       className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-extrabold transition-transform hover:-translate-y-px"
       style={
         view === "home"
-          ? { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)", boxShadow: "0 12px 28px -12px var(--accent)" }
+          ? { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)", boxShadow: "0 12px 28px -12px var(--accent)" }
           : { border: "1px solid var(--border)" }
       }
     >
@@ -168,7 +168,7 @@ export default function DashSide({
           </div>
         </div>
       ))}
-      <div className="mt-auto rounded-2xl p-4" style={{ background: "linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}>
+      <div className="mt-auto rounded-2xl p-4" style={{ background: "linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}>
         <div className="text-sm font-extrabold">Keep the streak alive 🔥</div>
         <p className="mt-1 text-xs leading-5" style={{ color: "color-mix(in srgb, var(--accent-fg) 85%, transparent)" }}>
           One mock a day keeps the flame burning.

@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
+import CountUp from "@/components/count-up";
 import DashNav from "@/components/dash-nav";
 import DashSide, { type DashView } from "@/components/dash-side";
 import MockHub from "@/components/mock-hub";
@@ -74,7 +75,7 @@ function AttemptRow({ a, cloud = false, best = 0, rank = 0 }: { a: Attempt; clou
           {new Date(a.created_at).toLocaleString("en-IN")} • {a.correct}✔ {a.wrong}✘ {a.skipped}○
         </div>
         <div className="mt-1.5 h-1.5 overflow-hidden rounded-full" style={{ background: "var(--pill)" }}>
-          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }} />
+          <div className="grow-bar h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))" }} />
         </div>
       </div>
       <div className="mono shrink-0 text-xl font-extrabold" style={{ color: "var(--accent)" }}>{a.score}</div>
@@ -108,7 +109,7 @@ function TrendChart({ data }: { data: Attempt[] }) {
           const x = PAD + i * bw + bw * 0.22;
           return (
             <g key={a.id ?? i}>
-              <rect x={x} y={H - 14 - h} width={Math.max(6, bw * 0.56)} height={h} rx="5" fill="var(--accent)" opacity={0.85} />
+              <rect x={x} y={H - 14 - h} width={Math.max(6, bw * 0.56)} height={h} rx="5" fill="var(--accent)" opacity={0.85} className="chart-bar" style={{ animationDelay: `${i * 60}ms` }} />
               <text x={x + bw * 0.28} y={H - 18 - h} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text)">{v}</text>
             </g>
           );
@@ -319,6 +320,20 @@ export default function DashboardPage() {
     return m;
   }, [attempts]);
 
+  // Stat tiles. Numeric values animate up when the async stats land; the
+  // streak keeps its full label, so it renders as plain text.
+  const statTiles: Array<{
+    icon: string; label: string; num?: number | null; dec?: number;
+    suffix?: string; fallback: string; text?: string; sub: string;
+  }> = [
+    { icon: "📝", label: "Mocks", num: derived ? Number(derived.total) : null, fallback: loading ? "…" : "0", sub: statsLabel },
+    { icon: "🏆", label: "Best score", num: derived ? parseFloat(derived.best) : null, dec: derived && !Number.isInteger(parseFloat(derived.best)) ? 1 : 0, fallback: loading ? "…" : "—", sub: statsLabel },
+    { icon: "📊", label: "Avg score", num: derived ? parseFloat(derived.avg) : null, dec: derived && !Number.isInteger(parseFloat(derived.avg)) ? 1 : 0, fallback: loading ? "…" : "—", sub: statsLabel },
+    { icon: "🎯", label: "Accuracy", num: derived && derived.acc !== "—" ? parseFloat(derived.acc) : null, suffix: derived && derived.acc !== "—" ? "%" : "", fallback: loading ? "…" : "—", sub: "correct ÷ answered" },
+    { icon: "❓", label: "Questions", num: derived ? Number(derived.questions) : null, fallback: loading ? "…" : "0", sub: "attempted total" },
+    { icon: "🔥", label: "Day streak", num: null, fallback: loading ? "…" : "No streak", text: loading ? "…" : formatStreak(derived?.streak ?? 0), sub: derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily" },
+  ];
+
   const clearLocal = () => {
     try {
       localStorage.removeItem("nimcuet-attempts");
@@ -373,8 +388,8 @@ export default function DashboardPage() {
       <>
       <Reveal>
         <section
-          className="relative overflow-hidden rounded-[26px] px-6 py-8 text-white sm:px-10 sm:py-10"
-          style={{ background: "linear-gradient(120deg, #141b34 0%, #2b3a7a 55%, var(--accent) 130%)", boxShadow: "0 40px 90px -35px rgba(20, 27, 52, 0.7)" }}
+          className="bg-pan relative overflow-hidden rounded-[26px] px-6 py-8 text-white sm:px-10 sm:py-10"
+          style={{ background: "linear-gradient(120deg, #141b34 0%, #2b3a7a 55%, var(--accent) 130%)", boxShadow: "var(--shadow-3)" }}
         >
           <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(600px 220px at 85% 0%, rgba(255,255,255,0.16), transparent 65%), radial-gradient(500px 260px at 0% 100%, rgba(255,255,255,0.08), transparent 60%)" }} />
           <div className="relative flex flex-wrap items-center justify-between gap-6">
@@ -425,7 +440,7 @@ export default function DashboardPage() {
                     cx="60" cy="60" r="52" fill="none" stroke="#fff" strokeWidth="11" strokeLinecap="round"
                     strokeDasharray={RING_C}
                     strokeDashoffset={RING_C * (1 - (derived?.bestStreak ? Math.min((derived?.streak ?? 0) / derived.bestStreak, 1) : 0))}
-                    transform="rotate(-90 60 60)" style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.8))" }}
+                    transform="rotate(-90 60 60)" style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.8))", transition: "stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1)" }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -530,20 +545,17 @@ export default function DashboardPage() {
           style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
         >
           <div className="grid grid-cols-2 gap-px sm:grid-cols-3 lg:grid-cols-6" style={{ background: "var(--border)" }}>
-            {[
-              { icon: "📝", label: "Mocks", value: loading ? "…" : (derived?.total ?? "0"), sub: statsLabel },
-              { icon: "🏆", label: "Best score", value: loading ? "…" : (derived?.best ?? "—"), sub: statsLabel },
-              { icon: "📊", label: "Avg score", value: loading ? "…" : (derived?.avg ?? "—"), sub: statsLabel },
-              { icon: "🎯", label: "Accuracy", value: loading ? "…" : (derived?.acc ?? "—"), sub: "correct ÷ answered" },
-              { icon: "❓", label: "Questions", value: loading ? "…" : (derived?.questions ?? "0"), sub: "attempted total" },
-              { icon: "🔥", label: "Day streak", value: loading ? "…" : formatStreak(derived?.streak ?? 0), sub: derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily" },
-            ].map((s) => (
-              <div key={s.label} className="card-bg px-4 py-4">
+            {statTiles.map((s) => (
+              <div key={s.label} className="group card-bg px-4 py-4">
                 <div className="flex items-center gap-2">
-                  <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm" style={{ background: "var(--pill)" }}>{s.icon}</span>
+                  <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110" style={{ background: "var(--pill)" }}>{s.icon}</span>
                   <span className="text-[12px] font-bold" style={{ color: "var(--text)" }}>{s.label}</span>
                 </div>
-                <div className="mono mt-1.5 text-xl font-extrabold" style={{ color: "var(--accent)" }}>{s.value}</div>
+                <div className="mono mt-1.5 text-xl font-extrabold" style={{ color: "var(--accent)" }}>
+                  {s.text !== undefined ? s.text : (
+                    <CountUp value={s.num ?? null} decimals={s.dec ?? 0} suffix={s.suffix ?? ""} fallback={s.fallback} />
+                  )}
+                </div>
                 <div className="mt-0.5 text-[10px] font-semibold" style={{ color: "var(--muted)" }}>{s.sub}</div>
               </div>
             ))}
@@ -588,10 +600,10 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={t.id}
-                    className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl card-bg px-5 py-4 pl-7"
+                    className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl card-bg px-5 py-4 pl-7 transition-transform duration-300 hover:-translate-y-0.5"
                     style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
                   >
-                    <span aria-hidden className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: "linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))" }} />
+                    <span aria-hidden className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: "linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))" }} />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>
@@ -615,7 +627,7 @@ export default function DashboardPage() {
                       type="button"
                       onClick={() => setView("mock")}
                       className="shrink-0 cursor-pointer rounded-xl px-4 py-2 text-[13px] font-extrabold transition-transform hover:-translate-y-px"
-                      style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
+                      style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}
                     >
                       Practice →
                     </button>
@@ -807,7 +819,7 @@ export default function DashboardPage() {
                 type="button"
                 onClick={() => setFbDone(false)}
                 className="mt-4 cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-extrabold transition-transform hover:-translate-y-px"
-                style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
+                style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}
               >
                 Send another
               </button>
@@ -868,7 +880,7 @@ export default function DashboardPage() {
                     disabled={fbBusy}
                     onClick={sendFeedback}
                     className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-extrabold transition-transform hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)" }}
+                    style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}
                   >
                     {fbBusy ? "Sending…" : "Send to admin"}
                   </button>

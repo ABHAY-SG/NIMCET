@@ -295,7 +295,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     }
   };
 
-  const inputCls = "w-full rounded-xl py-2.5 pl-11 pr-11 text-sm outline-none transition-shadow focus:ring-2";
+  const inputCls = "inp w-full rounded-xl py-2.5 pl-11 pr-11 text-sm";
 
   return (
     <>
@@ -321,7 +321,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         <span aria-hidden>←</span> Back to home
       </Link>
       <div
-        className="auth-card relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[560px]"
+        className="auth-card pop relative grid overflow-hidden rounded-[26px] backdrop-blur-[28px] backdrop-saturate-150 md:grid-cols-2 md:min-h-[560px]"
         style={{ border: "1px solid var(--border)" }}
       >
         <div className="auth-photo relative z-10 hidden flex-col justify-end p-8 md:flex">
@@ -368,12 +368,12 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
               <div className="mb-4 grid grid-cols-2 gap-2.5">
                 <div>
                   <label htmlFor="auth-first" className="mb-1.5 block text-[13px] font-bold">First name</label>
-                  <input id="auth-first" type="text" required maxLength={60} autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Abhay" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
+                  <input id="auth-first" type="text" required maxLength={60} autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Abhay" className="inp w-full rounded-xl px-4 py-2.5 text-sm"
                     style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
                 <div>
                   <label htmlFor="auth-last" className="mb-1.5 block text-[13px] font-bold">Last name</label>
-                  <input id="auth-last" type="text" required maxLength={60} autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Singh" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
+                  <input id="auth-last" type="text" required maxLength={60} autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Singh" className="inp w-full rounded-xl px-4 py-2.5 text-sm"
                     style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
               </div>
@@ -461,8 +461,8 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
 
             <button
               type="submit" disabled={busy}
-              className="mt-4 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold transition-all hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
-              style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #7c3aed))", color: "var(--accent-fg)", boxShadow: "0 14px 30px -12px color-mix(in srgb, var(--accent) 60%, transparent)" }}
+              className="cta-glow mt-4 w-full cursor-pointer rounded-xl py-3 text-sm font-extrabold transition-all hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
+              style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)", boxShadow: "0 14px 30px -12px color-mix(in srgb, var(--accent) 60%, transparent)" }}
             >
               {busy ? "Please wait…" : mode === "in" ? "Log in →" : "Create account →"}
             </button>

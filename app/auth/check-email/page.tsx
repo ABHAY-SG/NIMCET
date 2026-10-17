@@ -239,7 +239,7 @@ function CheckEmailContent() {
     return (
       <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
         <AuthBg />
-        <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+        <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl pop" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <h1 className="text-2xl font-extrabold tracking-tight">Email Authentication</h1>
           <div className="mx-auto mt-5 flex h-14 w-14 items-center justify-center rounded-full text-2xl text-white" style={{ background: "#16a34a" }}>✓</div>
           <p className="mt-5 font-semibold">Email authentication is successful.</p>
@@ -264,7 +264,7 @@ function CheckEmailContent() {
     return (
       <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
         <AuthBg />
-        <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl sm:p-10" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+        <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl pop sm:p-10" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-[26px]">Still waiting for confirmation</h1>
           <p className="mx-auto mt-4 max-w-sm text-[15px] leading-7" style={{ color: "var(--muted)" }}>
             We haven&apos;t seen a confirmation for <strong style={{ color: "var(--text)" }}>{email || "your email"}</strong> yet.
@@ -302,7 +302,7 @@ function CheckEmailContent() {
   return (
     <main className="relative flex min-h-screen items-center justify-center px-5 py-12" style={{ color: "var(--text)" }}>
       <AuthBg />
-      <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl sm:p-10" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+      <section className="w-full max-w-md rounded-3xl border p-8 text-center shadow-xl pop sm:p-10" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
         <h1 className="text-2xl font-extrabold tracking-tight sm:text-[26px]">Security Challenge</h1>
         <p className="mx-auto mt-4 max-w-sm text-[15px] leading-7" style={{ color: "var(--muted)" }}>
           To protect the security of your account, we sent an email to{" "}
@@ -322,7 +322,7 @@ function CheckEmailContent() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             autoComplete="email"
-            className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
+            className="inp w-full rounded-xl px-4 py-2.5 text-sm"
             style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
           />
         </div>

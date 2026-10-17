@@ -63,7 +63,7 @@ export default function MockCard({
       <div className="flex items-start gap-3">
         <span
           aria-hidden
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105"
           style={{ background: iconBg, color: iconFg, border: `1px solid color-mix(in srgb, ${iconFg} 22%, transparent)` }}
         >
           {icon}
@@ -96,7 +96,7 @@ export default function MockCard({
       <button
         type="button"
         onClick={onStart}
-        className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-sm font-extrabold text-white transition-transform hover:-translate-y-px"
+        className="cta-glow mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-sm font-extrabold text-white"
         style={{ background: "linear-gradient(120deg, #0f766e, #115e59)", boxShadow: "0 14px 30px -16px rgba(15, 118, 110, 0.75)" }}
       >
         {attempted > 0 ? <RetryIcon /> : <PlayIcon />}
