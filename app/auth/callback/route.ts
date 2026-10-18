@@ -28,6 +28,18 @@ export async function GET(req: Request) {
   const { searchParams, origin } = new URL(req.url);
   const fail = (reason: string) => NextResponse.redirect(new URL(`/login?error=${reason}`, origin));
 
+  // Additive: the mobile app asks for ?mobile=1 so the success page can hand
+  // control back to it (nimcuet:// deep link). Never present on website
+  // signups, so every URL built below stays byte-identical for the browser.
+  const mobile = searchParams.get("mobile") === "1";
+  const verifiedPath = (challenge: string | null) => {
+    const q = new URLSearchParams();
+    if (challenge) q.set("challenge", challenge);
+    if (mobile) q.set("mobile", "1");
+    const s = q.toString();
+    return `/auth/verified${s ? `?${s}` : ""}`;
+  };
+
   try {
     const sb = await getSupabaseServer();
 
@@ -83,14 +95,14 @@ export async function GET(req: Request) {
         // link. Keep it (never signOut here) and route through the minimal
         // success page, preserving ?challenge= so that page can also
         // mark/broadcast the confirmation for the waiting tab.
-        const next = challenge ? `/auth/verified?challenge=${encodeURIComponent(challenge)}` : "/auth/verified";
+        const next = verifiedPath(challenge);
         return NextResponse.redirect(new URL(next, origin));
       }
 
       if (type === "recovery") {
         return NextResponse.redirect(new URL("/reset-password", origin));
       }
-      return NextResponse.redirect(new URL("/auth/verified", origin));
+      return NextResponse.redirect(new URL(verifiedPath(null), origin));
     }
 
     // Provider refusal (e.g. Cancel on GitHub's/Google's screen): no code is
@@ -141,7 +153,7 @@ export async function GET(req: Request) {
                 .gt("expires_at", new Date().toISOString());
             }
           } catch {}
-          const next = challenge ? `/auth/verified?challenge=${encodeURIComponent(challenge)}` : "/auth/verified";
+          const next = verifiedPath(challenge);
           return NextResponse.redirect(new URL(next, origin));
         }
         return fail("exchange");
@@ -167,7 +179,7 @@ export async function GET(req: Request) {
             }
           }
         } catch {}
-        const next = challenge ? `/auth/verified?challenge=${encodeURIComponent(challenge)}` : "/auth/verified";
+        const next = verifiedPath(challenge);
         return NextResponse.redirect(new URL(next, origin));
       }
 
@@ -191,7 +203,7 @@ export async function GET(req: Request) {
                 email: legacyUser.email ?? null,
               });
             } catch {}
-            return NextResponse.redirect(new URL("/auth/verified", origin));
+            return NextResponse.redirect(new URL(verifiedPath(null), origin));
           }
         } catch {}
       }
