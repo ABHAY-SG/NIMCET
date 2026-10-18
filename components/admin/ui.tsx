@@ -428,6 +428,7 @@ export function ConfirmDialog({
   tone = "danger",
   busy = false,
   requireText,
+  error,
   onCancel,
   onConfirm,
 }: {
@@ -438,6 +439,8 @@ export function ConfirmDialog({
   tone?: "danger" | "primary";
   busy?: boolean;
   requireText?: string;
+  /** Server-side failure to keep on screen inside the dialog (a transient toast is easy to miss). */
+  error?: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -481,6 +484,11 @@ export function ConfirmDialog({
           </Field>
         </div>
       )}
+      {error ? (
+        <div className="mt-4">
+          <ErrorState message={error} />
+        </div>
+      ) : null}
     </Modal>
   );
 }

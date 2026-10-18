@@ -93,8 +93,10 @@ export default function AdminTests() {
 
   const [confirmDel, setConfirmDel] = useState<TestRow | null>(null);
   const [delBusy, setDelBusy] = useState(false);
+  const [delError, setDelError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDelOpen, setBulkDelOpen] = useState(false);
+  const [bulkDelError, setBulkDelError] = useState<string | null>(null);
 
   const tests = useMemo(() => data?.rows ?? [], [data]);
   const bank = useMemo(() => bankData.data?.rows ?? [], [bankData.data]);
@@ -169,13 +171,15 @@ export default function AdminTests() {
       setConfirmDel(null);
       reload();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Delete failed.", "error");
+      // Keep the dialog open with the server's reason (e.g. recorded attempts)
+      // instead of a toast that vanishes before it can be read.
+      setDelError(e instanceof Error ? e.message : "Delete failed.");
     } finally {
       setDelBusy(false);
     }
   };
 
-  const runBulk = async (action: "publish" | "unpublish" | "free" | "paid" | "delete") => {
+  const runBulk = async (action: "publish" | "unpublish" | "free" | "paid") => {
     try {
       const r = await adminMutate<{ affected: number }>("/api/admin/tests/bulk", "POST", {
         ids: [...selected],
@@ -187,6 +191,23 @@ export default function AdminTests() {
       reload();
     } catch (e) {
       toast(e instanceof Error ? e.message : "Bulk action failed.", "error");
+    }
+  };
+
+  const bulkDelete = async () => {
+    try {
+      const r = await adminMutate<{ affected: number }>("/api/admin/tests/bulk", "POST", {
+        ids: [...selected],
+        action: "delete",
+      });
+      toast(`${r.affected} test(s) deleted.`);
+      setSelected(new Set());
+      setBulkDelOpen(false);
+      reload();
+    } catch (e) {
+      // The server blocks tests with recorded attempts; show that right in the
+      // dialog so the click never looks like a no-op.
+      setBulkDelError(e instanceof Error ? e.message : "Delete failed.");
     }
   };
 
@@ -434,7 +455,14 @@ export default function AdminTests() {
               <button type="button" className="admin-btn" onClick={() => runBulk("paid")}>
                 Mark paid
               </button>
-              <button type="button" className="admin-btn admin-btn-danger" onClick={() => setBulkDelOpen(true)}>
+              <button
+                type="button"
+                className="admin-btn admin-btn-danger"
+                onClick={() => {
+                  setBulkDelError(null);
+                  setBulkDelOpen(true);
+                }}
+              >
                 <Icon name="trash" size={13} /> Delete
               </button>
               <button type="button" className="admin-btn ml-auto" onClick={() => setSelected(new Set())}>
@@ -533,7 +561,15 @@ export default function AdminTests() {
                           >
                             <Icon name={t.published ? "eyeOff" : "check"} size={14} />
                           </button>
-                          <button type="button" className="admin-btn admin-btn-danger px-2 py-1.5" title="Delete" onClick={() => setConfirmDel(t)}>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-danger px-2 py-1.5"
+                            title="Delete"
+                            onClick={() => {
+                              setDelError(null);
+                              setConfirmDel(t);
+                            }}
+                          >
                             <Icon name="trash" size={14} />
                           </button>
                         </div>
@@ -826,13 +862,17 @@ export default function AdminTests() {
         confirmLabel="Delete test"
         busy={delBusy}
         requireText={confirmDel?.title}
+        error={delError}
         message={
           <>
             This permanently deletes <strong>“{confirmDel?.title}”</strong>. Tests with recorded
             attempts are blocked from deletion by the server — unpublish instead to preserve history.
           </>
         }
-        onCancel={() => setConfirmDel(null)}
+        onCancel={() => {
+          setDelError(null);
+          setConfirmDel(null);
+        }}
         onConfirm={doDelete}
       />
       <ConfirmDialog
@@ -841,9 +881,13 @@ export default function AdminTests() {
         tone="danger"
         confirmLabel="Delete selected"
         requireText="DELETE"
+        error={bulkDelError}
         message="Tests with recorded attempts are blocked by the server and nothing else in the selection is deleted either."
-        onCancel={() => setBulkDelOpen(false)}
-        onConfirm={() => runBulk("delete")}
+        onCancel={() => {
+          setBulkDelError(null);
+          setBulkDelOpen(false);
+        }}
+        onConfirm={bulkDelete}
       />
     </AdminLayout>
   );
