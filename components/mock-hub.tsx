@@ -213,6 +213,16 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
 
   const marksOf = (t: Test) => t.question_ids.reduce((s, id) => s + (plusOf.get(id) ?? 0), 0);
 
+  // Card duration. When a test declares timed sections, the sections ARE the
+  // paper's clock — each window is fixed and unused time never carries over —
+  // so the card shows their sum instead of the stored `minutes` column.
+  // Display only: nothing is written back, so a stored value that ever drifts
+  // from the sections can no longer lie to a student on the hub.
+  const displayMinutesOf = (t: Test) => {
+    const parts = parseParts(t.sections, t.question_ids.length);
+    return parts ? parts.reduce((s, p) => s + p.minutes, 0) : t.minutes;
+  };
+
   const exams = useMemo(() => {
     const set = new Set(bank.map((q) => q.exam).filter(Boolean));
     return ["nimcet", ...Array.from(set).filter((e) => e !== "nimcet")];
@@ -596,7 +606,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
               key={t.id}
               title={t.title}
               questions={Array.isArray(t.question_ids) ? t.question_ids.length : 0}
-              minutes={t.minutes}
+              minutes={displayMinutesOf(t)}
               marks={marksOf(t)}
               difficulty={dominantDifficulty(t.question_ids, bankById)}
               tag={t.tag}
