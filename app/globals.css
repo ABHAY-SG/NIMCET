@@ -1,7 +1,17 @@
-@import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
-:root, [data-theme="light"] {
+/* Default palette (no saved choice) = Sunrise — the sitewide default theme.
+   Every other mode overrides it below; [data-theme="light"] is the classic
+   light palette, kept after :root so it wins when explicitly selected. */
+:root {
+  --bg: #fff7ed; --nav-bg: rgba(255,255,255,0.75); --text: #431407;
+  --muted: #9a6a4f; --border: rgba(67,20,7,0.1); --pill: rgba(249,115,22,0.1);
+  --btn-bg: #c2410c; --btn-text: #fff; --accent: #c2410c;
+  --card: #fffaf3; --accent-fg: #ffffff;
+  --glow-1: rgba(234, 88, 12, 0.14); --glow-2: rgba(251, 191, 36, 0.16);
+  --accent-2: #f59e0b;
+}
+[data-theme="light"] {
   --bg: #fafaf9; --nav-bg: rgba(255,255,255,0.72); --text: #131316;
   --muted: #6b7280; --border: rgba(0,0,0,0.08); --pill: rgba(0,0,0,0.04);
   --btn-bg: #131316; --btn-text: #fff; --accent: #635bdb;
@@ -102,12 +112,12 @@ html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   transition: background 0.25s, color 0.25s;
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3 {
-  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-heading), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.025em;
 }
 .card-bg { background: var(--card); }
@@ -119,13 +129,13 @@ h1, h2, h3 {
 }
 /* numeric + stat text: real monospace with tabular figures */
 .mono {
-  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 /* premium display headings for dashboard surfaces */
 .dash-display {
-  font-family: "Sora", "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-display), var(--font-heading), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.03em;
 }
 /* gradient theme background + fine grain texture */
@@ -360,13 +370,13 @@ footer .nlink::after { display: none; }
 [data-theme="sunset"] .authbg-sunset { opacity: 1; }
 
 .logo-script {
-  font-family: "Alex Brush", cursive;
+  font-family: var(--font-script), "Alex Brush", cursive;
   font-weight: 400;
   letter-spacing: 0.01em;
 }
 
 .serif-it {
-  font-family: "Fraunces", Georgia, serif;
+  font-family: var(--font-serif), Georgia, serif;
   font-style: italic;
   font-weight: 500;
   letter-spacing: 0;
@@ -376,7 +386,7 @@ footer .nlink::after { display: none; }
 
 /* Fraunces display serif for marketing headings — tight, optical, balanced. */
 .display {
-  font-family: "Fraunces", "Space Grotesk", Georgia, serif;
+  font-family: var(--font-serif), var(--font-heading), Georgia, serif;
   font-variation-settings: "opsz" 110;
   font-weight: 500;
   letter-spacing: -0.015em;
@@ -388,7 +398,7 @@ footer .nlink::after { display: none; }
 
 /* Oversized footer wordmark, fading into the page. */
 .wordmark {
-  font-family: "Fraunces", Georgia, serif;
+  font-family: var(--font-serif), Georgia, serif;
   font-variation-settings: "opsz" 144;
   font-weight: 600;
   letter-spacing: -0.035em;

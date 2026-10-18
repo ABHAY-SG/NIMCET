@@ -212,7 +212,14 @@ export default function DashboardPage() {
     (async () => {
       try {
         const sb = getAuthClient();
-        const { data: { user } } = await sb.auth.getUser();
+        let user = (await sb.auth.getUser()).data.user;
+        if (!user) {
+          // Recovery beat: a cookie session set moments ago (or a token that
+          // just rotated) can need one more pass before the auth server sees
+          // it. Never bounce a signed-in student to login over one hiccup.
+          await new Promise((r) => setTimeout(r, 700));
+          try { user = (await sb.auth.getUser()).data.user; } catch {}
+        }
         if (!user) { router.replace("/login"); return; }
         if (!user.email_confirmed_at) {
           try { await signOutAll(); } catch {}

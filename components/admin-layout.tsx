@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getSupabase, signOutAll } from "@/lib/supabase";
+import { isDarkTheme } from "@/lib/theme";
 import { Icon, type IconName } from "./admin/icons";
 import { Avatar, Badge, Spinner, ToastProvider, cx } from "./admin/ui";
 import { useAdminTheme, useInterval } from "./admin/hooks";
@@ -335,12 +336,12 @@ export default function AdminLayout({
             {/* theme toggle */}
             <button
               type="button"
-              onClick={() => setTheme(theme === "light" ? "midnight" : "light")}
-              aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-              title={theme === "light" ? "Dark mode" : "Light mode"}
+              onClick={() => setTheme(isDarkTheme(theme) ? "light" : "midnight")}
+              aria-label={isDarkTheme(theme) ? "Switch to light theme" : "Switch to dark theme"}
+              title={isDarkTheme(theme) ? "Light mode" : "Dark mode"}
               className="admin-btn hidden! px-2.5 sm:inline-flex!"
             >
-              <Icon name={theme === "light" ? "moon" : "sun"} size={16} />
+              <Icon name={isDarkTheme(theme) ? "sun" : "moon"} size={16} />
             </button>
 
             {/* profile dropdown */}
@@ -392,7 +393,7 @@ export default function AdminLayout({
                       <Icon name="user" size={15} /> Profile
                     </Link>
                     <Link
-                      href="/admin/profile#account"
+                      href="/admin/profile#security"
                       onClick={() => setMenuOpen(false)}
                       className="tmenu flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-bold"
                     >
@@ -400,11 +401,11 @@ export default function AdminLayout({
                     </Link>
                     <button
                       type="button"
-                      onClick={() => setTheme(theme === "light" ? "midnight" : "light")}
+                      onClick={() => setTheme(isDarkTheme(theme) ? "light" : "midnight")}
                       className="tmenu flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-bold"
                     >
-                      <Icon name={theme === "light" ? "moon" : "sun"} size={15} />
-                      {theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+                      <Icon name={isDarkTheme(theme) ? "sun" : "moon"} size={15} />
+                      {isDarkTheme(theme) ? "Switch to light theme" : "Switch to dark theme"}
                     </button>
                     <Link
                       href="/admin/settings"

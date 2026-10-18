@@ -32,21 +32,12 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
     title: "NIMCET",
     items: [
       { label: "NIMCET Mock", icon: ICONS.play, view: "mock" },
-      { label: "NIMCET PYQ", icon: ICONS.history, soon: true },
     ],
   },
   {
     title: "Test Builder",
     items: [
       { label: "Create Custom Mock", icon: ICONS.flask, view: "builder" },
-    ],
-  },
-  {
-    title: "Library",
-    items: [
-      { label: "Courses", icon: ICONS.film, soon: true },
-      { label: "Roadmap", icon: ICONS.map, soon: true },
-      { label: "Study Materials", icon: ICONS.book, soon: true },
     ],
   },
   {

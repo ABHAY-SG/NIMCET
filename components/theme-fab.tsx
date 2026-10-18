@@ -36,7 +36,7 @@ export default function ThemeFab() {
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-label="Change theme"
-          title={`Theme: ${theme}`}
+          title={`Theme: ${THEMES.find((t) => t.id === theme)?.name ?? theme}`}
           className="flex h-11 w-11 items-center justify-center rounded-full backdrop-blur-2xl transition-transform hover:-translate-y-0.5"
           style={{ background: "color-mix(in srgb, var(--nav-bg) 80%, transparent)", border: "1px solid var(--border)", color: "var(--text)", boxShadow: "0 12px 32px -12px rgba(0,0,0,0.4)" }}
         >

@@ -196,6 +196,12 @@ export default function AdminProfile() {
 
   const avatarSrc = resolveAvatarUrl({ custom_avatar: avatar ?? "" }) || undefined;
 
+  const facts: Array<{ label: string; value: string }> = [
+    { label: "Role", value: "Administrator" },
+    { label: "Member since", value: data ? fmtDate(data.created_at) : "—" },
+    { label: "Last sign-in", value: data?.last_sign_in_at ? relTime(data.last_sign_in_at) : "—" },
+  ];
+
   return (
     <AdminLayout>
       {error && (
@@ -204,137 +210,185 @@ export default function AdminProfile() {
         </div>
       )}
 
-      <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
-        <Card className="px-5 py-5">
+      {/* Identity hero: gradient banner, overlapping avatar, live account facts. */}
+      <Card className="overflow-hidden">
+        <div
+          className="relative h-24 sm:h-28"
+          style={{
+            background:
+              "linear-gradient(120deg, color-mix(in srgb, var(--accent) 26%, transparent), color-mix(in srgb, var(--accent-2) 30%, transparent) 55%, color-mix(in srgb, var(--accent) 18%, transparent))",
+          }}
+        >
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(420px 170px at 16% 130%, color-mix(in srgb, var(--accent) 42%, transparent), transparent 70%), radial-gradient(320px 140px at 88% -30%, color-mix(in srgb, var(--accent-2) 36%, transparent), transparent 72%)",
+            }}
+          />
+        </div>
+        <div className="px-5 pb-5">
           {loading && !data ? (
-            <div className="space-y-3">
+            <div className="space-y-3 pt-4">
               <Skeleton className="h-16" />
-              <Skeleton className="h-9" />
-              <Skeleton className="h-9" />
+              <Skeleton className="h-12" />
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-4">
-                <Avatar src={avatarSrc} name={displayName} size={72} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-[18px] font-extrabold">{displayName}</h2>
-                    <Badge tone="violet">Administrator</Badge>
+              <div className="-mt-11 flex flex-wrap items-end justify-between gap-4">
+                <div className="flex min-w-0 items-end gap-4">
+                  <span
+                    className="inline-flex shrink-0 rounded-full p-1.5"
+                    style={{ background: "var(--card)", boxShadow: "0 14px 34px -20px rgba(2, 6, 23, 0.55)" }}
+                  >
+                    <Avatar src={avatarSrc} name={displayName} size={84} />
+                  </span>
+                  <div className="min-w-0 pb-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="dash-display truncate text-[21px] font-extrabold tracking-tight">{displayName}</h1>
+                      <Badge tone="violet">Administrator</Badge>
+                    </div>
+                    <p className="mono mt-0.5 truncate text-[12px]" style={{ color: "var(--muted)" }}>
+                      {data?.email ?? "…"}
+                    </p>
                   </div>
-                  <p className="truncate text-[13px]" style={{ color: "var(--muted)" }}>
-                    {data?.email ?? "…"}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        pickFile(e.target.files?.[0]);
-                        e.target.value = "";
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="admin-btn"
-                      disabled={photoBusy}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      <Icon name="upload" size={14} /> {photoBusy ? "Working…" : "Change photo"}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 pb-1">
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      pickFile(e.target.files?.[0]);
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="admin-btn"
+                    disabled={photoBusy}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    <Icon name="upload" size={14} /> {photoBusy ? "Working…" : "Change photo"}
+                  </button>
+                  {avatar ? (
+                    <button type="button" className="admin-btn" disabled={photoBusy} onClick={removePhoto}>
+                      <Icon name="trash" size={14} /> Remove
                     </button>
-                    {avatar ? (
-                      <button type="button" className="admin-btn" disabled={photoBusy} onClick={removePhoto}>
-                        <Icon name="trash" size={14} /> Remove
-                      </button>
-                    ) : null}
-                  </div>
+                  ) : null}
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Field label="First name">
-                  <TextInput value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First name" />
-                </Field>
-                <Field label="Last name">
-                  <TextInput value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last name" />
-                </Field>
+              <div className="mt-5 grid gap-2.5 sm:grid-cols-3">
+                {facts.map((f) => (
+                  <div
+                    key={f.label}
+                    className="rounded-2xl px-3.5 py-3"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)" }}
+                  >
+                    <div
+                      className="text-[10.5px] font-extrabold uppercase"
+                      style={{ color: "var(--muted)", letterSpacing: "0.12em" }}
+                    >
+                      {f.label}
+                    </div>
+                    <div className="mono mt-1 truncate text-[14px] font-extrabold">{f.value}</div>
+                  </div>
+                ))}
               </div>
-              <div className="mt-3 flex items-center gap-2">
-                <button type="button" className="admin-btn admin-btn-primary" disabled={nameBusy} onClick={saveName}>
-                  {nameBusy ? "Saving…" : "Save name"}
-                </button>
-                <span className="text-[11.5px]" style={{ color: "var(--muted)" }}>
-                  Shown in the header and dropdown across the panel.
-                </span>
-              </div>
-              <p className="mt-3 text-[12px] leading-5" style={{ color: "var(--muted)" }}>
-                The photo is cropped in-browser and stored in the shared <span className="mono">avatars</span>{" "}
-                bucket; display goes through owner-scoped signed URLs.
-              </p>
             </>
           )}
-        </Card>
+        </div>
+      </Card>
 
-        <SectionCard title="Account & security" subtitle="Your own login — access rules stay server-side" id="account">
-          {data ? (
-            <div className="rounded-2xl px-3.5 py-1" style={{ background: "var(--pill)" }}>
-              <InfoRow label="Email" value={data.email} />
-              <InfoRow label="Sign-in method" value={data.provider || "email"} />
-              <InfoRow label="Member since" value={fmtDate(data.created_at)} />
-              <InfoRow label="Last sign-in" value={data.last_sign_in_at ? relTime(data.last_sign_in_at) : "—"} />
-              <InfoRow label="Account ID" value={data.id} mono />
+      <div className="mt-3 grid gap-3 lg:grid-cols-[1.15fr_1fr]">
+        <div className="space-y-3">
+          <SectionCard
+            title="Profile details"
+            subtitle="Shown in the header and dropdown across the panel"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="First name">
+                <TextInput value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First name" />
+              </Field>
+              <Field label="Last name">
+                <TextInput value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last name" />
+              </Field>
             </div>
-          ) : (
-            <Skeleton className="h-32" />
-          )}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button type="button" className="admin-btn admin-btn-primary" disabled={nameBusy} onClick={saveName}>
+                <Icon name="check" size={14} /> {nameBusy ? "Saving…" : "Save name"}
+              </button>
+              <span className="text-[11.5px]" style={{ color: "var(--muted)" }}>
+                The photo is cropped in-browser and stored in the shared <span className="mono">avatars</span> bucket.
+              </span>
+            </div>
+          </SectionCard>
 
-          <div className="mt-4">
-            <div className="mb-2 flex items-center gap-1 rounded-full p-0.5" style={{ background: "var(--pill)", width: "fit-content" }}>
-              {(
-                [
-                  { id: "change", label: "Change password" },
-                  { id: "set", label: "Set password" },
-                ] as const
-              ).map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setPwMode(m.id)}
-                  aria-pressed={pwMode === m.id}
-                  className="cursor-pointer rounded-full px-3 py-1.5 text-[12px] font-bold"
-                  style={pwMode === m.id ? { background: "var(--btn-bg)", color: "var(--btn-text)" } : { color: "var(--muted)" }}
-                >
-                  {m.label}
-                </button>
-              ))}
+          <SectionCard title="Account" subtitle="Identity recorded with Supabase Auth">
+            {data ? (
+              <div className="rounded-2xl px-3.5 py-1" style={{ background: "var(--pill)" }}>
+                <InfoRow label="Email" value={data.email} />
+                <InfoRow label="Sign-in method" value={data.provider || "email"} />
+                <InfoRow label="Member since" value={fmtDate(data.created_at)} />
+                <InfoRow label="Last sign-in" value={data.last_sign_in_at ? relTime(data.last_sign_in_at) : "—"} />
+                <InfoRow label="Account ID" value={data.id} mono />
+              </div>
+            ) : (
+              <Skeleton className="h-40" />
+            )}
+          </SectionCard>
+        </div>
+
+        <SectionCard title="Security" subtitle="Password sign-in for this console" id="security">
+          <div
+            className="mb-3 inline-flex items-center gap-1 rounded-full p-0.5"
+            style={{ background: "var(--pill)", width: "fit-content" }}
+          >
+            {(
+              [
+                { id: "change", label: "Change password" },
+                { id: "set", label: "Set password" },
+              ] as const
+            ).map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setPwMode(m.id)}
+                aria-pressed={pwMode === m.id}
+                className="cursor-pointer rounded-full px-3 py-1.5 text-[12px] font-bold"
+                style={pwMode === m.id ? { background: "var(--btn-bg)", color: "var(--btn-text)" } : { color: "var(--muted)" }}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-2.5">
+            {pwMode === "change" && (
+              <Field label="Current password">
+                <TextInput type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} autoComplete="current-password" />
+              </Field>
+            )}
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <Field label="New password">
+                <TextInput type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} autoComplete="new-password" />
+              </Field>
+              <Field label="Confirm">
+                <TextInput type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} autoComplete="new-password" />
+              </Field>
             </div>
-            <div className="space-y-2.5">
-              {pwMode === "change" && (
-                <Field label="Current password">
-                  <TextInput type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} autoComplete="current-password" />
-                </Field>
-              )}
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                <Field label="New password">
-                  <TextInput type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} autoComplete="new-password" />
-                </Field>
-                <Field label="Confirm">
-                  <TextInput type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} autoComplete="new-password" />
-                </Field>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button type="button" className="admin-btn admin-btn-primary" disabled={pwBusy} onClick={savePassword}>
-                  <Icon name="lock" size={14} /> {pwBusy ? "Working…" : pwMode === "set" ? "Set password" : "Change password"}
-                </button>
-                <span className="text-[11.5px]" style={{ color: "var(--muted)" }}>
-                  {PW_RULE}
-                </span>
-              </div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button type="button" className="admin-btn admin-btn-primary" disabled={pwBusy} onClick={savePassword}>
+                <Icon name="lock" size={14} /> {pwBusy ? "Working…" : pwMode === "set" ? "Set password" : "Change password"}
+              </button>
+              <span className="text-[11.5px]" style={{ color: "var(--muted)" }}>
+                {PW_RULE}
+              </span>
             </div>
           </div>
 
-          <p className="mt-4 text-[12px] leading-5" style={{ color: "var(--muted)" }}>
+          <p className="mt-4 border-t pt-3 text-[12px] leading-5" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>
             The admin allowlist lives only in server environment variables
             (<span className="mono">ADMIN_EMAILS</span>) — it is intentionally not editable from this page.
             Theme and table density are in{" "}

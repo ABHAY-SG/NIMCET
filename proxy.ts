@@ -16,11 +16,25 @@ import { createServerClient } from "@supabase/ssr";
 // A signed-in non-admin who reaches the pages is redirected to /dashboard by
 // the gate; no admin data is ever served because the APIs reject them too.
 //
-// OAuth/student/email flows never touch /admin*, so they are unaffected.
+// Admin and student flows are deliberately SEPARATE: a failed session check
+// here always lands on /admin/login?next=<path>, never the student /login.
+//
+// Sessions self-heal: if getUser() cannot see a user (expired access token),
+// one explicit refreshSession() is attempted before the visitor is treated as
+// signed out. The refreshed cookies ride back on this same response, so a
+// plain page refresh renews the session instead of dumping the admin out.
 
 export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
   if (path === "/admin/login") return NextResponse.next();
+
+  const loginUrl = () => {
+    const u = req.nextUrl.clone();
+    u.pathname = "/admin/login";
+    u.search = "";
+    u.searchParams.set("next", path);
+    return u;
+  };
 
   const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
   const key = (
@@ -29,11 +43,8 @@ export async function proxy(req: NextRequest) {
     ""
   ).trim();
   if (!url || !key) {
-    // Cannot verify sessions at all → send to login (fail closed).
-    const u = req.nextUrl.clone();
-    u.pathname = "/login";
-    u.searchParams.set("next", path);
-    return NextResponse.redirect(u);
+    // Cannot verify sessions at all → send to the admin sign-in (fail closed).
+    return NextResponse.redirect(loginUrl());
   }
 
   // Forward the concrete path in a request header; the server gate uses it
@@ -63,11 +74,17 @@ export async function proxy(req: NextRequest) {
   }
 
   if (!authed) {
-    const u = req.nextUrl.clone();
-    u.pathname = "/login";
-    u.searchParams.set("next", path);
-    return NextResponse.redirect(u);
+    // One recovery attempt: a valid refresh token must transparently renew an
+    // expired access token instead of bouncing the admin to a login screen.
+    try {
+      const { data, error } = await sb.auth.refreshSession();
+      if (!error && data.user) authed = true;
+    } catch {
+      authed = false;
+    }
   }
+
+  if (!authed) return NextResponse.redirect(loginUrl());
 
   return res;
 }

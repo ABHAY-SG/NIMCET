@@ -19,7 +19,9 @@ import { ToastProvider } from "@/components/admin/ui";
 // neutral skeleton below, and the admin page ({children}) is rendered only
 // after the gate resolves — an unauthorized request never receives it.
 //
-//   - no session            → /login?next=<the exact page they wanted>
+//   - no session            → /admin/login?next=<the exact page they wanted>
+//                             (the admin's own sign-in — never the student
+//                             /login, so the two areas stay separate)
 //   - signed in, not admin  → /dashboard (their rightful home)
 //   - allowlist unset       → explicit setup screen (fail closed, no redirect
 //                             loop, no guessed access)
@@ -39,7 +41,7 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
 
   if (session.status === "unauthenticated") {
     const path = (await headers()).get("x-admin-path") || "/admin";
-    redirect(`/login?next=${encodeURIComponent(path)}`);
+    redirect(`/admin/login?next=${encodeURIComponent(path)}`);
   }
   if (session.status === "forbidden") redirect("/dashboard");
 

@@ -66,3 +66,26 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: p.error }, { status: p.status });
   }
 }
+
+// DELETE /api/admin/audit — clear the entire log (a deliberate fresh start).
+// This is the one sanctioned destructive action on the audit trail itself.
+// It is NOT logged: writing a "cleared the log" row would immediately dirty
+// the empty log the caller asked for.
+export async function DELETE() {
+  const ctx = await requireAdmin();
+  if ("error" in ctx) return ctx.error;
+  const { svc } = ctx;
+  try {
+    // PostgREST requires a filter on DELETE; this lower bound matches every
+    // row ever written without changing the outcome.
+    const { error, count } = await svc
+      .from("admin_audit_log")
+      .delete({ count: "exact" })
+      .gte("created_at", "1970-01-01T00:00:00.000Z");
+    if (error) throw error;
+    return NextResponse.json({ ok: true, deleted: count ?? 0 });
+  } catch (e) {
+    const p = errorPayload(e, "Could not clear the audit log.");
+    return NextResponse.json({ error: p.error }, { status: p.status });
+  }
+}

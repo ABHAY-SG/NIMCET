@@ -2,15 +2,27 @@ import { useSyncExternalStore } from "react";
 
 // Single source for the site theme: the same five modes everywhere.
 // Persisted across reloads via localStorage, applied via data-theme.
+// Sunrise (warm orange) is the DEFAULT for first-time visitors; anyone can
+// pick any other mode and that choice sticks.
 export const THEMES = [
+  { id: "sunset", name: "Sunrise", dot: "#c2410c", icon: "#c2410c" },
   { id: "light", name: "Light", dot: "#ffffff", icon: "#f59e0b" },
   { id: "midnight", name: "Midnight", dot: "#1e293b", icon: "#1e293b" },
   { id: "ocean", name: "Ocean", dot: "#0369a1", icon: "#0369a1" },
   { id: "forest", name: "Forest", dot: "#059669", icon: "#059669" },
-  { id: "sunset", name: "Sunset", dot: "#c2410c", icon: "#c2410c" },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];
+
+export const DEFAULT_THEME: ThemeId = "sunset";
+
+// Modes with a dark background (used by the sun/moon quick toggles). The
+// rest — sunrise, light, ocean — are light backgrounds.
+const DARK_THEMES: readonly ThemeId[] = ["midnight", "forest"];
+
+export function isDarkTheme(id: ThemeId): boolean {
+  return DARK_THEMES.includes(id);
+}
 
 export function isThemeId(v: unknown): v is ThemeId {
   return THEMES.some((t) => t.id === v);
@@ -21,7 +33,7 @@ export function readTheme(): ThemeId {
     const saved = localStorage.getItem("mcamock-theme");
     if (isThemeId(saved)) return saved;
   } catch {}
-  return "light";
+  return DEFAULT_THEME;
 }
 
 export function applyTheme(t: ThemeId) {
@@ -45,8 +57,8 @@ function subscribeTheme(onChange: () => void) {
 }
 
 // The current theme as an external store: the server (and the first
-// hydration pass) renders "light", then React syncs to the stored value —
-// no effect setState, no hydration mismatch.
+// hydration pass) renders the default theme, then React syncs to the stored
+// value — no effect setState, no hydration mismatch.
 export function useTheme(): ThemeId {
-  return useSyncExternalStore(subscribeTheme, readTheme, () => "light" as ThemeId);
+  return useSyncExternalStore(subscribeTheme, readTheme, () => DEFAULT_THEME);
 }

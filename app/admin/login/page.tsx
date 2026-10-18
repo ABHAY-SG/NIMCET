@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase, signOutAll } from "@/lib/supabase";
+import { safeNextPath } from "@/lib/admin";
 
 // Admin login. Authentication is the same Supabase sign-in as everywhere
 // else; AUTHORIZATION is checked by the server (GET /api/admin/session),
@@ -12,13 +13,50 @@ import { getSupabase, signOutAll } from "@/lib/supabase";
 // The session is deliberately cookie-backed here (never the tab-scoped
 // memory mode): server-side checks read cookies, so an admin session must
 // live there.
+//
+// This page is the ONLY entry point for admin sessions: /admin/* redirects
+// here (with ?next=) instead of the student /login, and a failure to verify
+// a session never lands in the student area.
 
 type SessionInfo = { authenticated: boolean; admin: boolean; configured: boolean; email?: string };
 
+// The return target must be an in-app admin path — never an absolute URL and
+// never a bounce back to this login page.
+function adminNextPath(raw: string | null): string | null {
+  const n = safeNextPath(raw);
+  if (!n) return null;
+  if (n === "/admin" || n.startsWith("/admin/") || n.startsWith("/admin?")) {
+    return n.startsWith("/admin/login") ? null : n;
+  }
+  return null;
+}
+
+function currentNextParam(): string | null {
+  if (typeof window === "undefined") return null;
+  return adminNextPath(new URLSearchParams(window.location.search).get("next"));
+}
+
+// The server check is authoritative but must tolerate a flaky first request:
+// a transient failure should never look like "not an admin".
 async function fetchSessionInfo(): Promise<SessionInfo> {
-  const res = await fetch("/api/admin/session", { credentials: "same-origin", cache: "no-store" });
-  if (!res.ok) throw new Error("Could not verify admin access — check your connection and retry.");
-  return (await res.json()) as SessionInfo;
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch("/api/admin/session", { credentials: "same-origin", cache: "no-store" });
+      if (res.ok) return (await res.json()) as SessionInfo;
+      lastError = new Error(`Session check failed (${res.status}).`);
+    } catch (e) {
+      lastError = e;
+    }
+    await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Could not verify admin access — check your connection and retry.");
+}
+
+function isTransientAuthError(message: string): boolean {
+  return /fetch|network|timeout|timed out|abort|load failed/i.test(message);
 }
 
 export default function AdminLoginPage() {
@@ -29,12 +67,13 @@ export default function AdminLoginPage() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Already signed in as an admin? Straight to the panel.
+  // Already signed in as an admin? Straight to the panel (or the page they
+  // originally asked for).
   useEffect(() => {
     (async () => {
       try {
         const info = await fetchSessionInfo();
-        if (info.admin) router.replace("/admin");
+        if (info.admin) router.replace(currentNextParam() ?? "/admin");
       } catch {}
     })();
   }, [router]);
@@ -54,11 +93,23 @@ export default function AdminLoginPage() {
     setBusy(true);
     try {
       // Cookie-backed session only: the server gate and admin APIs read it.
-      // Drop any session left from a previous login first so a failed admin
-      // attempt can never keep someone else's session alive.
+      // End a session left from a previous login INSIDE THIS BROWSER first, so
+      // a failed attempt can never keep someone else's session alive. (No-op
+      // when there is nothing to clear — signing in already replaces the
+      // session, so the common path makes no extra call.)
       const sb = getSupabase();
-      try { await sb.auth.signOut({ scope: "local" }); } catch {}
-      const { error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
+      try {
+        const { data: { session: existing } } = await sb.auth.getSession();
+        if (existing) await signOutAll();
+      } catch {}
+
+      let { error } = await sb.auth.signInWithPassword({ email: cleanEmail, password });
+      if (error && isTransientAuthError(error.message)) {
+        // Cold connection after a deploy: one silent retry beats asking the
+        // admin to click "Log in" twice.
+        await new Promise((r) => setTimeout(r, 400));
+        ({ error } = await sb.auth.signInWithPassword({ email: cleanEmail, password }));
+      }
       if (error) {
         if (/email not confirmed/i.test(error.message)) {
           throw new Error("Email not verified yet — complete verification first, then use this page.");
@@ -68,11 +119,21 @@ export default function AdminLoginPage() {
         }
         throw error;
       }
+
       // The SERVER decides whether this account is an admin — the same check
       // that guards /admin pages and every admin API route.
-      const info = await fetchSessionInfo();
+      let info: SessionInfo | null = null;
+      try {
+        info = await fetchSessionInfo();
+      } catch {
+        // Signed in, but the verification call could not complete. Navigate
+        // anyway: the server gate re-checks on the very next request, so a
+        // non-admin still lands on /dashboard and never sees admin data.
+        router.replace(currentNextParam() ?? "/admin");
+        return;
+      }
       if (info.admin) {
-        router.push("/admin");
+        router.replace(currentNextParam() ?? "/admin");
         return;
       }
       // Signed in but not an admin: leave no session behind.

@@ -131,9 +131,6 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     e.preventDefault();
     setMsg("");
     setShowCheckEmailLink(false);
-    // Fresh attempt under a single identity: end any cookie session left from
-    // a previous login so it can never leak into the new attempt's result.
-    try { await getSupabase().auth.signOut({ scope: "local" }); } catch {}
     const cleanEmail = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) { setMsg("Enter a valid email address (e.g. you@example.com)."); return; }
     if (mode === "up") {
@@ -144,6 +141,14 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     setBusy(true);
     try {
       const sb = getSupabase();
+      // Fresh attempt under ONE identity: end a session left in this browser
+      // only when one actually exists. Signing in replaces the session anyway,
+      // so the common path makes no extra auth round-trip — and a needless
+      // sign-out can never race the login that follows.
+      try {
+        const { data: { session: existing } } = await sb.auth.getSession();
+        if (existing) await signOutAll();
+      } catch {}
       if (mode === "up") {
         const challengeId = crypto.randomUUID();
         const { data, error } = await sb.auth.signUp({
@@ -202,24 +207,50 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         router.push(`/auth/check-email?email=${encodeURIComponent(cleanEmail)}&challenge=${challengeId}`);
       } else {
         const loginSb = getSupabase();
-        const { data, error } = await loginSb.auth.signInWithPassword({ email: cleanEmail, password });
-        if (error) {
-          if (/email not confirmed/i.test(error.message)) {
+        const attempt = () => loginSb.auth.signInWithPassword({ email: cleanEmail, password });
+        let { data, error } = await attempt();
+        if (error && /fetch|network|timeout|abort/i.test(error.message)) {
+          // A cold or flaky connection (right after a deploy, slow network)
+          // must never read as "wrong password": one silent retry.
+          await new Promise((r) => setTimeout(r, 400));
+          ({ data, error } = await attempt());
+        }
+        if (error && !/invalid login credentials|email not confirmed/i.test(error.message)) {
+          // Even a rejected response can hide a session that was actually
+          // created (dropped response). If a live session for exactly this
+          // email now exists, the login succeeded — continue. Explicit
+          // credential rejections are never overridden.
+          try {
+            const { data: { session } } = await loginSb.auth.getSession();
+            if (session?.user && (session.user.email ?? "").toLowerCase() === cleanEmail.toLowerCase()) {
+              data = { user: session.user, session } as typeof data;
+              error = null;
+            }
+          } catch {}
+        }
+        if (error || !data.user) {
+          if (error && /email not confirmed/i.test(error.message)) {
             try { window.localStorage.setItem("nimcuet-pending-email", cleanEmail); } catch {}
             setShowCheckEmailLink(true);
             throw new Error("Email not verified yet — check your inbox for the confirmation link, or open the verification page to resend.");
           }
-          if (/invalid login credentials/i.test(error.message)) {
+          if (error && /invalid login credentials/i.test(error.message)) {
             throw new Error("Unable to log in with these details. Check your email and password, or create an account. Registered with Google or GitHub? Use Continue above — or set a password anytime with Forgot password?.");
           }
-          throw error;
+          throw error ?? new Error("We couldn’t complete the login. Please try again.");
         }
-        if (data.user) {
+        // Registry bookkeeping only: it must NEVER block or fail a successful
+        // sign-in (a duplicate just means the account was already recorded).
+        try {
           const { error: registryError } = await loginSb.from("oauth_account_registry").insert({
             user_id: data.user.id,
             email: data.user.email ?? cleanEmail,
           });
-          if (registryError && registryError.code !== "23505") throw registryError;
+          if (registryError && registryError.code !== "23505") {
+            console.error("registry insert failed:", registryError.message);
+          }
+        } catch (registryThrow) {
+          console.error("registry insert threw:", registryThrow instanceof Error ? registryThrow.message : registryThrow);
         }
         try {
           router.push(safeNextPath(new URLSearchParams(window.location.search).get("next")) ?? "/dashboard");

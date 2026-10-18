@@ -49,7 +49,19 @@ export async function sessionUser(): Promise<SessionUser | null> {
     },
   });
   try {
-    const { data: { user } } = await sb.auth.getUser();
+    const first = await sb.auth.getUser();
+    let user = first.data.user;
+    if (!user) {
+      // Expired access token whose refresh token is still valid: renew once
+      // (in route handlers the new cookies persist through setAll above) so a
+      // long-idle tab recovers instead of answering 401 / bouncing to login.
+      try {
+        const retry = await sb.auth.refreshSession();
+        user = retry.data.user ?? null;
+      } catch {
+        user = null;
+      }
+    }
     if (!user?.email) return null;
     // OAuth logins and confirmed email signups carry email_confirmed_at;
     // pending signups do not. Client pages used to be the only place that

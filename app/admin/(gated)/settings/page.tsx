@@ -77,7 +77,7 @@ export default function AdminSettings() {
           </div>
           <p className="mt-3 text-[12px] leading-5" style={{ color: "var(--muted)" }}>
             The choice is saved in this browser and applies across the whole app. The moon/sun button in
-            the header quick-toggles between Light and Midnight.
+            the header quick-toggles between a light theme (Light) and Midnight from anywhere in the panel.
           </p>
         </SectionCard>
 
@@ -151,7 +151,7 @@ export default function AdminSettings() {
             <Link href="/admin/profile" className="admin-btn">
               <Icon name="user" size={14} /> Open profile
             </Link>
-            <Link href="/admin/profile#account" className="admin-btn">
+            <Link href="/admin/profile#security" className="admin-btn">
               <Icon name="lock" size={14} /> Account &amp; security
             </Link>
           </div>

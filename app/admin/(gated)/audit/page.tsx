@@ -4,15 +4,17 @@ import AdminLayout from "@/components/admin-layout";
 import {
   Badge,
   Card,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   Pagination,
   Select,
   TableSkeleton,
   TextInput,
+  useToast,
 } from "@/components/admin/ui";
 import { Icon } from "@/components/admin/icons";
-import { useAdminData, useDebounced, usePageSize } from "@/components/admin/hooks";
+import { adminMutate, useAdminData, useDebounced, usePageSize } from "@/components/admin/hooks";
 import { fmtDateTime } from "@/lib/format";
 
 type AuditRow = {
@@ -40,6 +42,7 @@ const ACTION_TONE = (action: string): "green" | "red" | "amber" | "blue" | "viol
 
 export default function AdminAudit() {
   const per = usePageSize(20);
+  const toast = useToast();
 
   const [entity, setEntity] = useState("all");
   const [action, setAction] = useState("");
@@ -48,6 +51,28 @@ export default function AdminAudit() {
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearBusy, setClearBusy] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
+
+  const doClear = async () => {
+    setClearBusy(true);
+    setClearError(null);
+    try {
+      const j = await adminMutate<{ ok: boolean; deleted: number }>("/api/admin/audit", "DELETE");
+      setClearOpen(false);
+      toast(
+        j.deleted
+          ? `Audit log cleared — ${j.deleted.toLocaleString("en-IN")} ${j.deleted === 1 ? "entry" : "entries"} removed.`
+          : "Audit log is already empty."
+      );
+      reload();
+    } catch (e) {
+      setClearError(e instanceof Error ? e.message : "Could not clear the audit log.");
+    } finally {
+      setClearBusy(false);
+    }
+  };
 
   const debSearch = useDebounced(search, 300);
   const debAction = useDebounced(action, 300);
@@ -109,6 +134,15 @@ export default function AdminAudit() {
           To
           <TextInput type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} className="w-auto" />
         </label>
+        <button
+          type="button"
+          className="admin-btn admin-btn-danger ml-auto"
+          onClick={() => { setClearError(null); setClearOpen(true); }}
+          disabled={!data || data.total === 0}
+          title={!data || data.total === 0 ? "The log is already empty" : "Delete every audit entry"}
+        >
+          <Icon name="trash" size={14} /> Clear log
+        </button>
       </Card>
 
       {error && (
@@ -210,6 +244,24 @@ export default function AdminAudit() {
           </div>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={clearOpen}
+        title="Clear the entire audit log?"
+        tone="danger"
+        confirmLabel="Clear log"
+        busy={clearBusy}
+        requireText="CLEAR"
+        error={clearError}
+        message={
+          <>
+            Every audit entry on record ({(data?.total ?? 0).toLocaleString("en-IN")} right now) will be
+            permanently deleted. Actions taken after this moment are still recorded. This cannot be undone.
+          </>
+        }
+        onCancel={() => { setClearOpen(false); setClearError(null); }}
+        onConfirm={doClear}
+      />
     </AdminLayout>
   );
 }

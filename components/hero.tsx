@@ -76,10 +76,10 @@ export default function Hero() {
             PREMIUM MOCKS · NIMCET + CUET PG
           </p>
 
-          <h1 className="mt-5" style={{ fontSize: "clamp(1.9rem, 5.5vw, 4.2rem)", lineHeight: 1.1, fontFamily: '"Fraunces", Georgia, serif', overflowWrap: "anywhere" }}>
+          <h1 className="mt-5" style={{ fontSize: "clamp(1.9rem, 5.5vw, 4.2rem)", lineHeight: 1.1, fontFamily: "var(--font-serif), Georgia, serif", overflowWrap: "anywhere" }}>
             <span className="hline">
               <span className="block font-extrabold tracking-tight italic" style={{ animationDelay: "0.18s", color: "var(--text)" }}>
-                The paper doesn't forgive
+                The paper doesn&apos;t forgive
               </span>
             </span>
             <span className="hline">
@@ -89,8 +89,8 @@ export default function Hero() {
             </span>
           </h1>
 
-          <p className="rise mx-auto mt-6 max-w-[430px] text-[16px] leading-relaxed italic lg:mx-0 lg:text-left" style={{ color: "var(--accent)", fontFamily: '"Fraunces", Georgia, serif', animationDelay: "0.36s" }}>
-            "Repetition is the only shortcut that works."
+          <p className="rise mx-auto mt-6 max-w-[430px] text-[16px] leading-relaxed italic lg:mx-0 lg:text-left" style={{ color: "var(--accent)", fontFamily: "var(--font-serif), Georgia, serif", animationDelay: "0.36s" }}>
+            &ldquo;Repetition is the only shortcut that works.&rdquo;
           </p>
 
           <div
