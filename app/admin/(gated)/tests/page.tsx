@@ -97,6 +97,10 @@ export default function AdminTests() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDelOpen, setBulkDelOpen] = useState(false);
   const [bulkDelError, setBulkDelError] = useState<string | null>(null);
+  const [bulkDelBusy, setBulkDelBusy] = useState(false);
+  const [forceDel, setForceDel] = useState<{ ids: string[]; label: string; requireText: string } | null>(null);
+  const [forceBusy, setForceBusy] = useState(false);
+  const [forceError, setForceError] = useState<string | null>(null);
 
   const tests = useMemo(() => data?.rows ?? [], [data]);
   const bank = useMemo(() => bankData.data?.rows ?? [], [bankData.data]);
@@ -195,6 +199,7 @@ export default function AdminTests() {
   };
 
   const bulkDelete = async () => {
+    setBulkDelBusy(true);
     try {
       const r = await adminMutate<{ affected: number }>("/api/admin/tests/bulk", "POST", {
         ids: [...selected],
@@ -208,6 +213,59 @@ export default function AdminTests() {
       // The server blocks tests with recorded attempts; show that right in the
       // dialog so the click never looks like a no-op.
       setBulkDelError(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setBulkDelBusy(false);
+    }
+  };
+
+  // ---- delete force path ----
+  // A blocked delete is not a dead end: the admin can force it, which removes
+  // the recorded attempts too — but only after a second dialog where the exact
+  // test title (or FORCE DELETE for a multi-selection) must be typed.
+
+  const isAttemptsBlock = (msg: string | null) => !!msg && /recorded attempt/i.test(msg);
+
+  const openBulkForce = () => {
+    const list = tests.filter((t) => selected.has(t.id));
+    if (list.length === 0) return;
+    setForceError(null);
+    setBulkDelOpen(false);
+    setForceDel({
+      ids: list.map((t) => t.id),
+      label: list.length === 1 ? `“${list[0].title}”` : `${list.length} selected tests`,
+      requireText: list.length === 1 ? list[0].title : "FORCE DELETE",
+    });
+  };
+
+  const openSingleForce = () => {
+    if (!confirmDel) return;
+    setForceError(null);
+    setDelError(null);
+    setForceDel({ ids: [confirmDel.id], label: `“${confirmDel.title}”`, requireText: confirmDel.title });
+    setConfirmDel(null);
+  };
+
+  const runForceDelete = async () => {
+    if (!forceDel) return;
+    setForceBusy(true);
+    try {
+      const r = await adminMutate<{ affected: number; attemptsDeleted?: number }>("/api/admin/tests/bulk", "POST", {
+        ids: forceDel.ids,
+        action: "delete",
+        force: true,
+      });
+      toast(
+        r.attemptsDeleted
+          ? `${r.affected} test(s) and ${r.attemptsDeleted} recorded attempt(s) deleted.`
+          : `${r.affected} test(s) deleted.`
+      );
+      setSelected(new Set());
+      setForceDel(null);
+      reload();
+    } catch (e) {
+      setForceError(e instanceof Error ? e.message : "Force delete failed.");
+    } finally {
+      setForceBusy(false);
     }
   };
 
@@ -863,6 +921,13 @@ export default function AdminTests() {
         busy={delBusy}
         requireText={confirmDel?.title}
         error={delError}
+        errorAction={
+          isAttemptsBlock(delError) ? (
+            <button type="button" className="admin-btn admin-btn-danger w-full justify-center" onClick={openSingleForce}>
+              <Icon name="trash" size={14} /> Force delete (removes recorded attempts too)
+            </button>
+          ) : undefined
+        }
         message={
           <>
             This permanently deletes <strong>“{confirmDel?.title}”</strong>. Tests with recorded
@@ -880,14 +945,42 @@ export default function AdminTests() {
         title={`Delete ${selected.size} test(s)?`}
         tone="danger"
         confirmLabel="Delete selected"
+        busy={bulkDelBusy}
         requireText="DELETE"
         error={bulkDelError}
+        errorAction={
+          isAttemptsBlock(bulkDelError) ? (
+            <button type="button" className="admin-btn admin-btn-danger w-full justify-center" onClick={openBulkForce}>
+              <Icon name="trash" size={14} /> Force delete (removes recorded attempts too)
+            </button>
+          ) : undefined
+        }
         message="Tests with recorded attempts are blocked by the server and nothing else in the selection is deleted either."
         onCancel={() => {
           setBulkDelError(null);
           setBulkDelOpen(false);
         }}
         onConfirm={bulkDelete}
+      />
+      <ConfirmDialog
+        open={!!forceDel}
+        title="Force delete?"
+        tone="danger"
+        confirmLabel="Force delete"
+        busy={forceBusy}
+        requireText={forceDel?.requireText}
+        error={forceError}
+        message={
+          <>
+            This permanently deletes {forceDel?.label} <strong>together with every recorded attempt</strong> attached to
+            it. Student history for these mocks will be gone and cannot be recovered.
+          </>
+        }
+        onCancel={() => {
+          setForceError(null);
+          setForceDel(null);
+        }}
+        onConfirm={runForceDelete}
       />
     </AdminLayout>
   );

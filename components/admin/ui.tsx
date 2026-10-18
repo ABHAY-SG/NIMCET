@@ -429,6 +429,7 @@ export function ConfirmDialog({
   busy = false,
   requireText,
   error,
+  errorAction,
   onCancel,
   onConfirm,
 }: {
@@ -441,6 +442,8 @@ export function ConfirmDialog({
   requireText?: string;
   /** Server-side failure to keep on screen inside the dialog (a transient toast is easy to miss). */
   error?: string | null;
+  /** Extra action rendered under the error, e.g. a force-delete escape hatch. */
+  errorAction?: React.ReactNode;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -485,8 +488,9 @@ export function ConfirmDialog({
         </div>
       )}
       {error ? (
-        <div className="mt-4">
+        <div className="mt-4 space-y-3">
           <ErrorState message={error} />
+          {errorAction}
         </div>
       ) : null}
     </Modal>
