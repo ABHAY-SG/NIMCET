@@ -221,7 +221,7 @@ export default function AdminLayout({
               type="button"
               onClick={() => setDrawer(true)}
               aria-label="Open admin menu"
-              className="admin-btn px-2.5 md:hidden"
+              className="admin-btn px-2.5 md:hidden!"
             >
               <Icon name="menu" size={17} />
             </button>
@@ -230,7 +230,7 @@ export default function AdminLayout({
               onClick={toggleCollapsed}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="admin-btn hidden px-2.5 md:inline-flex"
+              className="admin-btn hidden! px-2.5 md:inline-flex!"
             >
               <Icon name={collapsed ? "chevronRight" : "chevronLeft"} size={15} />
             </button>
@@ -324,7 +324,7 @@ export default function AdminLayout({
               onClick={() => setTheme(theme === "light" ? "midnight" : "light")}
               aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
               title={theme === "light" ? "Dark mode" : "Light mode"}
-              className="admin-btn hidden px-2.5 sm:inline-flex"
+              className="admin-btn hidden! px-2.5 sm:inline-flex!"
             >
               <Icon name={theme === "light" ? "moon" : "sun"} size={16} />
             </button>

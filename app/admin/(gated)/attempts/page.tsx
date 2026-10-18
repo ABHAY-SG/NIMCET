@@ -135,7 +135,7 @@ export default function AdminAttempts() {
               setPage(1);
             }}
             placeholder="Search by student email or test…"
-            className="pl-9"
+            className="pl-9!"
             aria-label="Search attempts"
           />
         </div>

@@ -148,7 +148,7 @@ export default function AdminFeedback() {
               setPage(1);
             }}
             placeholder="Search subject, email or message…"
-            className="pl-9"
+            className="pl-9!"
             aria-label="Search feedback"
           />
         </div>

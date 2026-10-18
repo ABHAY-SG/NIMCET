@@ -295,7 +295,7 @@ export default function AdminQuestions() {
               setPage(1);
             }}
             placeholder="Search by question text, topic or section…"
-            className="pl-9"
+            className="pl-9!"
             aria-label="Search questions"
           />
         </div>

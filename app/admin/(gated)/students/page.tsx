@@ -149,7 +149,7 @@ export default function AdminStudents() {
               setPage(1);
             }}
             placeholder="Search by name or email…"
-            className="pl-9"
+            className="pl-9!"
             aria-label="Search students"
           />
         </div>

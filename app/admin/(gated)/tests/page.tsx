@@ -346,7 +346,7 @@ export default function AdminTests() {
               setPage(1);
             }}
             placeholder="Search tests by title, tag or exam…"
-            className="pl-9"
+            className="pl-9!"
             aria-label="Search tests"
           />
         </div>

@@ -97,7 +97,7 @@ export default function AdminAudit() {
               setPage(1);
             }}
             placeholder="Search actor, record id or details…"
-            className="pl-9"
+            className="pl-9!"
             aria-label="Search audit log"
           />
         </div>
