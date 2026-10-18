@@ -125,6 +125,7 @@ export default function AdminFeedback() {
                 setStatus(t.id);
                 setPage(1);
               }}
+              aria-pressed={status === t.id}
               className="cursor-pointer rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors"
               style={status === t.id ? { background: "var(--btn-bg)", color: "var(--btn-text)" } : { color: "var(--muted)" }}
             >

@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { LEGACY_RUN_KEY, RUN_KEY } from "./exam-parts";
 
 type Client = SupabaseClient;
 
@@ -61,6 +62,10 @@ export async function signOutAll(): Promise<void> {
   } catch {}
   try {
     for (const k of DEVICE_KEYS) window.localStorage.removeItem(k);
-    window.sessionStorage.removeItem("nimcuet-run-v1");
+    // sessionStorage holds an in-progress exam run (question set + picks +
+    // marked flags). Clear both the live key and the dead v1 key so the next
+    // account on a shared device can never resume the previous student's run.
+    window.sessionStorage.removeItem(RUN_KEY);
+    window.sessionStorage.removeItem(LEGACY_RUN_KEY);
   } catch {}
 }

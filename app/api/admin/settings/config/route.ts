@@ -35,12 +35,18 @@ export async function GET() {
       tableOk("admin_audit_log"),
     ]);
 
+    // Derived from the server env at request time (the route can only run when
+    // the service client exists, but the booleans still report the real check).
+    const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+    const anon = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "").trim();
+    const service = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+
     return NextResponse.json({
       adminEmail: user.email,
       adminEmailsConfigured: configured,
       adminEmailsCount: list.length,
-      serviceKeyConfigured: true, // requireAdmin already proved the service client exists
-      supabaseConfigured: true,
+      serviceKeyConfigured: !!service,
+      supabaseConfigured: !!(url && anon),
       avatarsBucket: avatars,
       tables: { announcements, feedback, auditLog },
       environment: process.env.VERCEL_ENV || "local",

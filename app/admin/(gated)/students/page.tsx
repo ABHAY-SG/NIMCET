@@ -132,9 +132,19 @@ export default function AdminStudents() {
   return (
     <AdminLayout>
       <div className="mb-3 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Registered students" value={fmtNum(data?.summary.users ?? 0)} icon="students" tone="blue" />
-        <StatCard label="With attempts" value={fmtNum(data?.summary.withAttempts ?? 0)} icon="attempts" tone="accent" />
-        <StatCard label="Disabled accounts" value={fmtNum(data?.summary.disabled ?? 0)} icon="lock" tone={data && data.summary.disabled > 0 ? "red" : "green"} />
+        {loading && !data ? (
+          <>
+            <Skeleton className="h-[96px]" />
+            <Skeleton className="h-[96px]" />
+            <Skeleton className="h-[96px]" />
+          </>
+        ) : (
+          <>
+            <StatCard label="Registered students" value={fmtNum(data?.summary.users ?? 0)} icon="students" tone="blue" />
+            <StatCard label="With attempts" value={fmtNum(data?.summary.withAttempts ?? 0)} icon="attempts" tone="accent" />
+            <StatCard label="Disabled accounts" value={fmtNum(data?.summary.disabled ?? 0)} icon="lock" tone={data && data.summary.disabled > 0 ? "red" : "green"} />
+          </>
+        )}
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -228,13 +238,14 @@ export default function AdminStudents() {
                     </td>
                     <td>
                       <div className="flex items-center justify-end gap-1">
-                        <button type="button" className="admin-btn px-2 py-1.5" title="View profile" onClick={() => setDetailId(s.id)}>
+                        <button type="button" className="admin-btn px-2 py-1.5" title="View profile" aria-label="View profile" onClick={() => setDetailId(s.id)}>
                           <Icon name="eye" size={14} />
                         </button>
                         <button
                           type="button"
                           className={s.disabled ? "admin-btn px-2 py-1.5" : "admin-btn admin-btn-danger px-2 py-1.5"}
                           title={s.disabled ? "Enable account" : "Disable account"}
+                          aria-label={s.disabled ? "Enable account" : "Disable account"}
                           onClick={() => setToToggle(s)}
                         >
                           <Icon name={s.disabled ? "check" : "lock"} size={14} />

@@ -98,13 +98,23 @@ export default function AdminAttempts() {
     if (!detail.data) return;
     const reason = corr.reason.trim();
     if (reason.length < 3) return toast("A reason (3+ characters) is required for the audit log.", "error");
+    // Number("") is 0 — an emptied box must never be silently recorded as a
+    // real zero. Every field needs an actual number first.
+    const fields = { score: corr.score, correct: corr.correct, wrong: corr.wrong, skipped: corr.skipped };
+    const vals: Record<keyof typeof fields, number> = { score: 0, correct: 0, wrong: 0, skipped: 0 };
+    for (const k of Object.keys(fields) as Array<keyof typeof fields>) {
+      const raw = fields[k].trim();
+      const n = Number(raw);
+      if (raw === "" || !Number.isFinite(n)) return toast(`Enter a number for “${k}”.`, "error");
+      vals[k] = n;
+    }
     setCorrBusy(true);
     try {
       await adminMutate(`/api/admin/attempts/${detail.data.attempt.id}`, "PUT", {
-        score: Number(corr.score),
-        correct: Number(corr.correct),
-        wrong: Number(corr.wrong),
-        skipped: Number(corr.skipped),
+        score: vals.score,
+        correct: vals.correct,
+        wrong: vals.wrong,
+        skipped: vals.skipped,
         reason,
       });
       toast("Score corrected and recorded in the audit log.");
@@ -244,7 +254,7 @@ export default function AdminAttempts() {
                     </td>
                     <td>
                       <div className="flex items-center justify-end gap-1">
-                        <button type="button" className="admin-btn px-2 py-1.5" title="View breakdown" onClick={() => setDetailId(a.id)}>
+                        <button type="button" className="admin-btn px-2 py-1.5" title="View breakdown" aria-label="View breakdown" onClick={() => setDetailId(a.id)}>
                           <Icon name="eye" size={14} />
                         </button>
                       </div>

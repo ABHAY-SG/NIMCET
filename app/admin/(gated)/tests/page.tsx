@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import AdminLayout from "@/components/admin-layout";
 import {
@@ -86,7 +86,7 @@ type Editor = {
   template: string;
 };
 
-const LETTERS = ["A", "B", "C", "D"];
+const LETTERS = ["A", "B", "C", "D", "E"];
 
 export default function AdminTests() {
   const toast = useToast();
@@ -104,6 +104,8 @@ export default function AdminTests() {
   const [page, setPage] = useState(1);
 
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [editorBase, setEditorBase] = useState("");
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [editorBusy, setEditorBusy] = useState(false);
   const [pickSearch, setPickSearch] = useState("");
   const [pickDiff, setPickDiff] = useState("all");
@@ -112,6 +114,7 @@ export default function AdminTests() {
   const [preview, setPreview] = useState<TestRow | null>(null);
   const [previewQ, setPreviewQ] = useState<QRow[] | null>(null);
   const [showKey, setShowKey] = useState(false);
+  const previewSeq = useRef(0); // guards stale preview fetches (see openPreview)
 
   const [confirmDel, setConfirmDel] = useState<TestRow | null>(null);
   const [delBusy, setDelBusy] = useState(false);
@@ -214,7 +217,6 @@ export default function AdminTests() {
       });
       toast(`${r.affected} test(s) updated.`);
       setSelected(new Set());
-      setBulkDelOpen(false);
       reload();
     } catch (e) {
       toast(e instanceof Error ? e.message : "Bulk action failed.", "error");
@@ -298,35 +300,46 @@ export default function AdminTests() {
     setPickSearch("");
     setPickDiff("all");
     setPickSubject("all");
-    if (t) {
-      setEditor({
-        id: t.id,
-        title: t.title,
-        exam: t.exam,
-        tag: t.tag,
-        minutes: String(t.minutes),
-        free: t.free,
-        published: t.published,
-        description: t.description,
-        instructions: t.instructions,
-        questionIds: [...t.question_ids],
-        template: t.template,
-      });
-    } else {
-      setEditor({
-        id: null,
-        title: "",
-        exam: "nimcet",
-        tag: "",
-        minutes: "30",
-        free: true,
-        published: false,
-        description: "",
-        instructions: "",
-        questionIds: [],
-        template: "",
-      });
+    const ed: Editor = t
+      ? {
+          id: t.id,
+          title: t.title,
+          exam: t.exam,
+          tag: t.tag,
+          minutes: String(t.minutes),
+          free: t.free,
+          published: t.published,
+          description: t.description,
+          instructions: t.instructions,
+          questionIds: [...t.question_ids],
+          template: t.template,
+        }
+      : {
+          id: null,
+          title: "",
+          exam: "nimcet",
+          tag: "",
+          minutes: "30",
+          free: true,
+          published: false,
+          description: "",
+          instructions: "",
+          questionIds: [],
+          template: "",
+        };
+    setEditor(ed);
+    setEditorBase(JSON.stringify(ed));
+  };
+
+  // The editor holds a full paper (metadata + question list) — closing it with
+  // unsaved edits asks first instead of dropping the work on a stray click.
+  const closeEditor = () => {
+    if (!editor || editorBusy) return;
+    if (JSON.stringify(editor) !== editorBase) {
+      setDiscardOpen(true);
+      return;
     }
+    setEditor(null);
   };
 
   const saveEditor = async () => {
@@ -438,6 +451,7 @@ export default function AdminTests() {
   // ---- preview ----
 
   const openPreview = async (t: TestRow) => {
+    const seq = ++previewSeq.current;
     setPreview(t);
     setPreviewQ(null);
     setShowKey(false);
@@ -448,10 +462,12 @@ export default function AdminTests() {
         const r = await fetch(`/api/admin/questions?ids=${missing.slice(0, 200).join(",")}&limit=200`, {
           credentials: "same-origin",
         });
+        if (seq !== previewSeq.current) return; // a newer preview opened meanwhile
         const j = (await r.json()) as { rows?: QRow[] };
         if (r.ok) for (const q of j.rows ?? []) have.set(q.id, q);
       } catch {}
     }
+    if (seq !== previewSeq.current) return;
     setPreviewQ(t.question_ids.map((id) => have.get(id)).filter((q): q is QRow => !!q));
   };
 
@@ -490,6 +506,7 @@ export default function AdminTests() {
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
+              setSelected(new Set());
             }}
             placeholder="Search tests by title, tag or exam…"
             className="pl-9!"
@@ -501,6 +518,7 @@ export default function AdminTests() {
           onChange={(e) => {
             setStatus(e.target.value);
             setPage(1);
+            setSelected(new Set());
           }}
           aria-label="Filter by status"
           className="w-auto"
@@ -514,6 +532,7 @@ export default function AdminTests() {
           onChange={(e) => {
             setExam(e.target.value);
             setPage(1);
+            setSelected(new Set());
           }}
           aria-label="Filter by exam"
           className="w-auto"
@@ -527,7 +546,11 @@ export default function AdminTests() {
         </Select>
         <Select
           value={sort}
-          onChange={(e) => setSort(e.target.value)}
+          onChange={(e) => {
+            setSort(e.target.value);
+            setPage(1);
+            setSelected(new Set());
+          }}
           aria-label="Sort tests"
           className="w-auto"
         >
@@ -541,7 +564,12 @@ export default function AdminTests() {
           className="admin-btn"
           onClick={async () => {
             try {
-              await downloadFile("/api/admin/tests?format=csv", "tests.csv");
+              // The export honours whatever the list is currently showing.
+              const p = new URLSearchParams({ format: "csv", sort });
+              if (search.trim()) p.set("q", search.trim());
+              if (status !== "all") p.set("published", status);
+              if (exam !== "all") p.set("exam", exam);
+              await downloadFile(`/api/admin/tests?${p.toString()}`, "tests.csv");
             } catch (e) {
               toast(e instanceof Error ? e.message : "Export failed.", "error");
             }
@@ -595,7 +623,9 @@ export default function AdminTests() {
         <>
           {selected.size > 0 && (
             <Card className="mb-3 flex flex-wrap items-center gap-2 px-3.5 py-2.5">
-              <span className="text-[12.5px] font-extrabold">{selected.size} selected</span>
+              <span className="text-[12.5px] font-extrabold">
+                {selected.size} selected{selected.size >= 100 ? " · 100 max per batch" : ""}
+              </span>
               <span className="mx-1 h-4 w-px" style={{ background: "var(--border)" }} />
               <button type="button" className="admin-btn" onClick={() => runBulk("publish")}>
                 Publish
@@ -635,13 +665,21 @@ export default function AdminTests() {
                         type="checkbox"
                         className="admin-check"
                         aria-label="Select all on page"
+                        ref={(el) => {
+                          if (el) {
+                            el.indeterminate =
+                              paged.some((t) => selected.has(t.id)) && !paged.every((t) => selected.has(t.id));
+                          }
+                        }}
                         checked={paged.length > 0 && paged.every((t) => selected.has(t.id))}
                         onChange={(e) => {
                           setSelected((prev) => {
                             const next = new Set(prev);
                             for (const t of paged) {
-                              if (e.target.checked) next.add(t.id);
-                              else next.delete(t.id);
+                              if (e.target.checked) {
+                                if (next.size >= 100) break; // server caps bulk batches at 100 ids
+                                next.add(t.id);
+                              } else next.delete(t.id);
                             }
                             return next;
                           });
@@ -667,14 +705,19 @@ export default function AdminTests() {
                           className="admin-check"
                           aria-label={`Select ${t.title}`}
                           checked={selected.has(t.id)}
-                          onChange={() =>
+                          onChange={() => {
+                            // Server caps bulk batches at 100 ids.
+                            if (!selected.has(t.id) && selected.size >= 100) {
+                              toast("Up to 100 tests per batch — deselect some first.", "error");
+                              return;
+                            }
                             setSelected((prev) => {
                               const next = new Set(prev);
                               if (next.has(t.id)) next.delete(t.id);
                               else next.add(t.id);
                               return next;
-                            })
-                          }
+                            });
+                          }}
                         />
                       </td>
                       <td className="max-w-[300px]">
@@ -701,19 +744,20 @@ export default function AdminTests() {
                       </td>
                       <td>
                         <div className="flex items-center justify-end gap-1">
-                          <button type="button" className="admin-btn px-2 py-1.5" title="Preview" onClick={() => openPreview(t)}>
+                          <button type="button" className="admin-btn px-2 py-1.5" title="Preview" aria-label="Preview test" onClick={() => openPreview(t)}>
                             <Icon name="eye" size={14} />
                           </button>
-                          <button type="button" className="admin-btn px-2 py-1.5" title="Edit" onClick={() => openEditor(t)}>
+                          <button type="button" className="admin-btn px-2 py-1.5" title="Edit" aria-label="Edit test" onClick={() => openEditor(t)}>
                             <Icon name="edit" size={14} />
                           </button>
-                          <button type="button" className="admin-btn px-2 py-1.5" title="Duplicate" onClick={() => duplicate(t)}>
+                          <button type="button" className="admin-btn px-2 py-1.5" title="Duplicate" aria-label="Duplicate test" onClick={() => duplicate(t)}>
                             <Icon name="copy" size={14} />
                           </button>
                           <button
                             type="button"
                             className={cx("admin-btn px-2 py-1.5", !t.published && "admin-btn-primary")}
                             title={t.published ? "Unpublish" : "Publish"}
+                            aria-label={t.published ? "Unpublish test" : "Publish test"}
                             onClick={() => togglePublish(t)}
                           >
                             <Icon name={t.published ? "eyeOff" : "check"} size={14} />
@@ -722,6 +766,7 @@ export default function AdminTests() {
                             type="button"
                             className="admin-btn admin-btn-danger px-2 py-1.5"
                             title="Delete"
+                            aria-label="Delete test"
                             onClick={() => {
                               setDelError(null);
                               setConfirmDel(t);
@@ -746,13 +791,13 @@ export default function AdminTests() {
       {/* editor modal */}
       <Modal
         open={!!editor}
-        onClose={() => setEditor(null)}
+        onClose={closeEditor}
         title={editor?.id ? "Edit test" : "New test"}
         subtitle="Title, schedule, access and the question sequence students will see."
         width="max-w-4xl"
         footer={
           <>
-            <button type="button" className="admin-btn" onClick={() => setEditor(null)} disabled={editorBusy}>
+            <button type="button" className="admin-btn" onClick={closeEditor} disabled={editorBusy}>
               Cancel
             </button>
             <button type="button" className="admin-btn admin-btn-primary" onClick={saveEditor} disabled={editorBusy}>
@@ -934,14 +979,15 @@ export default function AdminTests() {
                   onChange={(e) => setPickSearch(e.target.value)}
                   placeholder="Search the question bank…"
                   className="max-w-xs"
+                  aria-label="Search the question bank"
                 />
-                <Select value={pickDiff} onChange={(e) => setPickDiff(e.target.value)} className="w-auto">
+                <Select value={pickDiff} onChange={(e) => setPickDiff(e.target.value)} className="w-auto" aria-label="Filter by difficulty">
                   <option value="all">All difficulties</option>
                   <option value="Easy">Easy</option>
                   <option value="Medium">Medium</option>
                   <option value="Hard">Hard</option>
                 </Select>
-                <Select value={pickSubject} onChange={(e) => setPickSubject(e.target.value)} className="w-auto">
+                <Select value={pickSubject} onChange={(e) => setPickSubject(e.target.value)} className="w-auto" aria-label="Filter by subject">
                   <option value="all">All subjects</option>
                   {SUBJECTS.map((s) => (
                     <option key={s.key} value={s.key}>
@@ -951,7 +997,13 @@ export default function AdminTests() {
                 </Select>
               </div>
               <div className="admin-scroll max-h-56 space-y-1 overflow-y-auto">
-                {pickerList.length === 0 ? (
+                {bankData.error ? (
+                  <ErrorState message={bankData.error} onRetry={bankData.reload} />
+                ) : bankData.loading && !bankData.data ? (
+                  <p className="px-1 py-3 text-[12.5px]" style={{ color: "var(--muted)" }}>
+                    Loading the question bank…
+                  </p>
+                ) : pickerList.length === 0 ? (
                   <p className="px-1 py-3 text-[12.5px]" style={{ color: "var(--muted)" }}>
                     No questions match. Add questions in the Question Bank first.
                   </p>
@@ -1079,6 +1131,20 @@ export default function AdminTests() {
           </div>
         )}
       </Modal>
+
+      {/* discard guard */}
+      <ConfirmDialog
+        open={discardOpen}
+        title="Discard changes?"
+        tone="danger"
+        confirmLabel="Discard changes"
+        message="Your edits to this test haven't been saved. Discarding them cannot be undone."
+        onCancel={() => setDiscardOpen(false)}
+        onConfirm={() => {
+          setDiscardOpen(false);
+          setEditor(null);
+        }}
+      />
 
       {/* delete confirms */}
       <ConfirmDialog

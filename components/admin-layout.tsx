@@ -119,6 +119,20 @@ export default function AdminLayout({
   }, []);
   useInterval(loadNotif, 60_000);
 
+  // The bell and profile menus are lightweight popovers — Escape closes them
+  // (they already close on outside click).
+  useEffect(() => {
+    if (!menuOpen && !bellOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        setBellOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen, bellOpen]);
+
   const toggleCollapsed = () => {
     setCollapsed((v) => {
       try {

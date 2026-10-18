@@ -301,6 +301,7 @@ export default function AdminProfile() {
                   key={m.id}
                   type="button"
                   onClick={() => setPwMode(m.id)}
+                  aria-pressed={pwMode === m.id}
                   className="cursor-pointer rounded-full px-3 py-1.5 text-[12px] font-bold"
                   style={pwMode === m.id ? { background: "var(--btn-bg)", color: "var(--btn-text)" } : { color: "var(--muted)" }}
                 >

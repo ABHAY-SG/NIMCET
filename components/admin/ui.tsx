@@ -11,6 +11,11 @@ export function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
+// Stack of open dialogs (module scope). Only the topmost dialog reacts to
+// Escape/Tab: a confirm opened over a detail modal must not let one key close
+// both, and the two focus traps must not fight over Tab.
+const modalStack: symbol[] = [];
+
 export function initialsOf(name: string): string {
   const src = (name || "").trim();
   if (!src) return "?";
@@ -320,8 +325,11 @@ export function Modal({
   });
   useEffect(() => {
     if (!open) return;
+    const token = Symbol("modal");
+    modalStack.push(token);
     const restore = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
+      if (modalStack[modalStack.length - 1] !== token) return;
       if (e.key === "Escape") {
         onCloseRef.current();
         return;
@@ -361,6 +369,8 @@ export function Modal({
       auto?.focus();
     }, 0);
     return () => {
+      const i = modalStack.lastIndexOf(token);
+      if (i >= 0) modalStack.splice(i, 1);
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
       window.clearTimeout(t);

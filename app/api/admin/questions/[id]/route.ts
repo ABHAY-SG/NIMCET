@@ -12,13 +12,16 @@ function validate(body: Record<string, unknown>): string | null {
   if (body.topic !== undefined && !s(body.topic).trim()) return "Topic is required.";
   if (body.options !== undefined) {
     const opts = Array.isArray(body.options) ? body.options : [];
-    if (opts.length !== 4 || opts.some((o) => typeof o !== "string" || !o.trim())) {
-      return "All 4 options are required.";
+    if ((opts.length !== 4 && opts.length !== 5) || opts.some((o) => typeof o !== "string" || !o.trim())) {
+      return "Provide 4 or 5 non-empty options.";
     }
   }
   if (body.answer !== undefined) {
     const ans = Number(body.answer);
-    if (!Number.isInteger(ans) || ans < 0 || ans > 3) return "Answer must be option A–D.";
+    if (!Number.isInteger(ans) || ans < 0 || ans > 4) return "Answer must be option A–E.";
+    if (Array.isArray(body.options) && ans >= body.options.length) {
+      return "Answer must point to one of the provided options.";
+    }
   }
   if (body.difficulty !== undefined && !DIFFS.includes(String(body.difficulty))) {
     return "Difficulty must be Easy, Medium or Hard.";
@@ -60,6 +63,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = (await req.json()) as Record<string, unknown>;
     const bad = validate(body);
     if (bad) return NextResponse.json({ error: bad }, { status: 400 });
+
+    // An answer-only update must still point into the question's stored
+    // options — 4- and 5-option rows both exist in the bank.
+    if (body.answer !== undefined && body.options === undefined) {
+      const { data: row, error: rErr } = await svc.from("questions").select("options").eq("id", id).maybeSingle();
+      if (rErr) throw rErr;
+      if (!row) return NextResponse.json({ error: "Question not found." }, { status: 404 });
+      const stored = (row as { options?: unknown }).options;
+      const len = Array.isArray(stored) ? stored.length : 0;
+      if (Number(body.answer) >= len) {
+        return NextResponse.json({ error: "Answer must point to one of this question's options." }, { status: 400 });
+      }
+    }
+
     const patch = pick(body);
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: "Nothing to update." }, { status: 400 });

@@ -220,8 +220,6 @@ export default function AdminOverview() {
               <SectionCard title="System status" subtitle="Safe configuration visibility — no secrets shown">
                 <ul className="space-y-2 text-[13px]">
                   {[
-                    { ok: true, label: "Admin authorization (server-side allowlist)" },
-                    { ok: true, label: "Service-role database access (server-only)" },
                     { ok: data.status.avatars, label: "Avatars storage bucket" },
                     { ok: data.status.feedback, label: "Feedback table" },
                     { ok: data.status.announcements, label: "Announcements table" },
@@ -241,6 +239,10 @@ export default function AdminOverview() {
                     </li>
                   ))}
                 </ul>
+                <p className="mt-3 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
+                  Every admin page and API route is authorized server-side against the allowlist, and the service-role
+                  key is only ever used on the server — invariants of the panel, not check results.
+                </p>
                 {!data.status.feedback && (
                   <p className="mt-3 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
                     Missing tables are created by <code className="mono">supabase/migrations/0005_admin.sql</code>.

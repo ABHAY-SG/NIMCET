@@ -25,6 +25,11 @@ function validate(body: Record<string, unknown>): string | null {
   if (body.answer !== undefined) {
     const ans = Number(body.answer);
     if (!Number.isInteger(ans) || ans < 0 || ans > 4) return "Answer must be option A–E.";
+    // An answer key must point at an option that actually exists — a 4-option
+    // question with answer "E" would be unanswerable for every student.
+    if (Array.isArray(body.options) && ans >= body.options.length) {
+      return "Answer must point to one of the provided options.";
+    }
   }
   if (body.difficulty !== undefined && !DIFFS.includes(String(body.difficulty))) {
     return "Difficulty must be Easy, Medium or Hard.";
@@ -88,9 +93,12 @@ export async function GET(req: Request) {
       });
     }
 
-    const limit = toNum(searchParams.get("limit"), 500, 1, 1000);
     const sort = searchParams.get("sort") || "newest";
     const format = searchParams.get("format") || "";
+    // CSV exports carry the whole bank (with a hard safety cap); the JSON view
+    // stays small because the page filters and paginates client-side.
+    const isCsv = format === "csv";
+    const limit = toNum(searchParams.get("limit"), isCsv ? 20000 : 500, 1, isCsv ? 20000 : 1000);
     const idsParam = (searchParams.get("ids") || "").trim();
 
     let query = svc
@@ -122,9 +130,9 @@ export async function GET(req: Request) {
     const rows = (data ?? []) as QFull[];
 
     if (format === "csv") {
-      const letters = ["A", "B", "C", "D"];
+      const letters = ["A", "B", "C", "D", "E"];
       const csv = toCsv(
-        ["id", "exam", "section", "topic", "difficulty", "stem", "optionA", "optionB", "optionC", "optionD", "answer", "explanation", "plus", "minus", "created_at"],
+        ["id", "exam", "section", "topic", "difficulty", "stem", "optionA", "optionB", "optionC", "optionD", "optionE", "answer", "explanation", "plus", "minus", "created_at"],
         rows.map((r) => [
           r.id,
           r.exam,
@@ -136,6 +144,7 @@ export async function GET(req: Request) {
           r.options?.[1] ?? "",
           r.options?.[2] ?? "",
           r.options?.[3] ?? "",
+          r.options?.[4] ?? "",
           letters[r.answer] ?? "",
           r.explanation,
           r.plus,

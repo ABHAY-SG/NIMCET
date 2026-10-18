@@ -116,6 +116,7 @@ export default function AdminContent() {
           key={t.id}
           type="button"
           onClick={() => setTab(t.id)}
+          aria-pressed={tab === t.id}
           className="cursor-pointer rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition-colors"
           style={tab === t.id ? { background: "var(--btn-bg)", color: "var(--btn-text)" } : { color: "var(--muted)" }}
         >
@@ -182,21 +183,22 @@ export default function AdminContent() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
-                      <button type="button" className="admin-btn px-2 py-1.5" title="Preview" onClick={() => setPreview(a)}>
+                      <button type="button" className="admin-btn px-2 py-1.5" title="Preview" aria-label="Preview announcement" onClick={() => setPreview(a)}>
                         <Icon name="eye" size={14} />
                       </button>
-                      <button type="button" className="admin-btn px-2 py-1.5" title="Edit" onClick={() => openEditor(a)}>
+                      <button type="button" className="admin-btn px-2 py-1.5" title="Edit" aria-label="Edit announcement" onClick={() => openEditor(a)}>
                         <Icon name="edit" size={14} />
                       </button>
                       <button
                         type="button"
                         className={a.published ? "admin-btn px-2 py-1.5" : "admin-btn admin-btn-primary px-2 py-1.5"}
                         title={a.published ? "Unpublish" : "Publish"}
+                        aria-label={a.published ? "Unpublish announcement" : "Publish announcement"}
                         onClick={() => togglePublish(a)}
                       >
                         <Icon name={a.published ? "eyeOff" : "check"} size={14} />
                       </button>
-                      <button type="button" className="admin-btn admin-btn-danger px-2 py-1.5" title="Delete" onClick={() => setConfirmDel(a)}>
+                      <button type="button" className="admin-btn admin-btn-danger px-2 py-1.5" title="Delete" aria-label="Delete announcement" onClick={() => setConfirmDel(a)}>
                         <Icon name="trash" size={14} />
                       </button>
                     </div>
@@ -216,12 +218,12 @@ export default function AdminContent() {
               <ErrorState message={facetsData.error} onRetry={facetsData.reload} />
             </div>
           )}
-          {facetsData.loading && !facets ? (
+          {facetsData.loading && !facets && !facetsData.error ? (
             <div className="grid gap-3 lg:grid-cols-2">
               <Skeleton className="h-64" />
               <Skeleton className="h-64" />
             </div>
-          ) : (
+          ) : !facets ? null : (
             <div className="space-y-3">
               <Card className="px-4 py-3 text-[12.5px] leading-6" style={{ color: "var(--muted)" }}>
                 Subjects, sections and topics are free-text fields stored on each question — this catalog

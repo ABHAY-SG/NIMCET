@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import AdminLayout from "@/components/admin-layout";
 import {
   Badge,
@@ -126,7 +126,7 @@ export default function AdminAudit() {
           <EmptyState
             icon="audit"
             title="No audit entries match"
-            hint="Sensitive admin actions (test/question edits, deletions, score corrections, account status, settings) are recorded here. Nothing to show yet."
+            hint="Sensitive admin actions (test and question edits, deletions, score corrections, account status changes, announcements) are recorded here. Nothing to show yet."
           />
         </Card>
       ) : (
@@ -144,8 +144,20 @@ export default function AdminAudit() {
               </thead>
               <tbody>
                 {(data?.rows ?? []).map((r) => (
-                  <>
-                    <tr key={r.id} className="admin-row cursor-pointer" onClick={() => setExpanded(expanded === r.id ? null : r.id)}>
+                  <Fragment key={r.id}>
+                    <tr
+                      key={r.id}
+                      className="admin-row cursor-pointer"
+                      tabIndex={0}
+                      aria-expanded={expanded === r.id}
+                      onClick={() => setExpanded(expanded === r.id ? null : r.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setExpanded(expanded === r.id ? null : r.id);
+                        }
+                      }}
+                    >
                       <td>
                         <span style={{ color: "var(--muted)" }}>
                           <Icon name={expanded === r.id ? "chevronDown" : "chevronRight"} size={13} />
@@ -188,7 +200,7 @@ export default function AdminAudit() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

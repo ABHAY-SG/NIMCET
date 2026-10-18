@@ -51,14 +51,14 @@ type Editor = {
   topic: string;
   difficulty: string;
   stem: string;
-  options: [string, string, string, string];
+  options: [string, string, string, string, string];
   answer: number;
   explanation: string;
   plus: string;
   minus: string;
 };
 
-const LETTERS = ["A", "B", "C", "D"];
+const LETTERS = ["A", "B", "C", "D", "E"];
 
 function emptyEditor(): Editor {
   return {
@@ -68,7 +68,7 @@ function emptyEditor(): Editor {
     topic: "",
     difficulty: "Medium",
     stem: "",
-    options: ["", "", "", ""],
+    options: ["", "", "", "", ""],
     answer: 0,
     explanation: "",
     plus: "12",
@@ -92,6 +92,8 @@ export default function AdminQuestions() {
   const [page, setPage] = useState(1);
 
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [editorBase, setEditorBase] = useState("");
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [editorBusy, setEditorBusy] = useState(false);
   const [preview, setPreview] = useState<QRow | null>(null);
   const [showKey, setShowKey] = useState(false);
@@ -128,23 +130,34 @@ export default function AdminQuestions() {
   const paged = filtered.slice((safePage - 1) * per, safePage * per);
 
   const openEditor = (q?: QRow) => {
-    if (q) {
-      setEditor({
-        id: q.id,
-        exam: q.exam,
-        section: q.section,
-        topic: q.topic,
-        difficulty: q.difficulty,
-        stem: q.stem,
-        options: [q.options?.[0] ?? "", q.options?.[1] ?? "", q.options?.[2] ?? "", q.options?.[3] ?? ""],
-        answer: q.answer,
-        explanation: q.explanation,
-        plus: String(q.plus),
-        minus: String(q.minus),
-      });
-    } else {
-      setEditor(emptyEditor());
+    const ed: Editor = q
+      ? {
+          id: q.id,
+          exam: q.exam,
+          section: q.section,
+          topic: q.topic,
+          difficulty: q.difficulty,
+          stem: q.stem,
+          options: [q.options?.[0] ?? "", q.options?.[1] ?? "", q.options?.[2] ?? "", q.options?.[3] ?? "", q.options?.[4] ?? ""],
+          answer: q.answer,
+          explanation: q.explanation,
+          plus: String(q.plus),
+          minus: String(q.minus),
+        }
+      : emptyEditor();
+    setEditor(ed);
+    setEditorBase(JSON.stringify(ed));
+  };
+
+  // Closing with unsaved edits asks first — the editor holds the full question
+  // and losing it to a stray click is worse than one extra confirmation.
+  const closeEditor = () => {
+    if (!editor || editorBusy) return;
+    if (JSON.stringify(editor) !== editorBase) {
+      setDiscardOpen(true);
+      return;
     }
+    setEditor(null);
   };
 
   const saveEditor = async () => {
@@ -152,7 +165,11 @@ export default function AdminQuestions() {
     if (editor.stem.trim().length < 5) return toast("Question text needs at least 5 characters.", "error");
     if (!editor.exam.trim()) return toast("Exam is required.", "error");
     if (!editor.topic.trim()) return toast("Topic is required.", "error");
-    if (editor.options.some((o) => !o.trim())) return toast("All 4 options are required.", "error");
+    const opts = editor.options.map((o) => o.trim());
+    if (opts.slice(0, 4).some((o) => !o)) return toast("All 4 options are required.", "error");
+    if (!opts[4] && editor.answer === 4) {
+      return toast("Option E is empty — fill it in or pick a different correct answer.", "error");
+    }
     const plus = Number(editor.plus);
     const minus = Number(editor.minus);
     if (!Number.isFinite(plus) || plus <= 0) return toast("Positive marks must be greater than 0.", "error");
@@ -166,7 +183,7 @@ export default function AdminQuestions() {
         topic: editor.topic.trim(),
         difficulty: editor.difficulty,
         stem: editor.stem.trim(),
-        options: editor.options.map((o) => o.trim()),
+        options: opts[4] ? opts : opts.slice(0, 4),
         answer: editor.answer,
         explanation: editor.explanation.trim(),
         plus,
@@ -364,7 +381,7 @@ export default function AdminQuestions() {
           className="admin-btn"
           onClick={async () => {
             try {
-              await downloadFile("/api/admin/questions?format=csv&limit=1000", "questions.csv");
+              await downloadFile("/api/admin/questions?format=csv", "questions.csv");
             } catch (e) {
               toast(e instanceof Error ? e.message : "Export failed.", "error");
             }
@@ -453,13 +470,21 @@ export default function AdminQuestions() {
                         type="checkbox"
                         className="admin-check"
                         aria-label="Select all on page"
+                        ref={(el) => {
+                          if (el) {
+                            el.indeterminate =
+                              paged.some((q) => selected.has(q.id)) && !paged.every((q) => selected.has(q.id));
+                          }
+                        }}
                         checked={paged.length > 0 && paged.every((q) => selected.has(q.id))}
                         onChange={(e) => {
                           setSelected((prev) => {
                             const next = new Set(prev);
                             for (const q of paged) {
-                              if (e.target.checked) next.add(q.id);
-                              else next.delete(q.id);
+                              if (e.target.checked) {
+                                if (next.size >= 100) break; // server caps bulk batches at 100 ids
+                                next.add(q.id);
+                              } else next.delete(q.id);
                             }
                             return next;
                           });
@@ -484,14 +509,19 @@ export default function AdminQuestions() {
                           className="admin-check"
                           aria-label="Select question"
                           checked={selected.has(q.id)}
-                          onChange={() =>
+                          onChange={() => {
+                            // Server caps bulk batches at 100 ids.
+                            if (!selected.has(q.id) && selected.size >= 100) {
+                              toast("Up to 100 questions per batch — deselect some first.", "error");
+                              return;
+                            }
                             setSelected((prev) => {
                               const next = new Set(prev);
                               if (next.has(q.id)) next.delete(q.id);
                               else next.add(q.id);
                               return next;
-                            })
-                          }
+                            });
+                          }}
                         />
                       </td>
                       <td className="max-w-[340px]">
@@ -522,6 +552,7 @@ export default function AdminQuestions() {
                             type="button"
                             className="admin-btn px-2 py-1.5"
                             title="Preview (student view)"
+                            aria-label="Preview question (student view)"
                             onClick={() => {
                               setPreview(q);
                               setShowKey(false);
@@ -529,10 +560,10 @@ export default function AdminQuestions() {
                           >
                             <Icon name="eye" size={14} />
                           </button>
-                          <button type="button" className="admin-btn px-2 py-1.5" title="Edit" onClick={() => openEditor(q)}>
+                          <button type="button" className="admin-btn px-2 py-1.5" title="Edit" aria-label="Edit question" onClick={() => openEditor(q)}>
                             <Icon name="edit" size={14} />
                           </button>
-                          <button type="button" className="admin-btn admin-btn-danger px-2 py-1.5" title="Delete" onClick={() => setConfirmDel(q)}>
+                          <button type="button" className="admin-btn admin-btn-danger px-2 py-1.5" title="Delete" aria-label="Delete question" onClick={() => setConfirmDel(q)}>
                             <Icon name="trash" size={14} />
                           </button>
                         </div>
@@ -552,13 +583,13 @@ export default function AdminQuestions() {
       {/* editor */}
       <Modal
         open={!!editor}
-        onClose={() => setEditor(null)}
+        onClose={closeEditor}
         title={editor?.id ? "Edit question" : "New question"}
         subtitle="Stored in the bank with its answer key; students never see the key before submitting."
         width="max-w-3xl"
         footer={
           <>
-            <button type="button" className="admin-btn" onClick={() => setEditor(null)} disabled={editorBusy}>
+            <button type="button" className="admin-btn" onClick={closeEditor} disabled={editorBusy}>
               Cancel
             </button>
             <button type="button" className="admin-btn admin-btn-primary" onClick={saveEditor} disabled={editorBusy}>
@@ -604,7 +635,7 @@ export default function AdminQuestions() {
 
             <div>
               <span className="mb-1.5 block text-[11.5px] font-extrabold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.08em" }}>
-                Options — click the circle to set the correct answer
+                Options — click the circle to set the correct answer (E is optional)
               </span>
               <div className="space-y-2">
                 {editor.options.map((opt, i) => (
@@ -625,11 +656,11 @@ export default function AdminQuestions() {
                     <TextInput
                       value={opt}
                       onChange={(e) => {
-                        const next = [...editor.options] as [string, string, string, string];
+                        const next = [...editor.options] as [string, string, string, string, string];
                         next[i] = e.target.value;
                         setEditor({ ...editor, options: next });
                       }}
-                      placeholder={`Option ${LETTERS[i]}`}
+                      placeholder={i === 4 ? "Option E (optional)" : `Option ${LETTERS[i]}`}
                     />
                   </div>
                 ))}
@@ -711,6 +742,18 @@ export default function AdminQuestions() {
         )}
       </Modal>
 
+      <ConfirmDialog
+        open={discardOpen}
+        title="Discard changes?"
+        tone="danger"
+        confirmLabel="Discard changes"
+        message="Your edits to this question haven't been saved. Discarding them cannot be undone."
+        onCancel={() => setDiscardOpen(false)}
+        onConfirm={() => {
+          setDiscardOpen(false);
+          setEditor(null);
+        }}
+      />
       <ConfirmDialog
         open={!!confirmDel}
         title="Delete question?"
