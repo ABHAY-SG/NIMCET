@@ -28,3 +28,16 @@ Keep a qualifying candidate through the reporting pass even if you resolve or wo
 Before the final response, run one reporting pass. If candidates remain, from this file's directory run `node node_modules/next/dist/bin/next internal agent-feedback-instructions` once without piping or truncating its output. Follow its output or error guidance. If a network sandbox blocks it, retry with network access; if it still returns no output, continue normally.
 
 <!-- END:nextjs-agent-feedback -->
+
+## Deploy after every task
+
+A finished task is not done until it is deployed. When a task's changes are complete and verified:
+
+1. `git add` only the files that task touched.
+2. Commit (short conventional message, e.g. `feat(mock): ...`).
+3. `git push origin main` (GitHub `ABHAY-SG/NIMCET`).
+
+Vercel auto-deploys `main` to production: https://nimcet-eta.vercel.app
+
+Never stage or commit unrelated in-progress work — other sessions may be editing this repo at the same time.
+

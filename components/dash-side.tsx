@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 
-export type DashView = "home" | "mock" | "history" | "contact" | "pricing" | "feedback";
+export type DashView = "home" | "mock" | "builder" | "history" | "contact" | "pricing" | "feedback";
 
 type Item = { label: string; icon: React.ReactNode; view?: DashView; href?: string; soon?: boolean };
 
@@ -24,6 +24,7 @@ const ICONS: Record<string, React.ReactNode> = {
   mail: (<I><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></I>),
   tag: (<I><path d="M3 12V4h8l9 9-8 8-9-9z" /><circle cx="8" cy="9" r="1.5" /></I>),
   chat: (<I><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.5 0-3-.4-4.2-1L3 20l1.5-5.3A8.5 8.5 0 1 1 21 11.5z" /></I>),
+  flask: (<I><path d="M9 3h6" /><path d="M10 3v6.2l-5.3 9.4A1.8 1.8 0 0 0 6.3 21h11.4a1.8 1.8 0 0 0 1.6-2.4L14 9.2V3" /><path d="M7.5 15h9" /></I>),
 };
 
 const GROUPS: Array<{ title: string; items: Item[] }> = [
@@ -32,6 +33,12 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
     items: [
       { label: "NIMCET Mock", icon: ICONS.play, view: "mock" },
       { label: "NIMCET PYQ", icon: ICONS.history, soon: true },
+    ],
+  },
+  {
+    title: "Test Builder",
+    items: [
+      { label: "Create Custom Mock", icon: ICONS.flask, view: "builder" },
     ],
   },
   {

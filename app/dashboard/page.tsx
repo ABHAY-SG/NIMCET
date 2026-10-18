@@ -6,6 +6,7 @@ import CountUp from "@/components/count-up";
 import DashNav from "@/components/dash-nav";
 import DashSide, { type DashView } from "@/components/dash-side";
 import MockHub from "@/components/mock-hub";
+import MockBuilder from "@/components/mock-builder";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
 import { calcBestStreak, calcStreak, formatStreak, lastWeekActivity } from "@/lib/streak";
 
@@ -685,6 +686,9 @@ export default function DashboardPage() {
       )}
       {view === "mock" && (
         <MockHub attempted={attemptedCounts} />
+      )}
+      {view === "builder" && (
+        <MockBuilder />
       )}
       {view === "history" && (
         <>
