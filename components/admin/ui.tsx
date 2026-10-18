@@ -308,12 +308,22 @@ export function Modal({
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
+  // Latest onClose in a ref so the dialog effect below can depend on `open`
+  // alone. Callers pass inline onClose arrows, so including it in the deps
+  // re-ran the effect on every parent render — i.e. on every keystroke in a
+  // form field. The cleanup yanked focus back to the opener and the re-run
+  // auto-focused the dialog's first focusable element (the × button), so
+  // typing one character jumped focus to the top-right corner.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
   useEffect(() => {
     if (!open) return;
     const restore = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       // Keep keyboard focus inside the dialog while it is open.
@@ -344,7 +354,10 @@ export function Modal({
       if (!root) return;
       const auto =
         root.querySelector<HTMLElement>("[data-autofocus]") ??
-        root.querySelector<HTMLElement>('input, textarea, select, a[href], button:not([disabled])');
+        root.querySelector<HTMLElement>(
+          'input:not([type="checkbox"]):not([type="radio"]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+        ) ??
+        root.querySelector<HTMLElement>('button:not([disabled]), a[href]');
       auto?.focus();
     }, 0);
     return () => {
@@ -356,7 +369,7 @@ export function Modal({
         restore?.focus();
       } catch {}
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (
