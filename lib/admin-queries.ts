@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { checkFullMockComposition, subjectRank } from "./nimcet-full-mock";
 
 // SERVER ONLY — shared read helpers for the admin API routes.
 // Everything here runs behind requireAdmin()/requireUser() with the service
@@ -34,10 +35,10 @@ export function isUuid(v: unknown): v is string {
 export function migrationHint(e: unknown): string | null {
   const m = errText(e);
   if (/PGRST205|42P01|could not find the table|relation .* does not exist/i.test(m)) {
-    return "The database is missing an admin table. Run supabase/migrations/0005_admin.sql in the Supabase SQL Editor, then retry.";
+    return "The database is missing a table. Run the pending migrations (supabase/migrations/0005_admin.sql and 0007_full_mock.sql) in the Supabase SQL Editor, then retry.";
   }
   if (/PGRST204|42703|could not find the .* column|column .* does not exist/i.test(m)) {
-    return "The database is missing a new column. Run supabase/migrations/0005_admin.sql in the Supabase SQL Editor, then retry.";
+    return "The database is missing a column. Run the pending migrations (supabase/migrations/0005_admin.sql and 0007_full_mock.sql) in the Supabase SQL Editor, then retry.";
   }
   return null;
 }
@@ -170,6 +171,65 @@ export async function fetchAllQuestionsLite(svc: SupabaseClient, cap = 5000): Pr
   return out.slice(0, cap);
 }
 
+export type CompositionQuestion = {
+  id: string;
+  section: string;
+  options: unknown;
+  answer: unknown;
+  plus: unknown;
+  minus: unknown;
+};
+
+// Full-mock publish validation needs the questions' own options/answer/marks.
+// Paged so a 120-id paper never hits PostgREST query limits.
+export async function fetchQuestionsByIds(
+  svc: SupabaseClient,
+  ids: string[]
+): Promise<CompositionQuestion[]> {
+  const out: CompositionQuestion[] = [];
+  const step = 200;
+  for (let i = 0; i < ids.length; i += step) {
+    const chunk = ids.slice(i, i + step);
+    const { data, error } = await svc
+      .from("questions")
+      .select("id,section,options,answer,plus,minus")
+      .in("id", chunk);
+    if (error) throw error;
+    out.push(...((data ?? []) as CompositionQuestion[]));
+  }
+  return out;
+}
+
+// Every reason a full-mock question list is not publishable yet, in the same
+// verdict the admin UI shows. Empty array = publishable.
+export async function fullMockIssues(svc: SupabaseClient, ids: string[]): Promise<string[]> {
+  const unique = [...new Set(ids)];
+  const issues: string[] = [];
+  if (unique.length !== ids.length) issues.push("The paper contains duplicate question references.");
+  const rows = await fetchQuestionsByIds(svc, unique);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const missing = unique.filter((id) => !byId.has(id));
+  if (missing.length > 0) issues.push(`${missing.length} selected question(s) no longer exist in the bank.`);
+  const outcome = checkFullMockComposition(unique.filter((id) => byId.has(id)).map((id) => byId.get(id)!));
+  return [...issues, ...outcome.issues];
+}
+
+export function fullMockIssueText(issues: string[]): string {
+  const head = issues.slice(0, 3);
+  const more = issues.length > head.length ? ` (+${issues.length - head.length} more)` : "";
+  return `This full mock is not publishable yet: ${head.join(" ")}${more}`;
+}
+
+// Canonicalises a full-mock question list into the official subject order
+// (stable, so the administrator's relative order inside a subject survives).
+// Called on every content save of a template test so the runner's fixed slices
+// always line up with the paper structure.
+export async function normalizeFullMockIds(svc: SupabaseClient, ids: string[]): Promise<string[]> {
+  const rows = await fetchQuestionsByIds(svc, [...new Set(ids)]);
+  const sectionById = new Map(rows.map((r) => [r.id, r.section]));
+  return [...ids].sort((a, b) => subjectRank(sectionById.get(a)) - subjectRank(sectionById.get(b)));
+}
+
 export type TestLite = {
   id: string;
   exam: string;
@@ -181,26 +241,36 @@ export type TestLite = {
   question_ids: string[];
   description: string;
   instructions: string;
+  /** "" for custom/practice tests; "nimcet-2026" for the full-mock template. */
+  template: string;
   created_at: string;
 };
 
-// description/instructions only exist after migration 0005. Read compatibly
-// and report whether the new columns were found, so routes can degrade
-// gracefully instead of 500ing before the migration runs.
+// description/instructions only exist after migration 0005 and template after
+// 0007. Read compatibly in stages and report what was found, so routes can
+// degrade gracefully instead of 500ing before the migrations run.
 export async function fetchAllTests(
   svc: SupabaseClient,
   cap = 1000
-): Promise<{ tests: TestLite[]; migrated: boolean }> {
+): Promise<{ tests: TestLite[]; migrated: boolean; templated: boolean }> {
+  const withTemplate =
+    "id,exam,title,tag,minutes,free,published,question_ids,description,instructions,template,created_at";
   const full = "id,exam,title,tag,minutes,free,published,question_ids,description,instructions,created_at";
   const legacy = "id,exam,title,tag,minutes,free,published,question_ids,created_at";
   const run = (cols: string) =>
     svc.from("tests").select(cols).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(cap);
 
-  let res = await run(full);
+  let res = await run(withTemplate);
   let migrated = true;
+  let templated = true;
+  if (res.error) {
+    res = await run(full);
+    templated = false;
+  }
   if (res.error) {
     res = await run(legacy);
     migrated = false;
+    templated = false;
   }
   if (res.error) throw res.error;
   const raw = (res.data ?? []) as unknown as Array<Record<string, unknown>>;
@@ -215,9 +285,10 @@ export async function fetchAllTests(
     question_ids: Array.isArray(t.question_ids) ? (t.question_ids as string[]) : [],
     description: String(t.description ?? ""),
     instructions: String(t.instructions ?? ""),
+    template: typeof t.template === "string" ? t.template : "",
     created_at: String(t.created_at ?? ""),
   }));
-  return { tests, migrated };
+  return { tests, migrated, templated };
 }
 
 // Generic newest-first paged walk for tables with created_at. Respects the

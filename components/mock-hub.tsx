@@ -2,9 +2,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MockDemo, { SAMPLE_MARKS, SAMPLE_QUESTION_COUNT, type MockQuestion } from "@/components/mockdemo";
 import MockCard from "@/components/mock-card";
+import MockExam from "@/components/mock-exam";
 import MockInstructions, { type SchemeRow } from "@/components/mock-instructions";
 import { getSupabase } from "@/lib/supabase";
 import { parseParts, partRanges, RUN_KEY, LEGACY_RUN_KEY, type ExamPart } from "@/lib/exam-parts";
+import {
+  FULL_MOCK_MAX_MARKS,
+  FULL_MOCK_MINUTES,
+  FULL_MOCK_QUESTIONS,
+  isFullMockTemplate,
+  partNote,
+  SUBJECTS,
+  templateParts,
+} from "@/lib/nimcet-full-mock";
 
 type BankRow = {
   id: string;
@@ -29,9 +39,20 @@ type Test = {
   description: string;
   instructions: string;
   sections?: unknown;
+  template?: string;
 };
 
-type Run = { qs: MockQuestion[]; title: string; testName: string; attemptName: string; testId?: string; minutes: number; parts?: ExamPart[] };
+type Run = {
+  qs: MockQuestion[];
+  title: string;
+  testName: string;
+  attemptName: string;
+  testId?: string;
+  minutes: number;
+  parts?: ExamPart[];
+  /** Server-enforced template exam (NIMCET full mock) — run by MockExam. */
+  serverExam?: boolean;
+};
 
 // Everything the pre-exam instructions page needs, plus the run it will
 // launch — resolved once, so Start Test is a pure state flip.
@@ -44,6 +65,8 @@ type Setup = {
   timed: boolean;
   instructions: string;
   run: Run;
+  /** Server-enforced template exam — instructions switch to server wording. */
+  serverMode?: boolean;
 };
 
 type SectionGroup = { label: string; count: number; marks: number; plus: number; minus: number };
@@ -63,6 +86,7 @@ function toTest(raw: Record<string, unknown>): Test {
     description: typeof raw.description === "string" ? raw.description : "",
     instructions: typeof raw.instructions === "string" ? raw.instructions : "",
     sections: raw.sections,
+    template: typeof raw.template === "string" ? raw.template : "",
   };
 }
 
@@ -230,6 +254,46 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
   // Resolves a published test and opens its two-page instructions flow. The
   // ready-to-run payload travels with the setup so Start Test is instant.
   const openSetup = async (t: Test) => {
+    if (isFullMockTemplate(t.template)) {
+      // Template exams are server-run: the paper structure comes straight from
+      // the template (no bank prefetch) and the server serves each timed
+      // section only when its window opens.
+      const parts = templateParts();
+      const scheme: SchemeRow[] = parts.map((p, i) => {
+        const subs = SUBJECTS.filter((s) => s.part === i);
+        return {
+          label: p.label,
+          count: p.count,
+          marks: subs.reduce((sum, s) => sum + s.count * s.plus, 0),
+          plus: subs[0]?.plus ?? 0,
+          minus: subs[0]?.minus ?? 0,
+          minutes: p.minutes,
+          note: partNote(i) || undefined,
+        };
+      });
+      setSetup({
+        title: t.title,
+        minutes: FULL_MOCK_MINUTES,
+        count: FULL_MOCK_QUESTIONS,
+        totalMarks: FULL_MOCK_MAX_MARKS,
+        scheme,
+        timed: true,
+        instructions: t.instructions || "",
+        serverMode: true,
+        run: {
+          qs: [],
+          title: t.title.toUpperCase(),
+          testName: `${t.title} (${FULL_MOCK_QUESTIONS}Q)`,
+          attemptName: t.title,
+          testId: t.id,
+          minutes: FULL_MOCK_MINUTES,
+          parts,
+          serverExam: true,
+        },
+      });
+      window.scrollTo({ top: 0 });
+      return;
+    }
     setPendingId(t.id);
     window.scrollTo({ top: 0 });
     const rows = await resolveRows(t);
@@ -340,6 +404,23 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
   };
 
   if (run) {
+    if (run.serverExam && run.testId) {
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("Leave the exam? The server clock keeps running — you can resume before the section ends.")) leaveRun();
+            }}
+            className="mb-3 inline-flex cursor-pointer items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1"
+            style={{ color: "var(--muted)" }}
+          >
+            <span aria-hidden>←</span> Back to mocks
+          </button>
+          <MockExam testId={run.testId} title={run.testName} onExit={leaveRun} />
+        </div>
+      );
+    }
     return (
       <div>
         <button
@@ -383,6 +464,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
           scheme={setup.scheme}
           timed={setup.timed}
           instructions={setup.instructions}
+          serverMode={setup.serverMode}
           onStart={() => {
             setRun(setup.run);
             setSetup(null);

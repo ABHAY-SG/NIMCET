@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
-import { errorPayload } from "@/lib/admin-queries";
+import { errorPayload, fullMockIssues, fullMockIssueText } from "@/lib/admin-queries";
+import { isFullMockTemplate } from "@/lib/nimcet-full-mock";
 import { logAdminAction } from "@/lib/audit";
 
 // POST /api/admin/tests/bulk — publish / unpublish / free / paid / delete for a
@@ -28,13 +29,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unknown bulk action." }, { status: 400 });
     }
 
-    const { data: rows, error: fErr } = await svc.from("tests").select("id,title").in("id", ids);
-    if (fErr) throw fErr;
-    const found = (rows ?? []) as Array<{ id: string; title: string }>;
+    // `template` only exists after migration 0007 — read it compatibly.
+    type BulkRow = { id: string; title: string; template?: string; question_ids?: string[]; published?: boolean };
+    let found: BulkRow[] = [];
+    {
+      const withTemplate = await svc
+        .from("tests")
+        .select("id,title,template,question_ids,published")
+        .in("id", ids);
+      if (!withTemplate.error) {
+        found = (withTemplate.data ?? []) as BulkRow[];
+      } else {
+        const basic = await svc.from("tests").select("id,title").in("id", ids);
+        if (basic.error) throw basic.error;
+        found = (basic.data ?? []) as BulkRow[];
+      }
+    }
     if (found.length === 0) {
       return NextResponse.json({ error: "No matching tests found." }, { status: 404 });
     }
     const foundIds = found.map((t) => t.id);
+
+    // Publishing a full-mock draft goes through the same composition gate as
+    // the single-test publish path — a bulk action must not bypass it.
+    if (action === "publish") {
+      for (const t of found) {
+        if (!isFullMockTemplate(t.template) || t.published) continue;
+        const issues = await fullMockIssues(svc, Array.isArray(t.question_ids) ? t.question_ids : []);
+        if (issues.length > 0) {
+          return NextResponse.json(
+            { error: `“${t.title}” — ${fullMockIssueText(issues)}` },
+            { status: 400 }
+          );
+        }
+      }
+    }
 
     if (action === "delete") {
       const counts = await Promise.all(

@@ -9,6 +9,8 @@ export type SchemeRow = {
   plus: number;
   minus: number;
   minutes?: number;
+  /** Optional clarification shown under the row (e.g. Part III mixes two subjects). */
+  note?: string;
 };
 
 // Palette colours shared by the instructions legend and the live question
@@ -78,6 +80,7 @@ export default function MockInstructions({
   scheme,
   timed,
   instructions,
+  serverMode = false,
   onStart,
 }: {
   title: string;
@@ -87,6 +90,8 @@ export default function MockInstructions({
   scheme: SchemeRow[];
   timed: boolean;
   instructions?: string;
+  /** True for server-enforced template exams: no early submit, resume via server. */
+  serverMode?: boolean;
   onStart: () => void;
 }) {
   const [page, setPage] = useState<1 | 2>(1);
@@ -102,8 +107,12 @@ export default function MockInstructions({
       : "The countdown starts as soon as you begin and never pauses, even if you switch tabs or refresh the page.",
     `Every question is a multiple-choice question with 4 options — exactly one option is correct.`,
     "Unattempted questions score 0. There is no negative marking for leaving a question blank.",
-    "Refreshing or reopening the page is safe: your answers, your position and the running clock are restored automatically.",
-    "The test submits itself when the time ends — you can also submit early with the Submit Test button. Answers cannot be changed after submission.",
+    serverMode
+      ? "Refreshing or reopening the page is safe: your answers and the section clock live on the server, so you resume exactly where you left off."
+      : "Refreshing or reopening the page is safe: your answers, your position and the running clock are restored automatically.",
+    serverMode
+      ? "The test submits itself when the final section's time ends — there is no early submission, so use every minute you are given."
+      : "The test submits itself when the time ends — you can also submit early with the Submit Test button. Answers cannot be changed after submission.",
     "This is an original NIMCET-style practice paper, not the official question paper.",
   ];
 
@@ -222,7 +231,14 @@ export default function MockInstructions({
                     <tbody>
                       {scheme.map((s) => (
                         <tr key={s.label} style={{ borderTop: "1px solid var(--border)", color: "var(--text)" }}>
-                          <td className="py-2 pr-3 font-semibold">{s.label}</td>
+                          <td className="py-2 pr-3 font-semibold">
+                            {s.label}
+                            {s.note ? (
+                              <span className="block text-[11px] font-normal" style={{ color: "var(--muted)" }}>
+                                {s.note}
+                              </span>
+                            ) : null}
+                          </td>
                           <td className="mono px-2 py-2 text-right">{s.count}</td>
                           <td className="mono px-2 py-2 text-right">{fmtMarks(s.marks)}</td>
                           <td className="mono px-2 py-2 text-right">+{s.plus} / {s.minus}</td>
@@ -246,7 +262,11 @@ export default function MockInstructions({
               <Bullet>Every correct answer adds the section&apos;s positive mark; every wrong answer deducts its negative mark.</Bullet>
               <Bullet>Unattempted questions are worth 0 — skipping is never penalised.</Bullet>
               <Bullet>The clock does not pause, even if you get pulled away from the screen.</Bullet>
-              <Bullet>Your paper is scored on the server the moment you submit — the browser never decides your marks.</Bullet>
+              <Bullet>
+                {serverMode
+                  ? "Your paper is scored on the server when the final section ends — the browser never decides your marks."
+                  : "Your paper is scored on the server the moment you submit — the browser never decides your marks."}
+              </Bullet>
             </ul>
 
             <label

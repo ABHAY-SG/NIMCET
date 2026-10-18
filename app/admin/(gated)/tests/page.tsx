@@ -21,6 +21,14 @@ import {
 import { Icon } from "@/components/admin/icons";
 import { adminMutate, downloadFile, useAdminData, usePageSize } from "@/components/admin/hooks";
 import { fmtDate, fmtNum } from "@/lib/format";
+import {
+  checkFullMockComposition,
+  FULL_MOCK_MINUTES,
+  FULL_MOCK_TEMPLATE,
+  subjectForSection,
+  SUBJECTS,
+  subjectRank,
+} from "@/lib/nimcet-full-mock";
 
 type TestRow = {
   id: string;
@@ -33,11 +41,21 @@ type TestRow = {
   question_ids: string[];
   description: string;
   instructions: string;
+  template: string;
   created_at: string;
   questionCount: number;
   maxMarks: number;
   minMarks: number;
 };
+
+// Prefers publishable questions when auto-filling a full mock from the bank.
+function cleanScore(q: QRow, plus: number, minus: number): number {
+  let s = 0;
+  if (Array.isArray(q.options) && q.options.length === 4 && q.options.every((o) => String(o ?? "").trim())) s += 2;
+  if (Number.isInteger(q.answer) && q.answer >= 0 && q.answer <= 3) s += 2;
+  if (Math.abs(Number(q.plus) - plus) < 1e-9 && Math.abs(Number(q.minus) - minus) < 1e-9) s += 2;
+  return s;
+}
 
 type QRow = {
   id: string;
@@ -64,6 +82,8 @@ type Editor = {
   description: string;
   instructions: string;
   questionIds: string[];
+  /** "" for custom tests; FULL_MOCK_TEMPLATE for the official NIMCET full mock. */
+  template: string;
 };
 
 const LETTERS = ["A", "B", "C", "D"];
@@ -87,6 +107,7 @@ export default function AdminTests() {
   const [editorBusy, setEditorBusy] = useState(false);
   const [pickSearch, setPickSearch] = useState("");
   const [pickDiff, setPickDiff] = useState("all");
+  const [pickSubject, setPickSubject] = useState("all");
 
   const [preview, setPreview] = useState<TestRow | null>(null);
   const [previewQ, setPreviewQ] = useState<QRow[] | null>(null);
@@ -159,6 +180,7 @@ export default function AdminTests() {
         description: t.description,
         instructions: t.instructions,
         question_ids: t.question_ids,
+        template: t.template,
       });
       toast("Test duplicated as a draft.");
       reload();
@@ -275,6 +297,7 @@ export default function AdminTests() {
   const openEditor = (t?: TestRow) => {
     setPickSearch("");
     setPickDiff("all");
+    setPickSubject("all");
     if (t) {
       setEditor({
         id: t.id,
@@ -287,6 +310,7 @@ export default function AdminTests() {
         description: t.description,
         instructions: t.instructions,
         questionIds: [...t.question_ids],
+        template: t.template,
       });
     } else {
       setEditor({
@@ -300,6 +324,7 @@ export default function AdminTests() {
         description: "",
         instructions: "",
         questionIds: [],
+        template: "",
       });
     }
   };
@@ -308,11 +333,20 @@ export default function AdminTests() {
     if (!editor) return;
     const title = editor.title.trim();
     if (title.length < 3) return toast("Title needs at least 3 characters.", "error");
-    const minutes = Number(editor.minutes);
-    if (!Number.isFinite(minutes) || minutes < 5 || minutes > 180) {
+    const templateMode = editor.template === FULL_MOCK_TEMPLATE;
+    const minutes = templateMode ? FULL_MOCK_MINUTES : Number(editor.minutes);
+    if (!templateMode && (!Number.isFinite(minutes) || minutes < 5 || minutes > 180)) {
       return toast("Duration must be 5–180 minutes.", "error");
     }
     if (editor.questionIds.length === 0) return toast("Pick at least one question.", "error");
+    if (templateMode && editor.published) {
+      const rows = editor.questionIds.map((id) => bankById.get(id)).filter((q): q is QRow => !!q);
+      const issues = checkFullMockComposition(rows).issues;
+      if (editor.questionIds.length !== rows.length) {
+        issues.unshift("Some selected questions are not visible in the bank view — refresh the page and retry.");
+      }
+      if (issues.length > 0) return toast(`Can't publish this full mock: ${issues[0]}`, "error");
+    }
 
     setEditorBusy(true);
     try {
@@ -326,6 +360,7 @@ export default function AdminTests() {
         description: editor.description,
         instructions: editor.instructions,
         question_ids: editor.questionIds,
+        template: editor.template,
       };
       if (editor.id) await adminMutate(`/api/admin/tests/${editor.id}`, "PUT", payload);
       else await adminMutate("/api/admin/tests", "POST", payload);
@@ -362,6 +397,44 @@ export default function AdminTests() {
     });
   };
 
+  // Template helper: top up every subject to its official count from the bank
+  // (preferring fully valid questions), without touching what is selected.
+  const autoFill = () => {
+    setEditor((ed) => {
+      if (!ed || ed.template !== FULL_MOCK_TEMPLATE) return ed;
+      const picked = new Set(ed.questionIds);
+      const additions: string[] = [];
+      const countFor = (key: string) =>
+        ed.questionIds
+          .concat(additions)
+          .filter((id) => subjectForSection(bankById.get(id)?.section)?.key === key).length;
+      for (const s of SUBJECTS) {
+        let need = s.count - countFor(s.key);
+        if (need <= 0) continue;
+        const candidates = bank
+          .filter((q) => !picked.has(q.id) && subjectForSection(q.section)?.key === s.key)
+          .sort((a, b) => cleanScore(b, s.plus, s.minus) - cleanScore(a, s.plus, s.minus));
+        for (const q of candidates) {
+          if (need <= 0) break;
+          additions.push(q.id);
+          picked.add(q.id);
+          need -= 1;
+        }
+      }
+      return { ...ed, questionIds: [...ed.questionIds, ...additions] };
+    });
+  };
+
+  const sortPicks = () => {
+    setEditor((ed) => {
+      if (!ed || ed.template !== FULL_MOCK_TEMPLATE) return ed;
+      const next = [...ed.questionIds].sort(
+        (a, b) => subjectRank(bankById.get(a)?.section) - subjectRank(bankById.get(b)?.section)
+      );
+      return { ...ed, questionIds: next };
+    });
+  };
+
   // ---- preview ----
 
   const openPreview = async (t: TestRow) => {
@@ -386,9 +459,23 @@ export default function AdminTests() {
     const q = pickSearch.trim().toLowerCase();
     return bank
       .filter((b) => (pickDiff === "all" ? true : b.difficulty === pickDiff))
+      .filter((b) => (pickSubject === "all" ? true : subjectForSection(b.section)?.key === pickSubject))
       .filter((b) => (q ? `${b.stem} ${b.topic} ${b.section}`.toLowerCase().includes(q) : true))
       .slice(0, 60);
-  }, [bank, pickSearch, pickDiff]);
+  }, [bank, pickSearch, pickDiff, pickSubject]);
+
+  // Live composition verdict for a template test being edited: subject
+  // counters + every reason the paper is not publishable yet.
+  const editorFull = useMemo(() => {
+    if (!editor || editor.template !== FULL_MOCK_TEMPLATE) return null;
+    const rows: QRow[] = [];
+    for (const id of editor.questionIds) {
+      const q = bankById.get(id);
+      if (q) rows.push(q);
+    }
+    const outcome = checkFullMockComposition(rows);
+    return { ...outcome, hidden: editor.questionIds.length - rows.length };
+  }, [editor, bankById]);
 
   return (
     <AdminLayout>
@@ -591,7 +678,10 @@ export default function AdminTests() {
                         />
                       </td>
                       <td className="max-w-[300px]">
-                        <span className="block truncate font-bold">{t.title}</span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="min-w-0 truncate font-bold">{t.title}</span>
+                          {t.template === FULL_MOCK_TEMPLATE && <Badge tone="violet">Full mock</Badge>}
+                        </span>
                         <span className="block text-[11.5px]" style={{ color: "var(--muted)" }}>
                           {t.exam}
                           {t.tag ? ` · ${t.tag}` : ""}
@@ -687,13 +777,33 @@ export default function AdminTests() {
               <Field label="Tag" hint="Short label shown to students, e.g. “Full mock” or “Algebra”.">
                 <TextInput value={editor.tag} onChange={(e) => setEditor({ ...editor, tag: e.target.value })} placeholder="Full mock" />
               </Field>
-              <Field label="Duration (minutes)" hint="5–180 minutes.">
+              <Field label="Template" hint="Template tests enforce the official NIMCET 2026 structure on the server.">
+                <Select
+                  value={editor.template}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setEditor({
+                      ...editor,
+                      template: v,
+                      ...(v === FULL_MOCK_TEMPLATE ? { minutes: String(FULL_MOCK_MINUTES) } : {}),
+                    });
+                  }}
+                >
+                  <option value="">Custom / practice test</option>
+                  <option value={FULL_MOCK_TEMPLATE}>NIMCET 2026 Full Mock (official)</option>
+                </Select>
+              </Field>
+              <Field
+                label="Duration (minutes)"
+                hint={editor.template === FULL_MOCK_TEMPLATE ? `Fixed at ${FULL_MOCK_MINUTES} minutes (70 + 30 + 20).` : "5–180 minutes."}
+              >
                 <TextInput
                   type="number"
                   min={5}
                   max={180}
-                  value={editor.minutes}
+                  value={editor.template === FULL_MOCK_TEMPLATE ? String(FULL_MOCK_MINUTES) : editor.minutes}
                   onChange={(e) => setEditor({ ...editor, minutes: e.target.value })}
+                  disabled={editor.template === FULL_MOCK_TEMPLATE}
                 />
               </Field>
             </div>
@@ -747,6 +857,38 @@ export default function AdminTests() {
                 </span>
               </div>
 
+              {editor.template === FULL_MOCK_TEMPLATE && editorFull && (
+                <div className="mb-2 space-y-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {SUBJECTS.map((s) => {
+                      const n = editorFull.counts[s.key];
+                      return (
+                        <Badge key={s.key} tone={n === s.count ? "green" : n > s.count ? "red" : "amber"}>
+                          {s.short}: {n}/{s.count} · +{s.plus}/{s.minus}
+                        </Badge>
+                      );
+                    })}
+                    <button type="button" className="admin-btn px-2 py-1 text-[12px]" onClick={autoFill}>
+                      <Icon name="plus" size={12} /> Auto-fill missing
+                    </button>
+                    <button type="button" className="admin-btn px-2 py-1 text-[12px]" onClick={sortPicks}>
+                      Sort by subject
+                    </button>
+                  </div>
+                  {(editorFull.issues.length > 0 || editorFull.hidden > 0) && (
+                    <ul className="space-y-1 rounded-xl px-3 py-2 text-[12px]" style={{ background: "var(--bg)", color: "var(--muted)" }}>
+                      {editorFull.hidden > 0 && (
+                        <li>• {editorFull.hidden} selected question(s) are not visible in the bank view.</li>
+                      )}
+                      {editorFull.issues.slice(0, 4).map((iss, i) => (
+                        <li key={i}>• {iss}</li>
+                      ))}
+                      {editorFull.issues.length > 4 && <li>• …and {editorFull.issues.length - 4} more.</li>}
+                    </ul>
+                  )}
+                </div>
+              )}
+
               {editor.questionIds.length > 0 && (
                 <ul className="mb-3 space-y-1.5">
                   {editor.questionIds.map((id, i) => {
@@ -764,12 +906,19 @@ export default function AdminTests() {
                           {q ? q.stem : `Question ${id.slice(0, 8)}… (not in bank view)`}
                         </span>
                         {q && <Badge tone={q.difficulty === "Easy" ? "green" : q.difficulty === "Hard" ? "red" : "amber"}>{q.difficulty}</Badge>}
-                        <button type="button" className="admin-btn px-1.5 py-1" onClick={() => movePick(id, -1)} title="Move up">
-                          <Icon name="chevronLeft" size={12} className="rotate-90" />
-                        </button>
-                        <button type="button" className="admin-btn px-1.5 py-1" onClick={() => movePick(id, 1)} title="Move down">
-                          <Icon name="chevronRight" size={12} className="rotate-90" />
-                        </button>
+                        {editor.template === FULL_MOCK_TEMPLATE && q && (
+                          <Badge tone="neutral">{subjectForSection(q.section)?.short ?? q.section ?? "—"}</Badge>
+                        )}
+                        {editor.template !== FULL_MOCK_TEMPLATE && (
+                          <>
+                            <button type="button" className="admin-btn px-1.5 py-1" onClick={() => movePick(id, -1)} title="Move up">
+                              <Icon name="chevronLeft" size={12} className="rotate-90" />
+                            </button>
+                            <button type="button" className="admin-btn px-1.5 py-1" onClick={() => movePick(id, 1)} title="Move down">
+                              <Icon name="chevronRight" size={12} className="rotate-90" />
+                            </button>
+                          </>
+                        )}
                         <button type="button" className="admin-btn px-1.5 py-1" onClick={() => togglePick(id)} title="Remove">
                           <Icon name="x" size={12} />
                         </button>
@@ -791,6 +940,14 @@ export default function AdminTests() {
                   <option value="Easy">Easy</option>
                   <option value="Medium">Medium</option>
                   <option value="Hard">Hard</option>
+                </Select>
+                <Select value={pickSubject} onChange={(e) => setPickSubject(e.target.value)} className="w-auto">
+                  <option value="all">All subjects</option>
+                  {SUBJECTS.map((s) => (
+                    <option key={s.key} value={s.key}>
+                      {s.label}
+                    </option>
+                  ))}
                 </Select>
               </div>
               <div className="admin-scroll max-h-56 space-y-1 overflow-y-auto">
@@ -814,6 +971,7 @@ export default function AdminTests() {
                         }}
                       >
                         <span className="min-w-0 flex-1 truncate text-[12.5px]">{q.stem}</span>
+                        <Badge tone="neutral">{subjectForSection(q.section)?.short ?? (q.section || "—")}</Badge>
                         <Badge tone={q.difficulty === "Easy" ? "green" : q.difficulty === "Hard" ? "red" : "amber"}>{q.difficulty}</Badge>
                         <span className="mono shrink-0 text-[11px]" style={{ color: "var(--muted)" }}>
                           +{q.plus}/{q.minus}
@@ -852,6 +1010,7 @@ export default function AdminTests() {
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone="violet">{preview.exam}</Badge>
               {preview.tag && <Badge tone="blue">{preview.tag}</Badge>}
+              {preview.template === FULL_MOCK_TEMPLATE && <Badge tone="violet">Full mock template</Badge>}
               <Badge tone={preview.published ? "green" : "amber"}>{preview.published ? "Live" : "Draft"}</Badge>
               <Badge tone={preview.free ? "blue" : "violet"}>{preview.free ? "Free" : "Paid"}</Badge>
               <span className="text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>

@@ -5,9 +5,13 @@ import {
   errorPayload,
   fetchAllQuestionsLite,
   fetchAllTests,
+  fullMockIssues,
+  fullMockIssueText,
+  normalizeFullMockIds,
   normTitle,
   toCsv,
 } from "@/lib/admin-queries";
+import { FULL_MOCK_MINUTES, FULL_MOCK_TEMPLATE, isFullMockTemplate, templateParts } from "@/lib/nimcet-full-mock";
 import { logAdminAction } from "@/lib/audit";
 
 function toNum(v: string | null, fallback: number, min: number, max: number): number {
@@ -39,6 +43,9 @@ function validate(body: Record<string, unknown>): string | null {
   for (const k of ["free", "published"] as const) {
     if (body[k] !== undefined && typeof body[k] !== "boolean") return `${k} must be true or false.`;
   }
+  if (body.template !== undefined && !(body.template === "" || isFullMockTemplate(body.template))) {
+    return "Unknown test template.";
+  }
   return null;
 }
 
@@ -58,7 +65,7 @@ export async function GET(req: Request) {
     const format = searchParams.get("format") || "";
     const limit = toNum(searchParams.get("limit"), 500, 1, 1000);
 
-    const [{ tests, migrated }, questions] = await Promise.all([
+    const [{ tests, migrated, templated }, questions] = await Promise.all([
       fetchAllTests(svc, 1000),
       fetchAllQuestionsLite(svc),
     ]);
@@ -96,7 +103,7 @@ export async function GET(req: Request) {
 
     if (format === "csv") {
       const csv = toCsv(
-        ["id", "exam", "title", "tag", "minutes", "free", "published", "questions", "max_marks", "min_marks", "description", "instructions", "question_ids", "created_at"],
+        ["id", "exam", "title", "tag", "minutes", "free", "published", "template", "questions", "max_marks", "min_marks", "description", "instructions", "question_ids", "created_at"],
         enriched.map((t) => [
           t.id,
           t.exam,
@@ -105,6 +112,7 @@ export async function GET(req: Request) {
           t.minutes,
           t.free,
           t.published,
+          t.template,
           t.questionCount,
           t.maxMarks,
           t.minMarks,
@@ -123,7 +131,7 @@ export async function GET(req: Request) {
     }
 
     const exams = [...new Set(tests.map((t) => t.exam))].sort();
-    return NextResponse.json({ rows: enriched, total: rows.length, exams, migrated });
+    return NextResponse.json({ rows: enriched, total: rows.length, exams, migrated, templated });
   } catch (e) {
     const p = errorPayload(e, "Load failed.");
     return NextResponse.json({ error: p.error }, { status: p.status });
@@ -148,15 +156,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Pick at least one question for this test." }, { status: 400 });
     }
     const s = (v: unknown, d = "") => (typeof v === "string" ? v.trim() : d);
+    const template = isFullMockTemplate(body.template) ? FULL_MOCK_TEMPLATE : "";
 
     const description = s(body.description);
     const instructions = s(body.instructions);
     let migrated = true;
-    if (description || instructions) {
-      migrated = (await fetchAllTests(svc, 1)).migrated;
+    let templated = true;
+    if (description || instructions || template) {
+      const info = await fetchAllTests(svc, 1);
+      migrated = info.migrated;
+      templated = info.templated;
       if (!migrated) {
         return NextResponse.json(
           { error: "The database is missing the new test columns. Run supabase/migrations/0005_admin.sql, then retry." },
+          { status: 503 }
+        );
+      }
+      if (template && !templated) {
+        return NextResponse.json(
+          { error: "The database is missing the template column. Run supabase/migrations/0007_full_mock.sql, then retry." },
           { status: 503 }
         );
       }
@@ -175,6 +193,23 @@ export async function POST(req: Request) {
       insert.description = description;
       insert.instructions = instructions;
     }
+    if (template) {
+      // Template tests are governed by the template: fixed 120-minute paper
+      // split into the official timed parts, questions stored in the official
+      // subject order (the runner slices the list by position), and a
+      // published full mock must already be structurally complete.
+      insert.template = template;
+      insert.minutes = FULL_MOCK_MINUTES;
+      insert.sections = templateParts();
+      const ordered = await normalizeFullMockIds(svc, ids);
+      insert.question_ids = ordered;
+      if (insert.published) {
+        const issues = await fullMockIssues(svc, ordered);
+        if (issues.length > 0) {
+          return NextResponse.json({ error: fullMockIssueText(issues) }, { status: 400 });
+        }
+      }
+    }
 
     const { data, error } = await svc.from("tests").insert(insert).select("id").single();
     if (error) throw error;
@@ -184,7 +219,12 @@ export async function POST(req: Request) {
       action: "test.create",
       entity: "test",
       entityId: (data as { id: string }).id,
-      details: { title: s(body.title), questions: (body.question_ids as string[] | undefined)?.length ?? 0, published: insert.published as boolean },
+      details: {
+        title: s(body.title),
+        questions: (body.question_ids as string[] | undefined)?.length ?? 0,
+        published: insert.published as boolean,
+        ...(template ? { template } : {}),
+      },
     });
 
     return NextResponse.json({ id: (data as { id: string }).id });

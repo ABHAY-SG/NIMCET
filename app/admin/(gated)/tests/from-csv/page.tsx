@@ -2,11 +2,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import AdminLayout from "@/components/admin-layout";
-import { Badge, Card, Field, Modal, TextArea, TextInput, cx, useToast } from "@/components/admin/ui";
+import { Badge, Card, Field, Modal, Select, TextArea, TextInput, cx, useToast } from "@/components/admin/ui";
 import { Icon } from "@/components/admin/icons";
 import { adminMutate } from "@/components/admin/hooks";
 import { FULL_LENGTH_QUESTIONS, type ParsedRow } from "@/lib/question-rows";
-import { parseMockCsv, titleFromFilename, type SectionSummary } from "@/lib/mock-csv";
+import { parseMockCsv, titleFromFilename, type MockTemplate, type SectionSummary, type SubjectSummary } from "@/lib/mock-csv";
+import { FULL_MOCK_MINUTES, FULL_MOCK_TEMPLATE } from "@/lib/nimcet-full-mock";
 import { fmtNum } from "@/lib/format";
 
 const LETTERS = ["A", "B", "C", "D", "E"];
@@ -19,6 +20,7 @@ type CreatedResult = {
   inserted: number;
   reused: number;
   published: boolean;
+  template?: string;
 };
 
 type FileEntry = {
@@ -31,6 +33,8 @@ type FileEntry = {
   errors: string[];
   rows: ParsedRow[] | null;
   sections: SectionSummary[];
+  /** Template mode only — required vs found per subject. */
+  subjects: SubjectSummary[];
   maxMarks: number;
   serverError: string;
   result: CreatedResult | null;
@@ -53,6 +57,7 @@ export default function AdminTestsFromCsv() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [exam, setExam] = useState("nimcet");
+  const [template, setTemplate] = useState<MockTemplate>(FULL_MOCK_TEMPLATE);
   const [minutes, setMinutes] = useState("120");
   const [plus, setPlus] = useState("12");
   const [minus, setMinus] = useState("-3");
@@ -60,6 +65,8 @@ export default function AdminTestsFromCsv() {
   const [free, setFree] = useState(true);
   const [publish, setPublish] = useState<"draft" | "live">("draft");
   const [instructions, setInstructions] = useState("");
+
+  const templateMode = template === FULL_MOCK_TEMPLATE;
 
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -81,24 +88,26 @@ export default function AdminTestsFromCsv() {
   }, [exam, plus, minus]);
 
   // Re-run the pre-flight on every not-yet-created file when the shared
-  // scheme changes, so blank plus/minus cells pick up the new defaults.
+  // scheme (or the template) changes, so blank plus/minus cells pick up the
+  // new defaults and template rules stay enforced.
   useEffect(() => {
     setFiles((prev) =>
       prev.map((f) => {
         if (f.status === "created" || f.status === "creating") return f;
-        const out = parseMockCsv(f.text, scheme);
+        const out = parseMockCsv(f.text, scheme, template);
         return {
           ...f,
           errors: out.errors,
           rows: out.rows,
           sections: out.sections,
+          subjects: out.subjects,
           maxMarks: out.maxMarks,
           status: out.errors.length > 0 ? ("invalid" as const) : ("ready" as const),
           serverError: "",
         };
       })
     );
-  }, [scheme]);
+  }, [scheme, template]);
 
   const ready = files.filter((f) => f.status === "ready" || f.status === "error");
   const created = files.filter((f) => f.result);
@@ -118,7 +127,7 @@ export default function AdminTestsFromCsv() {
       for (const f of incoming) {
         try {
           const text = await f.text();
-          const out = parseMockCsv(text, scheme);
+          const out = parseMockCsv(text, scheme, template);
           added.push({
             key: ++keySeq,
             name: f.name,
@@ -129,6 +138,7 @@ export default function AdminTestsFromCsv() {
             errors: out.errors,
             rows: out.rows,
             sections: out.sections,
+            subjects: out.subjects,
             maxMarks: out.maxMarks,
             serverError: "",
             result: null,
@@ -165,6 +175,10 @@ export default function AdminTestsFromCsv() {
       toast("Duration must be 5–180 minutes.", "error");
       return false;
     }
+    if (templateMode && mins !== FULL_MOCK_MINUTES) {
+      toast(`A NIMCET full mock is always ${FULL_MOCK_MINUTES} minutes (70 + 30 + 20).`, "error");
+      return false;
+    }
     return true;
   };
 
@@ -181,8 +195,9 @@ export default function AdminTestsFromCsv() {
       const r = await adminMutate<CreatedResult>("/api/admin/tests/from-csv", "POST", {
         title,
         exam: scheme.exam,
+        template,
         tag: tag.trim(),
-        minutes: Number(minutes),
+        minutes: templateMode ? FULL_MOCK_MINUTES : Number(minutes),
         free,
         published: publish === "live",
         instructions: instructions.trim(),
@@ -248,6 +263,7 @@ export default function AdminTestsFromCsv() {
         <Badge tone={publish === "live" ? "green" : "amber"}>{publish === "live" ? "Publishes live" : "Saves as draft"}</Badge>
         {tag.trim() && <Badge tone="neutral">{tag.trim()}</Badge>}
         <Badge tone="neutral">{scheme.exam}</Badge>
+        {templateMode && <Badge tone="violet">NIMCET 2026 Full Mock</Badge>}
       </div>
 
       {previewEntry.sections.length > 1 && (
@@ -356,29 +372,66 @@ export default function AdminTestsFromCsv() {
             manual picking.
           </p>
 
+          <div className="mt-4 max-w-xl">
+            <Field
+              label="Template"
+              hint={
+                templateMode
+                  ? "Official structure enforced: 50/40/20/10 questions · 70 + 30 + 20 minutes · per-subject marks · 4 options each."
+                  : "Generic 120-question paper — your marking scheme applies, timing stays a single 120-minute clock."
+              }
+            >
+              <Select
+                value={template}
+                onChange={(e) => {
+                  const v = e.target.value as MockTemplate;
+                  setTemplate(v);
+                  if (v === FULL_MOCK_TEMPLATE) setMinutes(String(FULL_MOCK_MINUTES));
+                }}
+                disabled={busyAll}
+              >
+                <option value={FULL_MOCK_TEMPLATE}>NIMCET 2026 Full Mock (official structure)</option>
+                <option value="">Custom full-length paper</option>
+              </Select>
+            </Field>
+          </div>
+
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Exam">
               <TextInput value={exam} onChange={(e) => setExam(e.target.value)} placeholder="nimcet" disabled={busyAll} />
             </Field>
-            <Field label="Duration (minutes)" hint="5–180 minutes.">
+            <Field
+              label="Duration (minutes)"
+              hint={templateMode ? `Fixed at ${FULL_MOCK_MINUTES} minutes (70 + 30 + 20).` : "5–180 minutes."}
+            >
               <TextInput
                 type="number"
                 min={5}
                 max={180}
-                value={minutes}
+                value={templateMode ? String(FULL_MOCK_MINUTES) : minutes}
                 onChange={(e) => setMinutes(e.target.value)}
-                disabled={busyAll}
+                disabled={busyAll || templateMode}
               />
             </Field>
             <Field label="Tag" hint="Short label shown to students.">
               <TextInput value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Full mock" disabled={busyAll} />
             </Field>
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Marking +" hint="Default correct mark.">
-                <TextInput type="number" value={plus} onChange={(e) => setPlus(e.target.value)} disabled={busyAll} />
+              <Field label="Marking +" hint={templateMode ? "Per subject" : "Default correct mark."}>
+                <TextInput
+                  type="number"
+                  value={plus}
+                  onChange={(e) => setPlus(e.target.value)}
+                  disabled={busyAll || templateMode}
+                />
               </Field>
-              <Field label="Marking −" hint="Default wrong mark.">
-                <TextInput type="number" value={minus} onChange={(e) => setMinus(e.target.value)} disabled={busyAll} />
+              <Field label="Marking −" hint={templateMode ? "Per subject" : "Default wrong mark."}>
+                <TextInput
+                  type="number"
+                  value={minus}
+                  onChange={(e) => setMinus(e.target.value)}
+                  disabled={busyAll || templateMode}
+                />
               </Field>
             </div>
           </div>
@@ -434,9 +487,9 @@ export default function AdminTestsFromCsv() {
           </div>
 
           <p className="mt-2 text-[12px] leading-5" style={{ color: "var(--muted)" }}>
-            Marking note: a row&apos;s own <code>plus</code>/<code>minus</code> values always win; the defaults above
-            apply only where those columns are blank. Identical questions already in the bank are reused — never
-            duplicated.
+            {templateMode
+              ? "Template mode: each section must map to one of the four NIMCET subjects and carry its official marks (+12/−3, +6/−1.5, +6/−1.5, +4/−1) — leave the columns blank to fill them automatically. Identical questions already in the bank are reused, never duplicated."
+              : "Marking note: a row's own plus/minus values always win; the defaults above apply only where those columns are blank. Identical questions already in the bank are reused — never duplicated."}
           </p>
         </Card>
 
@@ -643,11 +696,17 @@ export default function AdminTestsFromCsv() {
 
                   {f.rows && f.errors.length === 0 && (
                     <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[12.5px]">
-                      {f.sections.map((sec) => (
-                        <Badge key={sec.label} tone="neutral">
-                          {sec.label}: {sec.count}Q · +{sec.plus}/{sec.minus}
-                        </Badge>
-                      ))}
+                      {f.subjects.length > 0
+                        ? f.subjects.map((s) => (
+                            <Badge key={s.key} tone={s.found === s.required ? "green" : "red"}>
+                              {s.label}: {s.found}/{s.required} · +{s.plus}/{s.minus}
+                            </Badge>
+                          ))
+                        : f.sections.map((sec) => (
+                            <Badge key={sec.label} tone="neutral">
+                              {sec.label}: {sec.count}Q · +{sec.plus}/{sec.minus}
+                            </Badge>
+                          ))}
                       <span style={{ color: "var(--muted)" }}>Max marks {fmtNum(f.maxMarks, 1)}</span>
                     </div>
                   )}
@@ -679,6 +738,11 @@ export default function AdminTestsFromCsv() {
                 <code>explanation</code>, <code>plus</code>, <code>minus</code>.
               </li>
               <li>• Export any list from the Question Bank to CSV — the file re-imports here as-is.</li>
+              <li>
+                • NIMCET Full Mock template: sections must map to Mathematics (50Q · +12/−3), Analytical Ability &amp;
+                Logical Reasoning (40Q · +6/−1.5), Computer Awareness (20Q · +6/−1.5) and General English (10Q · +4/−1) —
+                4 options each, 120 minutes in three timed parts.
+              </li>
               <li>• Duplicate question text inside one file is rejected; identical text already in the bank is reused.</li>
             </ul>
           </details>

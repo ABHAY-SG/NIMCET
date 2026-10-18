@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
-import { errorPayload, fetchAllTests, isUuid } from "@/lib/admin-queries";
+import { errorPayload, fetchAllTests, fullMockIssues, fullMockIssueText, isUuid, normalizeFullMockIds } from "@/lib/admin-queries";
+import { FULL_MOCK_MINUTES, FULL_MOCK_TEMPLATE, isFullMockTemplate, templateParts } from "@/lib/nimcet-full-mock";
 import { logAdminAction } from "@/lib/audit";
 
 function validate(body: Record<string, unknown>): string | null {
@@ -25,6 +26,9 @@ function validate(body: Record<string, unknown>): string | null {
   }
   for (const k of ["free", "published"] as const) {
     if (body[k] !== undefined && typeof body[k] !== "boolean") return `${k} must be true or false.`;
+  }
+  if (body.template !== undefined && !(body.template === "" || isFullMockTemplate(body.template))) {
+    return "Unknown test template.";
   }
   return null;
 }
@@ -57,7 +61,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (bad) return NextResponse.json({ error: bad }, { status: 400 });
 
     const patch = pick(body);
-    if (Object.keys(patch).length === 0) {
+    const wantsTemplate = body.template !== undefined;
+    const template = wantsTemplate ? (isFullMockTemplate(body.template) ? FULL_MOCK_TEMPLATE : "") : undefined;
+    if (Object.keys(patch).length === 0 && !wantsTemplate) {
       return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
     }
 
@@ -71,29 +77,91 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       }
     }
 
-    const { data: before, error: bErr } = await svc
-      .from("tests")
-      .select("title,published,question_ids")
-      .eq("id", id)
-      .maybeSingle();
-    if (bErr) throw bErr;
+    // `template` only exists after migration 0007 — read the row compatibly.
+    let templated = true;
+    let before: Record<string, unknown> | null = null;
+    {
+      const withTemplate = await svc
+        .from("tests")
+        .select("title,published,question_ids,template")
+        .eq("id", id)
+        .maybeSingle();
+      if (!withTemplate.error) {
+        before = (withTemplate.data as Record<string, unknown> | null) ?? null;
+      } else {
+        templated = false;
+        const basic = await svc
+          .from("tests")
+          .select("title,published,question_ids")
+          .eq("id", id)
+          .maybeSingle();
+        if (basic.error) throw basic.error;
+        before = (basic.data as Record<string, unknown> | null) ?? null;
+      }
+    }
     if (!before) return NextResponse.json({ error: "Test not found." }, { status: 404 });
+
+    const existing = before as { title: string; published: boolean; question_ids: string[]; template?: unknown };
+
+    if (wantsTemplate) {
+      if (template) {
+        if (!templated) {
+          return NextResponse.json(
+            { error: "The database is missing the template column. Run supabase/migrations/0007_full_mock.sql, then retry." },
+            { status: 503 }
+          );
+        }
+        // The template governs duration and the three official timed parts.
+        patch.template = template;
+        patch.minutes = FULL_MOCK_MINUTES;
+        patch.sections = templateParts();
+      } else if (templated) {
+        // Switching back to a custom test: drop the section clocks too.
+        patch.template = "";
+        patch.sections = [];
+      }
+    }
+
+    const finalTemplate = wantsTemplate
+      ? template ?? ""
+      : isFullMockTemplate(existing.template)
+        ? FULL_MOCK_TEMPLATE
+        : "";
+    const finalPublished = body.published !== undefined ? Boolean(body.published) : Boolean(existing.published);
+    let finalIds: string[] = Array.isArray(body.question_ids)
+      ? (body.question_ids as string[])
+      : Array.isArray(existing.question_ids)
+        ? existing.question_ids
+        : [];
+    const publishingNow = finalPublished && !existing.published;
+    const contentChanged = body.question_ids !== undefined || wantsTemplate;
+    if (finalTemplate === FULL_MOCK_TEMPLATE && (contentChanged || publishingNow)) {
+      // Canonical subject order keeps the runner's fixed part slices correct.
+      finalIds = await normalizeFullMockIds(svc, finalIds);
+      patch.question_ids = finalIds;
+    }
+    if (finalTemplate === FULL_MOCK_TEMPLATE && (publishingNow || (finalPublished && contentChanged))) {
+      const issues = await fullMockIssues(svc, finalIds);
+      if (issues.length > 0) {
+        return NextResponse.json({ error: fullMockIssueText(issues) }, { status: 400 });
+      }
+    }
 
     const { error } = await svc.from("tests").update(patch).eq("id", id);
     if (error) throw error;
 
-    const prev = before as { title: string; published: boolean; question_ids: string[] };
     await logAdminAction(svc, {
       actor,
       action: "test.update",
       entity: "test",
       entityId: id,
       details: {
-        title: prev.title,
+        title: existing.title,
         changed: Object.keys(patch),
         ...(body.published !== undefined ? { published: Boolean(body.published) } : {}),
+        ...(wantsTemplate && template ? { template } : {}),
         ...(body.question_ids !== undefined
-          ? { questionsBefore: prev.question_ids.length, questionsAfter: (body.question_ids as string[]).length }
+          ? { questionsBefore: existing.question_ids.length, questionsAfter: (body.question_ids as string[]).length }
           : {}),
       },
     });

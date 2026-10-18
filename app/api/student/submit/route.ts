@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/admin-server";
 import { errorPayload, isUuid } from "@/lib/admin-queries";
+import { marksUsed } from "@/lib/exam-session";
+import { FULL_MOCK_TEMPLATE, isFullMockTemplate } from "@/lib/nimcet-full-mock";
 
 type AnswerIn = { id: string; answer: number | null };
 type BankRow = {
@@ -11,6 +13,7 @@ type BankRow = {
   stem: string;
   options: unknown;
   explanation: unknown;
+  section?: string | null;
 };
 
 // POST /api/student/submit — scores a finished mock SERVER-SIDE from the
@@ -79,34 +82,47 @@ export async function POST(req: Request) {
     // Resolve the real test (id preferred, title as fallback) so a submission
     // can only score against that test's own questions.
     let allowed: Set<string> | null = null;
+    let resolvedTemplate = "";
     try {
-      let tq: { id: string; question_ids: unknown } | null = null;
-      if (testId) {
-        const { data } = await svc
+      type TestRow = { id: string; question_ids: unknown; template?: unknown };
+      // `template` only exists after migration 0007 — read it compatibly so
+      // older databases keep the previous strict behavior.
+      const readTest = async (kind: "id" | "title", value: string): Promise<TestRow | null> => {
+        let res = await svc
           .from("tests")
-          .select("id,question_ids")
-          .eq("id", testId)
+          .select("id,question_ids,template")
+          .eq(kind, value)
           .eq("published", true)
-          .maybeSingle();
-        tq = (data as { id: string; question_ids: unknown } | null) ?? null;
-      }
-      if (!tq) {
-        const { data } = await svc
-          .from("tests")
-          .select("id,question_ids")
-          .eq("title", test)
-          .eq("published", true)
-          .limit(1)
-          .maybeSingle();
-        tq = (data as { id: string; question_ids: unknown } | null) ?? null;
-      }
+          .maybeSingle<TestRow>();
+        if (res.error) {
+          res = await svc
+            .from("tests")
+            .select("id,question_ids")
+            .eq(kind, value)
+            .eq("published", true)
+            .maybeSingle<TestRow>();
+        }
+        return res.data ?? null;
+      };
+      const tq = (testId ? await readTest("id", testId) : null) ?? (await readTest("title", test));
       if (tq && Array.isArray(tq.question_ids)) {
         allowed = new Set((tq.question_ids as unknown[]).filter((x): x is string => typeof x === "string"));
+        resolvedTemplate = isFullMockTemplate(tq.template) ? FULL_MOCK_TEMPLATE : "";
       }
     } catch {
       // Test lookup is best-effort (older databases may lack columns); the
       // safer scoring path below still runs.
       allowed = null;
+      resolvedTemplate = "";
+    }
+    // Timed template exams are scored exclusively through the server-enforced
+    // session flow (mock_sessions) — a direct legacy submission would bypass
+    // the section clocks, so it is refused.
+    if (resolvedTemplate === FULL_MOCK_TEMPLATE) {
+      return NextResponse.json(
+        { error: "This is a timed template exam — it submits itself from the test screen." },
+        { status: 409 }
+      );
     }
     if (allowed) {
       for (const id of unique.keys()) {
@@ -119,7 +135,7 @@ export async function POST(req: Request) {
     const ids = [...unique.keys()];
     const { data, error } = await svc
       .from("questions")
-      .select("id,answer,plus,minus,stem,options,explanation")
+      .select("id,answer,plus,minus,stem,options,explanation,section")
       .in("id", ids);
     if (error) throw error;
     const byId = new Map<string, BankRow>();
@@ -149,8 +165,9 @@ export async function POST(req: Request) {
     let skipped = 0;
     for (const [id, pick] of unique) {
       const q = byId.get(id)!;
-      const plus = Number(q.plus) || 0;
-      const minus = Number(q.minus) || 0;
+      const marks = marksUsed({ section: q.section ?? "", plus: Number(q.plus) || 0, minus: Number(q.minus) || 0 }, resolvedTemplate);
+      const plus = marks.plus;
+      const minus = marks.minus;
       const opts = Array.isArray(q.options) ? (q.options as string[]) : [];
       const exp = typeof q.explanation === "string" ? q.explanation : "";
       if (pick === null) {
