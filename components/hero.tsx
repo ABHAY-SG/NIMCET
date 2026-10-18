@@ -76,18 +76,15 @@ export default function Hero() {
             Full-length mocks · NIMCET + CUET PG
           </p>
 
-          <h1 className="mt-5" style={{ fontSize: "clamp(1.9rem, 4.9vw, 4.6rem)", lineHeight: 1.06 }}>
+          <h1 className="mt-5" style={{ fontSize: "clamp(2.2rem, 6vw, 5.2rem)", lineHeight: 1.04, fontFamily: '"Fraunces", Georgia, serif' }}>
             <span className="hline">
-              <span
-                className="block font-extrabold tracking-tight"
-                style={{ fontFamily: '"Sora", "Space Grotesk", "Inter", sans-serif', whiteSpace: "nowrap" }}
-              >
+              <span className="block font-extrabold tracking-tight italic" style={{ whiteSpace: "nowrap" }}>
                 Rank is not luck.
               </span>
             </span>
             <span className="hline">
               <span className="block" style={{ animationDelay: "0.12s", whiteSpace: "nowrap" }}>
-                <span className="display serif-it headline-warm">It’s repetition.</span>
+                <span className="block font-extrabold tracking-tight">It’s repetition.</span>
               </span>
             </span>
           </h1>
