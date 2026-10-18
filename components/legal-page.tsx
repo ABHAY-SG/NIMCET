@@ -48,7 +48,7 @@ export default function LegalPage({
       </div>
 
       <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-8 md:grid-cols-[230px_minmax(0,1fr)]">
-        <aside className="premium-card admin-scroll hidden max-h-full self-start overflow-y-auto rounded-[22px] p-3.5 md:block">
+        <aside className="premium-card noscroll hidden max-h-full self-start overflow-y-auto rounded-[22px] p-3.5 md:block">
           <div className="px-2 pb-2 pt-1 text-[10px] font-extrabold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
             On this page
           </div>
@@ -66,7 +66,7 @@ export default function LegalPage({
             tabIndex={0}
             role="region"
             aria-label={`${title} — full text`}
-            className="premium-card admin-scroll h-full overflow-y-auto rounded-[22px] p-6 outline-none sm:p-9"
+            className="premium-card noscroll h-full overflow-y-auto rounded-[22px] p-6 outline-none sm:p-9"
           >
             {sections.map(([t, ps], i) => (
               <section
