@@ -26,6 +26,7 @@ export async function GET() {
       first_name: str(meta.first_name),
       last_name: str(meta.last_name),
       custom_avatar: str(meta.custom_avatar),
+      custom_cover: str(meta.custom_cover),
       created_at: u.created_at ?? "",
       last_sign_in_at: u.last_sign_in_at ?? null,
       provider: (u.app_metadata?.provider as string | undefined) ?? "",

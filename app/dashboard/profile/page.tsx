@@ -110,7 +110,6 @@ export default function ProfilePage() {
   const [photoMsg, setPhotoMsg] = useState("");
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [curPw, setCurPw] = useState("");
-  const [pwMode, setPwMode] = useState<"change" | "set">("change");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const pickPhoto = (file: File) => {
@@ -307,31 +306,31 @@ export default function ProfilePage() {
     setBusy(true);
     try {
       const sb = getAuthClient();
-      if (pwMode === "change") {
-        // Re-authenticate against Supabase: proves the current password
-        // without ever storing or logging it. OAuth-only accounts have no
-        // password, so this correctly fails for them — they use Set mode.
-        if (!curPw) { setFormMsg("Enter your current password."); setBusy(false); return; }
-        const { data: { user } } = await sb.auth.getUser();
-        if (!user?.email) throw new Error("Log in again, then retry.");
-        const { error: reauthError } = await sb.auth.signInWithPassword({
-          email: user.email,
-          password: curPw,
-        });
-        if (reauthError) {
-          if (/invalid login credentials/i.test(reauthError.message)) {
-            throw new Error("Current password is incorrect. If you joined with Google/GitHub and never set one, use Set password instead.");
-          }
-          throw reauthError;
+      // Changing a password ALWAYS requires the current one. Google/GitHub-only
+      // accounts have no password yet — they add one from the one-time prompt
+      // shown after sign-in (components/password-prompt.tsx), so this form
+      // never doubles as a password-less shortcut.
+      if (!curPw) { setFormMsg("Enter your current password."); setBusy(false); return; }
+      // Re-authenticate against Supabase: proves the current password without
+      // ever storing or logging it.
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user?.email) throw new Error("Log in again, then retry.");
+      const { error: reauthError } = await sb.auth.signInWithPassword({
+        email: user.email,
+        password: curPw,
+      });
+      if (reauthError) {
+        if (/invalid login credentials/i.test(reauthError.message)) {
+          throw new Error("Current password is incorrect. If you joined with Google/GitHub and never set one, use Forgot password on the login page.");
         }
+        throw reauthError;
       }
       const { error } = await sb.auth.updateUser({ password: newPw });
       if (error) throw error;
       setCurPw("");
       setNewPw("");
       setConfirmPw("");
-      setPanel(null);
-      setFormMsg(pwMode === "set" ? "Password set — you can now sign in with email + password too. Google/GitHub login still works." : "");
+      setFormMsg("Password changed.");
     } catch (err: unknown) {
       setFormMsg(err instanceof Error ? err.message : "Could not update password. Try again.");
     } finally {
@@ -414,7 +413,7 @@ export default function ProfilePage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setPanel(panel === "password" ? null : "password"); setFormMsg(""); setCurPw(""); setNewPw(""); setConfirmPw(""); setPwMode("change"); }}
+                onClick={() => { setPanel(panel === "password" ? null : "password"); setFormMsg(""); setCurPw(""); setNewPw(""); setConfirmPw(""); }}
                 className="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-px"
                 style={{ border: "1.5px solid rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.12)" }}
               >
@@ -489,33 +488,19 @@ export default function ProfilePage() {
         {panel === "password" && (
           <Reveal>
             <section className="mt-4 rounded-[22px] p-6 backdrop-blur-2xl sm:p-7" style={cardStyle}>
-              <h2 className="text-lg font-extrabold tracking-tight">{pwMode === "set" ? "Set password" : "Change password"}</h2>
+              <h2 className="text-lg font-extrabold tracking-tight">Change password</h2>
               <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                {pwMode === "set"
-                  ? "For Google/GitHub sign-ins adding their first password — no current password needed. Afterwards email + password login works, and Google/GitHub login keeps working."
-                  : "Email + password accounts: confirm your current password first."}
+                Confirm your current password first — we re-check it with the auth server before saving the new one.
+                Joined with Google/GitHub and never set a password? Add one from the prompt after login, or use{" "}
+                <a href="/login" className="font-bold underline">Forgot password</a>.
               </p>
-              <div className="mt-3 flex gap-2 text-[13px]">
-                <button type="button" onClick={() => { setPwMode("change"); setFormMsg(""); }}
-                  className="cursor-pointer rounded-xl px-4 py-1.5 font-bold"
-                  style={pwMode === "change" ? { background: "var(--btn-bg)", color: "var(--btn-text)" } : { border: "1px solid var(--border)" }}>
-                  Change
-                </button>
-                <button type="button" onClick={() => { setPwMode("set"); setFormMsg(""); }}
-                  className="cursor-pointer rounded-xl px-4 py-1.5 font-bold"
-                  style={pwMode === "set" ? { background: "var(--btn-bg)", color: "var(--btn-text)" } : { border: "1px solid var(--border)" }}>
-                  Set (Google/GitHub)
-                </button>
-              </div>
               <div className="mt-3 grid max-w-md gap-2.5">
-                {pwMode === "change" && (
-                  <div>
-                    <label htmlFor="profile-cur" className="mb-1.5 block text-[13px] font-bold">Current password</label>
-                    <input id="profile-cur" type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} autoComplete="current-password"
-                      placeholder="Your existing password" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
-                      style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
-                  </div>
-                )}
+                <div>
+                  <label htmlFor="profile-cur" className="mb-1.5 block text-[13px] font-bold">Current password</label>
+                  <input id="profile-cur" type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} autoComplete="current-password"
+                    placeholder="Your existing password" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }} />
+                </div>
                 <div>
                   <label htmlFor="profile-pw" className="mb-1.5 block text-[13px] font-bold">New password</label>
                   <input id="profile-pw" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} autoComplete="new-password"
@@ -536,7 +521,7 @@ export default function ProfilePage() {
                 <button type="button" onClick={savePassword} disabled={busy}
                   className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-50"
                   style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
-                  {busy ? "Saving…" : pwMode === "set" ? "Set password" : "Update password"}
+                  {busy ? "Saving…" : "Update password"}
                 </button>
                 <button type="button" onClick={() => setPanel(null)}
                   className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold"

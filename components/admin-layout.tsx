@@ -7,6 +7,7 @@ import { isDarkTheme } from "@/lib/theme";
 import { Icon, type IconName } from "./admin/icons";
 import { Avatar, Badge, Spinner, ToastProvider, cx } from "./admin/ui";
 import { useAdminTheme, useInterval } from "./admin/hooks";
+import PasswordPrompt from "./password-prompt";
 import { relTime } from "@/lib/format";
 
 // Admin shell (sidebar + header + profile dropdown). Authorization is NOT
@@ -470,6 +471,8 @@ export default function AdminLayout({
           </div>
         )}
       </div>
+      {/* One-time "add a password" prompt for Google/GitHub-only accounts. */}
+      <PasswordPrompt />
     </ToastProvider>
   );
 }

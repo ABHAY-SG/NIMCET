@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-const VIEW = 280;
-const OUT = 512;
+const BOX_W = 320;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
 
@@ -11,17 +10,26 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
 }
 
-// Square crop editor: drag to reposition, slider/buttons to zoom.
-// Confirm renders a 512px JPEG blob of exactly the visible square.
+// Crop editor: drag to reposition, slider/buttons to zoom.
+// Confirm renders a JPEG blob of exactly the visible crop area. The crop box
+// aspect defaults to 1 (square profile photo); wide ratios (e.g. 4) produce a
+// LinkedIn-style cover image.
 export default function PhotoCropper({
   src,
   onCancel,
   onConfirm,
+  aspect = 1,
+  title = "Crop photo",
 }: {
   src: string;
   onCancel: () => void;
   onConfirm: (blob: Blob) => void;
+  /** width / height of the crop area. */
+  aspect?: number;
+  title?: string;
 }) {
+  const boxW = BOX_W;
+  const boxH = Math.max(64, Math.round(BOX_W / aspect));
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [zoom, setZoom] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -42,12 +50,12 @@ export default function PhotoCropper({
   }, [src]);
 
   // Displayed image dims at current zoom (cover-fit base × zoom).
-  const base = size.w > 0 && size.h > 0 ? Math.max(VIEW / size.w, VIEW / size.h) : 1;
+  const base = size.w > 0 && size.h > 0 ? Math.max(boxW / size.w, boxH / size.h) : 1;
   const k = base * zoom;
   const dw = size.w * k;
   const dh = size.h * k;
-  const cx = clamp(pos.x, -(dw - VIEW) / 2, (dw - VIEW) / 2);
-  const cy = clamp(pos.y, -(dh - VIEW) / 2, (dh - VIEW) / 2);
+  const cx = clamp(pos.x, -(dw - boxW) / 2, (dw - boxW) / 2);
+  const cy = clamp(pos.y, -(dh - boxH) / 2, (dh - boxH) / 2);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     (e.target as HTMLDivElement).setPointerCapture?.(e.pointerId);
@@ -66,16 +74,20 @@ export default function PhotoCropper({
     const im = new Image();
     im.onload = () => {
       try {
-        // Visible square maps back to this source rect.
-        const side = VIEW / k;
-        const sx = (size.w - side) / 2 - cx / k;
-        const sy = (size.h - side) / 2 - cy / k;
+        // Visible crop area maps back to this source rect.
+        const sideW = boxW / k;
+        const sideH = boxH / k;
+        const sx = (size.w - sideW) / 2 - cx / k;
+        const sy = (size.h - sideH) / 2 - cy / k;
+        // Output resolution: 512px on the short edge, capped at 1600px wide.
+        const outW = Math.min(1600, Math.round(512 * Math.max(1, aspect)));
+        const outH = Math.round(outW / aspect);
         const canvas = document.createElement("canvas");
-        canvas.width = OUT;
-        canvas.height = OUT;
+        canvas.width = outW;
+        canvas.height = outH;
         const ctx = canvas.getContext("2d");
         if (!ctx) throw new Error("Canvas unavailable.");
-        ctx.drawImage(im, sx, sy, side, side, 0, 0, OUT, OUT);
+        ctx.drawImage(im, sx, sy, sideW, sideH, 0, 0, outW, outH);
         canvas.toBlob(
           (blob) => {
             setBusy(false);
@@ -92,16 +104,18 @@ export default function PhotoCropper({
     im.src = src;
   };
 
+  const shape = aspect >= 3 ? "cover" : "square";
+
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Crop profile photo">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" aria-label="Close crop editor" onClick={onCancel} className="absolute inset-0 cursor-default"
         style={{ background: "linear-gradient(180deg, rgba(10,14,28,0.55), rgba(10,14,28,0.75))", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }} />
       <div className="relative w-full max-w-sm rounded-3xl p-6 text-center" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-        <h2 className="text-lg font-extrabold tracking-tight">Crop photo</h2>
-        <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Drag to reposition • zoom to fit the square</p>
+        <h2 className="text-lg font-extrabold tracking-tight">{title}</h2>
+        <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Drag to reposition • zoom to fit the {shape}</p>
         <div
           className="relative mx-auto mt-4 touch-none select-none overflow-hidden rounded-2xl"
-          style={{ width: VIEW, height: VIEW, maxWidth: "100%", background: "var(--pill)", border: "1px solid var(--border)", cursor: "grab" }}
+          style={{ width: boxW, height: boxH, maxWidth: "100%", background: "var(--pill)", border: "1px solid var(--border)", cursor: "grab" }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
@@ -120,7 +134,7 @@ export default function PhotoCropper({
               }}
             />
           ) : (
-            <p className="mt-24 text-sm" style={{ color: "var(--muted)" }}>Loading…</p>
+            <p className="absolute inset-0 flex items-center justify-center text-sm" style={{ color: "var(--muted)" }}>Loading…</p>
           )}
         </div>
         <div className="mx-auto mt-4 flex max-w-[280px] items-center gap-2">

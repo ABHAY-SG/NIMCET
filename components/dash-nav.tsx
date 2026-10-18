@@ -5,6 +5,7 @@ import { signOutAll } from "@/lib/supabase";
 import { THEMES, applyTheme, useTheme, type ThemeId } from "@/lib/theme";
 import { formatStreak } from "@/lib/streak";
 import { ThemeIcon } from "@/components/theme-fab";
+import PasswordPrompt from "@/components/password-prompt";
 
 export type StreakSummary = {
   current: number;
@@ -295,6 +296,8 @@ export default function DashNav({
           )}
         </div>
       </div>
+      {/* One-time "add a password" prompt for Google/GitHub-only accounts. */}
+      <PasswordPrompt />
     </header>
   );
 }
