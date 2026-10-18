@@ -78,12 +78,12 @@ export default function Hero() {
 
           <h1 className="mt-5" style={{ fontSize: "clamp(1.9rem, 5.5vw, 4.2rem)", lineHeight: 1.1, fontFamily: '"Fraunces", Georgia, serif', overflowWrap: "anywhere" }}>
             <span className="hline">
-              <span className="block font-extrabold tracking-tight italic" style={{ animationDelay: "0.18s" }}>
+              <span className="block font-extrabold tracking-tight italic" style={{ animationDelay: "0.18s", color: "var(--text)" }}>
                 The paper doesn't forgive
               </span>
             </span>
             <span className="hline">
-              <span className="block font-extrabold tracking-tight" style={{ animationDelay: "0.26s" }}>
+              <span className="block font-extrabold tracking-tight" style={{ animationDelay: "0.26s", color: "var(--accent)" }}>
                 guesswork.
               </span>
             </span>
