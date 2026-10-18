@@ -4,7 +4,9 @@ import type { Metadata } from "next";
 // indexing. Purely presentational — authentication and authorization stay in
 // app/admin/(gated)/layout.tsx and lib/admin-server.ts.
 export const metadata: Metadata = {
-  title: "Admin — NimCuet",
+  // The root layout's title template appends "— NimCuet", so this must stay a
+  // bare segment ("Admin — NimCuet" would double the brand).
+  title: "Admin",
   robots: { index: false, follow: false },
 };
 
