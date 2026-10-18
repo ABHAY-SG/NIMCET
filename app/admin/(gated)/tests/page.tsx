@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import AdminLayout from "@/components/admin-layout";
 import {
   Badge,
@@ -461,6 +462,9 @@ export default function AdminTests() {
         >
           <Icon name="download" size={14} /> Export CSV
         </button>
+        <Link href="/admin/tests/from-csv" className="admin-btn">
+          <Icon name="upload" size={14} /> From CSV
+        </Link>
         <button type="button" className="admin-btn admin-btn-primary" onClick={() => openEditor()}>
           <Icon name="plus" size={14} /> New test
         </button>
@@ -488,9 +492,14 @@ export default function AdminTests() {
             hint={tests.length === 0 ? "Create your first mock to get started." : "Try clearing the search or filters."}
             action={
               tests.length === 0 ? (
-                <button type="button" className="admin-btn admin-btn-primary" onClick={() => openEditor()}>
-                  <Icon name="plus" size={14} /> New test
-                </button>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Link href="/admin/tests/from-csv" className="admin-btn">
+                    <Icon name="upload" size={14} /> Create from CSV
+                  </Link>
+                  <button type="button" className="admin-btn admin-btn-primary" onClick={() => openEditor()}>
+                    <Icon name="plus" size={14} /> New test
+                  </button>
+                </div>
               ) : undefined
             }
           />

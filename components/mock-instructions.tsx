@@ -77,6 +77,7 @@ export default function MockInstructions({
   totalMarks,
   scheme,
   timed,
+  instructions,
   onStart,
 }: {
   title: string;
@@ -85,6 +86,7 @@ export default function MockInstructions({
   totalMarks: number;
   scheme: SchemeRow[];
   timed: boolean;
+  instructions?: string;
   onStart: () => void;
 }) {
   const [page, setPage] = useState<1 | 2>(1);
@@ -158,6 +160,22 @@ export default function MockInstructions({
                   </li>
                 ))}
               </ol>
+              {instructions && instructions.trim() !== "" && (
+                <div
+                  className="mt-4 rounded-xl px-3.5 py-3"
+                  style={{
+                    background: "color-mix(in srgb, var(--accent) 7%, transparent)",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <p className="mono text-[10px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.14em" }}>
+                    PAPER-SPECIFIC INSTRUCTIONS
+                  </p>
+                  <p className="mt-1.5 whitespace-pre-line text-[13px] leading-6" style={{ color: "var(--text)" }}>
+                    {instructions.trim()}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="rounded-xl p-4" style={{ border: "1px solid var(--border)" }}>
               <h3 className="flex items-center gap-2 text-[15px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>

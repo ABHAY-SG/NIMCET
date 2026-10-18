@@ -35,7 +35,16 @@ type Run = { qs: MockQuestion[]; title: string; testName: string; attemptName: s
 
 // Everything the pre-exam instructions page needs, plus the run it will
 // launch — resolved once, so Start Test is a pure state flip.
-type Setup = { title: string; minutes: number; count: number; totalMarks: number; scheme: SchemeRow[]; timed: boolean; run: Run };
+type Setup = {
+  title: string;
+  minutes: number;
+  count: number;
+  totalMarks: number;
+  scheme: SchemeRow[];
+  timed: boolean;
+  instructions: string;
+  run: Run;
+};
 
 type SectionGroup = { label: string; count: number; marks: number; plus: number; minus: number };
 
@@ -155,7 +164,10 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
           .from("tests")
           .select("*")
           .eq("published", true)
-          .limit(30);
+          // Newest first so newly created mocks always surface; the cap is
+          // generous enough for the whole catalogue to stay browsable.
+          .order("created_at", { ascending: false })
+          .limit(60);
         if (tErr) throw tErr;
         const qRes = await fetch("/api/student/questions?limit=300", { credentials: "same-origin" });
         const qj = (await qRes.json()) as { error?: string; rows?: BankRow[] };
@@ -252,6 +264,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
       totalMarks: rows.reduce((s, q) => s + (Number(q.plus) || 0), 0),
       scheme,
       timed: !!parts,
+      instructions: t.instructions || "",
       run: {
         qs: rows.map(toMock),
         title: t.title.toUpperCase(),
@@ -285,6 +298,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
       totalMarks: picked.reduce((s, q) => s + (Number(q.plus) || 0), 0),
       scheme,
       timed: false,
+      instructions: "",
       run: {
         qs: picked.map(toMock),
         title: label.toUpperCase(),
@@ -368,6 +382,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
           totalMarks={setup.totalMarks}
           scheme={setup.scheme}
           timed={setup.timed}
+          instructions={setup.instructions}
           onStart={() => {
             setRun(setup.run);
             setSetup(null);
