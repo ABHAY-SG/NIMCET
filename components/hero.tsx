@@ -69,38 +69,42 @@ export default function Hero() {
         {/* Editorial column */}
         <div className="text-center lg:text-left">
           <p
-            className="track-in inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase"
-            style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)", color: "var(--muted)", letterSpacing: "0.22em" }}
+            className="track-in inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase rise"
+            style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)", color: "var(--muted)", letterSpacing: "0.22em", animationDelay: "0.1s" }}
           >
             <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "var(--accent)" }} />
-            Full-length mocks · NIMCET + CUET PG
+            PREMIUM MOCKS · NIMCET + CUET PG
           </p>
 
-          <h1 className="mt-5" style={{ fontSize: "clamp(2.2rem, 6vw, 5.2rem)", lineHeight: 1.04, fontFamily: '"Fraunces", Georgia, serif' }}>
+          <h1 className="mt-5" style={{ fontSize: "clamp(1.9rem, 5.5vw, 4.2rem)", lineHeight: 1.1, fontFamily: '"Fraunces", Georgia, serif', overflowWrap: "anywhere" }}>
             <span className="hline">
-              <span className="block font-extrabold tracking-tight italic" style={{ whiteSpace: "nowrap" }}>
-                Rank is not luck.
+              <span className="block font-extrabold tracking-tight italic" style={{ animationDelay: "0.18s" }}>
+                The paper doesn't forgive
               </span>
             </span>
             <span className="hline">
-              <span className="block" style={{ animationDelay: "0.12s", whiteSpace: "nowrap" }}>
-                <span className="block font-extrabold tracking-tight">It’s repetition.</span>
+              <span className="block font-extrabold tracking-tight" style={{ animationDelay: "0.26s" }}>
+                guesswork.
               </span>
             </span>
           </h1>
+
+          <p className="rise mx-auto mt-6 max-w-[430px] text-[16px] leading-relaxed italic lg:mx-0 lg:text-left" style={{ color: "var(--accent)", fontFamily: '"Fraunces", Georgia, serif', animationDelay: "0.36s" }}>
+            "Repetition is the only shortcut that works."
+          </p>
 
           <div
             className="rise mx-auto mt-6 h-px w-24 lg:mx-0"
             style={{ background: "linear-gradient(90deg, transparent, var(--accent), transparent)", animationDelay: "0.3s" }}
           />
 
-          <p className="rise mx-auto mt-5 max-w-[440px] text-[15px] leading-relaxed lg:mx-0" style={{ color: "var(--muted)", animationDelay: "0.38s" }}>
-            Every mock replays the real paper — same pattern, same clock, same
-            negative marking. You attempt, the report talks, the leaks get
-            fixed, and the next attempt starts stronger than the last.
+          <p className="rise mx-auto mt-5 max-w-[440px] text-[15px] leading-relaxed lg:mx-0" style={{ color: "var(--muted)", animationDelay: "0.42s" }}>
+            Full-length timed mocks replay the real paper — same pattern, same
+            clock, same negative marking. Instant scorecards pinpoint where you
+            leak marks, so every attempt starts stronger than the last.
           </p>
 
-          <div className="rise mt-7 flex flex-wrap justify-center gap-3 lg:justify-start" style={{ animationDelay: "0.46s" }}>
+          <div className="rise mt-7 flex flex-wrap justify-center gap-3 lg:justify-start" style={{ animationDelay: "0.52s" }}>
             <Link
               href="/#demo"
               className="cta-glow rounded-full px-7 py-3.5 text-sm font-bold"
@@ -117,7 +121,7 @@ export default function Hero() {
             </Link>
           </div>
 
-          <div className="rise mt-7 flex items-center justify-center gap-7 lg:justify-start" style={{ animationDelay: "0.54s" }}>
+          <div className="rise mt-7 flex items-center justify-center gap-7 lg:justify-start" style={{ animationDelay: "0.62s" }}>
             <div>
               <div className="mono text-[24px] font-extrabold leading-none">120</div>
               <div className="mt-1.5 text-[10px] font-semibold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
