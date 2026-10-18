@@ -107,7 +107,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (refErr) throw refErr;
     if ((count ?? 0) > 0) {
       return NextResponse.json(
-        { error: `Cannot delete — ${count} test(s) still reference this question. Remove it from those tests first.` },
+        { error: `Cannot delete — ${count} test(s) still reference this question. Use force delete to remove it from those tests too.` },
         { status: 409 }
       );
     }

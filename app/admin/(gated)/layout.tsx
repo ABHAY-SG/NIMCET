@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/admin-server";
+import { ToastProvider } from "@/components/admin/ui";
 
 // Server-side gate for every /admin page EXCEPT /admin/login (which stays at
 // app/admin/login, outside this route group). This is the page half of the
@@ -25,9 +26,11 @@ import { getAdminSession } from "@/lib/admin-server";
 //   - admin                 → render the requested page
 export default function AdminGatedLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<GateSkeleton />}>
-      <AdminGate>{children}</AdminGate>
-    </Suspense>
+    <ToastProvider>
+      <Suspense fallback={<GateSkeleton />}>
+        <AdminGate>{children}</AdminGate>
+      </Suspense>
+    </ToastProvider>
   );
 }
 

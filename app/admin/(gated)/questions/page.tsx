@@ -130,8 +130,14 @@ export default function AdminQuestions() {
   const [showKey, setShowKey] = useState(false);
   const [confirmDel, setConfirmDel] = useState<QRow | null>(null);
   const [delBusy, setDelBusy] = useState(false);
+  const [delError, setDelError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDelOpen, setBulkDelOpen] = useState(false);
+  const [bulkDelBusy, setBulkDelBusy] = useState(false);
+  const [bulkDelError, setBulkDelError] = useState<string | null>(null);
+  const [forceDel, setForceDel] = useState<{ ids: string[]; label: string } | null>(null);
+  const [forceBusy, setForceBusy] = useState(false);
+  const [forceError, setForceError] = useState<string | null>(null);
   const [importBusy, setImportBusy] = useState(false);
 
   const rows = useMemo(() => data?.rows ?? [], [data]);
@@ -218,17 +224,21 @@ export default function AdminQuestions() {
     try {
       await adminMutate(`/api/admin/questions/${confirmDel.id}`, "DELETE");
       toast("Question deleted.");
+      setDelError(null);
       setConfirmDel(null);
       reload();
       facetsData.reload();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Delete failed.", "error");
+      // Keep the dialog open with the server's reason (a transient toast is
+      // easy to miss) — the force escape hatch renders next to it.
+      setDelError(e instanceof Error ? e.message : "Delete failed.");
     } finally {
       setDelBusy(false);
     }
   };
 
   const runBulkDelete = async () => {
+    setBulkDelBusy(true);
     try {
       const r = await adminMutate<{ affected: number }>("/api/admin/questions/bulk", "POST", {
         ids: [...selected],
@@ -236,11 +246,68 @@ export default function AdminQuestions() {
       });
       toast(`${r.affected} question(s) deleted.`);
       setSelected(new Set());
+      setBulkDelError(null);
       setBulkDelOpen(false);
       reload();
       facetsData.reload();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Bulk delete failed.", "error");
+      // Blocked batches (questions used by a test) stay visible right in the
+      // dialog, with the force-delete escape hatch underneath.
+      setBulkDelError(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setBulkDelBusy(false);
+    }
+  };
+
+  // ---- delete force path ----
+  // A blocked delete is not a dead end: the admin can force it, which also
+  // drops the questions from every test that references them — but only after
+  // a second dialog where FORCE DELETE must be typed.
+
+  const isTestRefBlock = (msg: string | null) => !!msg && /reference/i.test(msg);
+
+  const openSingleForce = () => {
+    if (!confirmDel) return;
+    setForceError(null);
+    setDelError(null);
+    setForceDel({ ids: [confirmDel.id], label: `“${confirmDel.stem.slice(0, 60)}…”` });
+    setConfirmDel(null);
+  };
+
+  const openBulkForce = () => {
+    const list = rows.filter((q) => selected.has(q.id));
+    if (list.length === 0) return;
+    setForceError(null);
+    setBulkDelError(null);
+    setBulkDelOpen(false);
+    setForceDel({
+      ids: list.map((q) => q.id),
+      label: list.length === 1 ? `“${list[0].stem.slice(0, 60)}…”` : `${list.length} selected questions`,
+    });
+  };
+
+  const runForceDelete = async () => {
+    if (!forceDel) return;
+    setForceBusy(true);
+    try {
+      const r = await adminMutate<{ affected: number; unlinkedFromTests?: number }>("/api/admin/questions/bulk", "POST", {
+        ids: forceDel.ids,
+        action: "delete",
+        force: true,
+      });
+      toast(
+        r.unlinkedFromTests
+          ? `${r.affected} question(s) deleted and removed from ${r.unlinkedFromTests} test(s).`
+          : `${r.affected} question(s) deleted.`
+      );
+      setSelected(new Set());
+      setForceDel(null);
+      reload();
+      facetsData.reload();
+    } catch (e) {
+      setForceError(e instanceof Error ? e.message : "Force delete failed.");
+    } finally {
+      setForceBusy(false);
     }
   };
 
@@ -683,13 +750,24 @@ export default function AdminQuestions() {
         tone="danger"
         confirmLabel="Delete question"
         busy={delBusy}
+        error={delError}
+        errorAction={
+          isTestRefBlock(delError) ? (
+            <button type="button" className="admin-btn admin-btn-danger w-full justify-center" onClick={openSingleForce}>
+              <Icon name="trash" size={14} /> Force delete (removes it from tests too)
+            </button>
+          ) : undefined
+        }
         message={
           <>
-            This permanently deletes the question starting with “{confirmDel?.stem.slice(0, 80)}…”. Questions
-            still referenced by a test are blocked by the server.
+            This permanently deletes the question starting with “{confirmDel?.stem.slice(0, 80)}…”. If a test still
+            uses it, the server blocks the delete — force delete then drops it from those tests first.
           </>
         }
-        onCancel={() => setConfirmDel(null)}
+        onCancel={() => {
+          setDelError(null);
+          setConfirmDel(null);
+        }}
         onConfirm={doDelete}
       />
       <ConfirmDialog
@@ -697,10 +775,43 @@ export default function AdminQuestions() {
         title={`Delete ${selected.size} question(s)?`}
         tone="danger"
         confirmLabel="Delete selected"
+        busy={bulkDelBusy}
         requireText="DELETE"
-        message="Questions referenced by any test are blocked; nothing is deleted when the batch contains a referenced question."
-        onCancel={() => setBulkDelOpen(false)}
+        error={bulkDelError}
+        errorAction={
+          isTestRefBlock(bulkDelError) ? (
+            <button type="button" className="admin-btn admin-btn-danger w-full justify-center" onClick={openBulkForce}>
+              <Icon name="trash" size={14} /> Force delete (removes them from tests too)
+            </button>
+          ) : undefined
+        }
+        message="Questions still used by a test block the whole batch — nothing is deleted. Force delete drops them from those tests first."
+        onCancel={() => {
+          setBulkDelError(null);
+          setBulkDelOpen(false);
+        }}
         onConfirm={runBulkDelete}
+      />
+      <ConfirmDialog
+        open={!!forceDel}
+        title="Force delete?"
+        tone="danger"
+        confirmLabel="Force delete"
+        busy={forceBusy}
+        requireText="FORCE DELETE"
+        error={forceError}
+        message={
+          <>
+            This permanently deletes {forceDel?.label} and removes {forceDel && forceDel.ids.length === 1 ? "it" : "them"} from
+            every test that uses {forceDel && forceDel.ids.length === 1 ? "it" : "them"} — those tests will simply have fewer
+            questions. Deleted question content cannot be recovered.
+          </>
+        }
+        onCancel={() => {
+          setForceError(null);
+          setForceDel(null);
+        }}
+        onConfirm={runForceDelete}
       />
     </AdminLayout>
   );
