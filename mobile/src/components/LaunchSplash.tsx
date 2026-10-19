@@ -60,7 +60,6 @@ export default function LaunchSplash({ onDone }: { onDone: () => void }) {
     setLeaving(true);
   };
 
-  const word = "NimCuet";
 
   return (
     <div
@@ -91,25 +90,8 @@ export default function LaunchSplash({ onDone }: { onDone: () => void }) {
           <LogoMark size={96} glow className="splash-mark" />
         </div>
 
-        <h1 className="splash-word" aria-label="NimCuet">
-          {word.split("").map((letter, i) => (
-            <span
-              key={`${letter}-${i}`}
-              aria-hidden
-              className="splash-letter"
-              style={{
-                animationDelay: `${560 + i * 70}ms`,
-                color: i >= 3 ? "var(--gold)" : undefined,
-                fontStyle: i >= 3 ? "italic" : "normal",
-                fontWeight: i >= 3 ? 400 : undefined,
-              }}
-            >
-              {letter}
-            </span>
-          ))}
-        </h1>
 
-        <p className="splash-tag">The art of exam preparation</p>
+        <p className="splash-tag">Prepare smart. Perform better.</p>
         <span aria-hidden className="splash-rule" />
 
         <div aria-hidden className="splash-progress">

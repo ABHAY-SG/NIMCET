@@ -1,6 +1,6 @@
 import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { LogoMark, Wordmark } from "./brand";
+import { LogoMark } from "./brand";
 import { Icon, type IconName } from "./icons";
 
 const TABS: Array<{ to: string; label: string; icon: IconName }> = [
@@ -25,15 +25,9 @@ export default function AppShell() {
       <header className="shell-header safe-top">
         <div className="shell-header-inner">
           <Link to="/dashboard" className="brand-lockup" aria-label="NimCuet home">
-            <LogoMark size={34} />
-            <span className="flex flex-col">
-              <Wordmark />
-              <span
-                className="mt-0.5 text-[8px] font-extrabold uppercase text-faint"
-                style={{ letterSpacing: "0.26em" }}
-              >
-                Exam Studio
-              </span>
+            <span className="flex flex-col items-start gap-1">
+              <LogoMark size={28} />
+              <span className="brand-tagline">Prepare smart. Perform better.</span>
             </span>
           </Link>
 

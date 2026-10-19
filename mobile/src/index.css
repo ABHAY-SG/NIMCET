@@ -59,9 +59,9 @@
   --color-danger: var(--danger);
   --color-ok: var(--ok);
 
-  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: "Manrope Variable", sans-serif;
+  --font-display: "Fraunces Variable", serif;
+  --font-mono: "JetBrains Mono Variable", monospace;
 
   --radius-card: 24px;
   --shadow-card: var(--shadow-1);
@@ -70,6 +70,13 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 html,
@@ -923,6 +930,17 @@ body::after {
   letter-spacing: -0.035em;
   line-height: 1;
 }
+.brand-tagline {
+  padding-left: 1px;
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+  line-height: 1;
+  white-space: nowrap;
+}
 .brand-name em {
   font-style: italic;
   font-weight: 400;
@@ -1171,11 +1189,12 @@ body::after {
 }
 .splash-tag {
   margin-top: 13px;
-  font-size: 12px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: rgba(248, 243, 234, 0.5);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-style: italic;
+  letter-spacing: 0.015em;
+  font-weight: 500;
+  color: var(--gold);
   opacity: 0;
   animation: fadeIn 0.9s 0.95s var(--ease) both;
 }
