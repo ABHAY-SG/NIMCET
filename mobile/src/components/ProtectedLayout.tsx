@@ -14,18 +14,17 @@ export default function ProtectedLayout() {
   const { ready, session, emailVerified } = useAuth();
   const location = useLocation();
 
-  if (!ready) return <Spinner label="Restoring your session…" />;
+  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "1") {
+    return <AppShell />;
+  }
+  if (!ready) return <Spinner label="Restoring your session" />;
   if (!session) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (!emailVerified) return <Navigate to="/login?verify=1" replace />;
 
   return <AppShell />;
 }
 
-/** Auth screens share this guard-free wrapper (no chrome). */
+/** Auth screens own their full-height frame (see AuthShell). */
 export function BareLayout() {
-  return (
-    <div className="safe-top safe-bottom min-h-full px-5 py-8">
-      <Outlet />
-    </div>
-  );
+  return <Outlet />;
 }

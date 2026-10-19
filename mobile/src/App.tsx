@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { AuthProvider } from "./lib/auth";
+import LaunchSplash from "./components/LaunchSplash";
 import ProtectedLayout, { BareLayout } from "./components/ProtectedLayout";
 import Login from "./screens/Login";
 import Signup from "./screens/Signup";
@@ -37,8 +38,11 @@ function AndroidBackButton() {
 // history/path routing is unreliable. Hash routing is the safe choice for
 // Capacitor.
 export default function App() {
+  const [splashDone, setSplashDone] = useState(false);
+
   return (
     <AuthProvider>
+      {!splashDone ? <LaunchSplash onDone={() => setSplashDone(true)} /> : null}
       <HashRouter>
         <AndroidBackButton />
         <Routes>

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { Alert, Card, Spinner } from "../components/ui";
+import { Alert, Spinner } from "../components/ui";
+import { Icon } from "../components/icons";
+import AuthShell from "../components/AuthShell";
 
 export default function Signup() {
   const { ready, configured, session, emailVerified, signUp, resendVerification } = useAuth();
@@ -10,6 +12,8 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [awaiting, setAwaiting] = useState(false);
@@ -58,20 +62,38 @@ export default function Signup() {
     }
   }
 
+  const strength = [
+    password.length >= 8,
+    password.length >= 12,
+    /[A-Z]/.test(password) && /[a-z]/.test(password),
+    /[^A-Za-z]/.test(password) || /\d/.test(password),
+  ];
+  const strengthCount = strength.filter(Boolean).length;
+
   if (awaiting) {
     return (
-      <div className="mx-auto w-full max-w-sm">
-        <div className="mt-10 text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-ok/15 text-2xl text-ok">
-            ✓
-          </div>
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Check your inbox</h1>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
+      <AuthShell
+        mode="up"
+        title="One last"
+        accent="step."
+        subtitle="Your account is created. Confirm the email and the practice room unlocks."
+        footer={
+          <>
+            Already verified? <Link to="/login?verify=1">Log in</Link>
+          </>
+        }
+      >
+        <div className="verify-panel">
+          <span className="verify-seal">
+            <Icon name="mail" size={27} />
+          </span>
+          <h2 className="display mt-4 text-[1.65rem]">Check your inbox</h2>
+          <p className="mt-2 text-[13px] leading-relaxed text-muted">
             We sent a confirmation link to <span className="font-semibold text-fg">{email}</span>.
-            Open it to verify your account — it will hand you back to NimCuet automatically. Then
-            log in.
+            Opening it hands you straight back to NimCuet.
           </p>
         </div>
+
         {error ? (
           <div className="mt-4">
             <Alert kind="error">{error}</Alert>
@@ -82,9 +104,11 @@ export default function Signup() {
             <Alert kind="ok">Confirmation email sent again.</Alert>
           </div>
         ) : null}
-        <div className="mt-6 flex flex-col gap-2">
+
+        <div className="mt-5 flex flex-col gap-2">
           <Link to="/login?verify=1" className="btn btn-primary btn-block">
             I&apos;ve verified — log in
+            <Icon name="arrowRight" size={17} />
           </Link>
           <button
             className="btn btn-ghost btn-block"
@@ -94,24 +118,23 @@ export default function Signup() {
           >
             {resending ? "Sending…" : "Resend confirmation email"}
           </button>
-          <Link to="/login" className="btn btn-ghost btn-block">
-            Back to login
-          </Link>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-sm">
-      <div className="mb-8 mt-6 text-center">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-btn text-2xl font-black text-btn-fg">
-          N
-        </div>
-        <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Create your account</h1>
-        <p className="mt-1 text-sm text-muted">Mock tests, real timers, honest analytics.</p>
-      </div>
-
+    <AuthShell
+      mode="up"
+      title="Begin your"
+      accent="ascent."
+      subtitle="A sharper way to prepare for NIMCET and CUET PG MCA — real papers, honest scorecards and a room of your own."
+      footer={
+        <>
+          Already have an account? <Link to="/login">Log in</Link>
+        </>
+      }
+    >
       {!configured ? (
         <div className="mb-4">
           <Alert kind="error">
@@ -121,14 +144,21 @@ export default function Signup() {
         </div>
       ) : null}
 
-      <Card>
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          {error ? <Alert kind="error">{error}</Alert> : null}
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        {error ? (
+          <Alert kind="error" shake>
+            {error}
+          </Alert>
+        ) : null}
 
-          <label className="field">
-            <span className="label">Email</span>
+        <label className="field">
+          <span className="label">Email address</span>
+          <span className="input-wrap">
+            <span className="input-icon">
+              <Icon name="mail" size={17} />
+            </span>
             <input
-              className="input"
+              className="input has-icon"
               type="email"
               inputMode="email"
               autoComplete="email"
@@ -138,13 +168,18 @@ export default function Signup() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
             />
-          </label>
+          </span>
+        </label>
 
-          <label className="field">
-            <span className="label">Password</span>
+        <label className="field">
+          <span className="label">Password</span>
+          <span className="input-wrap">
+            <span className="input-icon">
+              <Icon name="lock" size={17} />
+            </span>
             <input
-              className="input"
-              type="password"
+              className="input has-icon has-action"
+              type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               required
               minLength={8}
@@ -152,33 +187,77 @@ export default function Signup() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
             />
-          </label>
+            <button
+              type="button"
+              className="input-action"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+            >
+              <Icon name={showPassword ? "eyeOff" : "eye"} size={18} />
+            </button>
+          </span>
+          <span className="strength" aria-hidden>
+            {strength.map((on, i) => (
+              <span key={i} data-on={on ? "true" : "false"} />
+            ))}
+          </span>
+          <span className="text-[10px] text-faint">
+            {password.length === 0
+              ? "Use 8+ characters. Longer is stronger."
+              : strengthCount >= 3
+                ? "Strong — ready to go."
+                : strengthCount === 2
+                  ? "Good. Add length or a symbol to strengthen it."
+                  : "Keep going — 8+ characters minimum."}
+          </span>
+        </label>
 
-          <label className="field">
-            <span className="label">Confirm password</span>
+        <label className="field">
+          <span className="label">Confirm password</span>
+          <span className="input-wrap">
+            <span className="input-icon">
+              <Icon name="shield" size={17} />
+            </span>
             <input
-              className="input"
-              type="password"
+              className="input has-icon has-action"
+              type={showConfirm ? "text" : "password"}
               autoComplete="new-password"
               required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Repeat your password"
             />
-          </label>
+            <button
+              type="button"
+              className="input-action"
+              onClick={() => setShowConfirm((v) => !v)}
+              aria-label={showConfirm ? "Hide password" : "Show password"}
+              aria-pressed={showConfirm}
+            >
+              <Icon name={showConfirm ? "eyeOff" : "eye"} size={18} />
+            </button>
+          </span>
+        </label>
 
-          <button className="btn btn-primary btn-block" type="submit" disabled={busy || !configured}>
-            {busy ? "Creating account…" : "Create account"}
-          </button>
-        </form>
-      </Card>
+        <button className="btn btn-primary btn-block mt-1" type="submit" disabled={busy || !configured}>
+          {busy ? (
+            <>
+              <span className="btn-spinner" aria-hidden />
+              Creating account…
+            </>
+          ) : (
+            <>
+              Create account
+              <Icon name="arrowRight" size={17} />
+            </>
+          )}
+        </button>
+      </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
-        Already have an account?{" "}
-        <Link to="/login" className="font-semibold text-accent">
-          Log in
-        </Link>
+      <p className="mt-4 text-center text-[10px] leading-4 text-faint">
+        By creating an account you agree to the NimCuet terms and privacy policy.
       </p>
-    </div>
+    </AuthShell>
   );
 }

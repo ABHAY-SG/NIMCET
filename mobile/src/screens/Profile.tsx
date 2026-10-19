@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useAsync } from "../lib/useAsync";
 import { formatDate, listMyAttempts } from "../lib/data";
-import { Card, ScreenTitle } from "../components/ui";
+import { SectionHead, Stat } from "../components/ui";
+import { Icon } from "../components/icons";
 
 function displayName(user: { email?: string; user_metadata?: Record<string, unknown> }): string {
   const meta = (user.user_metadata ?? {}) as {
@@ -27,6 +28,8 @@ export default function Profile() {
 
   const initial = (user?.email?.[0] ?? "?").toUpperCase();
   const name = user ? displayName(user) : "student";
+  const verified = Boolean(user?.email_confirmed_at);
+  const attemptCount = data?.length ?? 0;
 
   async function onSignOut() {
     setBusy(true);
@@ -39,58 +42,107 @@ export default function Profile() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md">
-      <ScreenTitle title="Profile" />
+    <div className="screen">
+      <header className="screen-head">
+        <div>
+          <p className="eyebrow">Your account</p>
+          <h1 className="screen-title mt-2">
+            Profile <em>&amp; progress</em>
+          </h1>
+        </div>
+      </header>
 
-      <Card>
-        <div className="flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-pill text-lg font-bold text-accent">
-            {initial}
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">{name}</div>
-            <div className="truncate text-xs text-muted">{user?.email}</div>
+      <section className="hero reveal" style={{ padding: "20px" }}>
+        <span aria-hidden className="hero-orb hero-orb-a" />
+        <span aria-hidden className="hero-orb hero-orb-b" />
+        <div className="relative z-10 flex items-center gap-4">
+          <span className="avatar h-16 w-16 text-[26px]">{initial}</span>
+          <div className="min-w-0 flex-1">
+            <h2 className="display truncate text-[1.55rem]">{name}</h2>
+            <p className="mt-1 truncate text-[12px] text-muted">{user?.email}</p>
+            <span className={`pill mt-2 ${verified ? "pill-ok" : "pill-gold"}`}>
+              <Icon name={verified ? "shield" : "alert"} size={11} strokeWidth={2} />
+              {verified ? "Verified account" : "Verification pending"}
+            </span>
           </div>
         </div>
-      </Card>
+      </section>
 
-      <Card className="mt-3">
-        <dl className="space-y-2 text-sm">
-          <Row label="Email verified" value={user?.email_confirmed_at ? "Yes" : "No"} />
-          <Row label="Member since" value={user?.created_at ? formatDate(user.created_at) : "—"} />
-          <Row
-            label="Last sign-in"
-            value={user?.last_sign_in_at ? formatDate(user.last_sign_in_at) : "—"}
-          />
-          <Row
-            label="Mock attempts"
-            value={loading ? "…" : String(data?.length ?? 0)}
-          />
-          <Row label="Account ID" value={<span className="mono text-xs">{user?.id?.slice(0, 8)}…</span>} />
-        </dl>
-      </Card>
+      <div className="stat-grid mt-3 reveal" style={{ "--d": "70ms" } as React.CSSProperties}>
+        <Stat
+          icon="book"
+          label="Mock attempts"
+          value={loading ? "…" : String(attemptCount)}
+          note="saved to your account"
+        />
+        <Stat
+          icon="calendar"
+          label="Member since"
+          value={user?.created_at ? formatDate(user.created_at) : "—"}
+          note="your first day here"
+        />
+      </div>
 
-      <Card className="mt-3 border-dashed">
-        <span className="pill mb-2">Coming soon</span>
-        <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted">
-          <li>Edit display name and avatar</li>
-          <li>Password reset (opens the website&apos;s existing reset flow in-app)</li>
-          <li>Notification and theme preferences</li>
+      <SectionHead title="Account details" />
+      <div className="card p-4">
+        <div className="detail-row">
+          <span className="detail-label flex items-center gap-2">
+            <Icon name="mail" size={14} />
+            Email
+          </span>
+          <span className="detail-value truncate">{user?.email ?? "—"}</span>
+        </div>
+        <div className="detail-row">
+          <span className="detail-label flex items-center gap-2">
+            <Icon name="shield" size={14} />
+            Email verified
+          </span>
+          <span className="detail-value">{verified ? "Yes" : "No"}</span>
+        </div>
+        <div className="detail-row">
+          <span className="detail-label flex items-center gap-2">
+            <Icon name="clock" size={14} />
+            Last sign-in
+          </span>
+          <span className="detail-value">
+            {user?.last_sign_in_at ? formatDate(user.last_sign_in_at) : "—"}
+          </span>
+        </div>
+        <div className="detail-row">
+          <span className="detail-label flex items-center gap-2">
+            <Icon name="hash" size={14} />
+            Account ID
+          </span>
+          <span className="detail-value mono text-[11px]">{user?.id?.slice(0, 8)}…</span>
+        </div>
+      </div>
+
+      <SectionHead title="Coming to this space" />
+      <div className="card card-quiet p-4">
+        <ul className="space-y-3">
+          {[
+            "Display name and avatar editing",
+            "Password reset inside the app",
+            "Notification and study reminders",
+          ].map((line) => (
+            <li key={line} className="flex items-center gap-2.5 text-[12.5px] text-muted">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg" style={{ background: "rgba(244,162,97,0.08)", color: "var(--accent)" }}>
+                <Icon name="sparkles" size={12} />
+              </span>
+              {line}
+            </li>
+          ))}
         </ul>
-      </Card>
+      </div>
 
-      <button className="btn btn-ghost btn-block mt-4" type="button" onClick={onSignOut} disabled={busy}>
+      <button className="btn btn-danger btn-block mt-5" type="button" onClick={onSignOut} disabled={busy}>
+        <Icon name="logout" size={16} />
         {busy ? "Signing out…" : "Sign out"}
       </button>
-    </div>
-  );
-}
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <dt className="text-muted">{label}</dt>
-      <dd className="font-medium">{value}</dd>
+      <p className="mt-4 text-center text-[9.5px] font-bold uppercase tracking-[0.24em] text-faint">
+        NimCuet · Exam Studio
+      </p>
     </div>
   );
 }

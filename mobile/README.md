@@ -68,17 +68,29 @@ The Android WebView loads the bundle from `https://localhost` (`androidScheme: "
 
 ## Prerequisites
 
-**For web development / building the bundle (works today):**
+**For web development / building the bundle:**
 
 - Node.js 20+ (tested on v24) and npm.
 
-**For building an APK/AAB (not yet available on this machine):**
+**For building an APK/AAB (installed on this machine):**
 
-- JDK 21, Android SDK (build-tools + platform) and, practically, Android Studio.
-- `ANDROID_HOME` / `ANDROID_SDK_ROOT` set, and `adb` on `PATH`.
+- JDK 21 — `C:\Program Files\Java\jdk-21.0.12.1`
+- Android SDK — `%LOCALAPPDATA%\Android\Sdk` (platform `android-37.0`, build-tools `36.0.0`)
+- Android Studio — `C:\Program Files\Android\Android Studio`
 
-> No Android toolchain is installed here, so no APK/AAB has been produced and no `android/` project
-> exists yet. The web bundle and types are verified; the native build is the next step.
+Neither `java` nor `adb` is on `PATH`, so set the environment for the session before building:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-21.0.12.1"
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+$env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+$env:PATH = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:PATH"
+```
+
+`mobile/android/local.properties` (git-ignored) points Gradle at the SDK.
+
+> The `cmdline-tools`/`sdkmanager` package is not installed. The Android Gradle Plugin downloads any
+> missing SDK components automatically (the SDK licences are already accepted).
 
 ---
 
@@ -109,9 +121,9 @@ npm run typecheck    # tsc --noEmit
 npm run build        # typecheck + production bundle into dist/
 npm run preview      # serve the built bundle locally
 
-# Native (requires the Android toolchain):
-npm run cap:add:android     # one-time: generates the android/ Gradle project
-npm run cap:sync            # build web assets into the native project
+# Native (Android project lives in mobile/android/):
+npm run cap:sync            # build web assets into the native project (run after every web change)
+npm run cap:add:android     # one-time: (re)generates the android/ Gradle project
 npm run cap:open:android    # open in Android Studio
 npm run cap:run:android     # build + install + run on a device/emulator
 ```
@@ -119,6 +131,53 @@ npm run cap:run:android     # build + install + run on a device/emulator
 Local dev against the website: run the website (`npm run dev` in the repo root, port 3000) and
 point `VITE_API_BASE_URL=http://localhost:3000` in `mobile/.env.local`. The website's dev CORS rule
 already allows `http://localhost:5173`.
+
+### Building the APK
+
+With the environment set (see *Prerequisites*):
+
+```powershell
+cd mobile
+npm.cmd run build                 # rebuild the web bundle
+.\node_modules\.bin\cap.cmd sync android
+
+cd android
+.\gradlew.bat assembleDebug       # debug APK
+# output: mobile\android\app\build\outputs\apk\debug\app-debug.apk
+```
+
+Install on a connected device/emulator:
+
+```powershell
+adb install -r .\app\build\outputs\apk\debug\app-debug.apk
+```
+
+### Release signing
+
+The signed release APK is built with a keystore that lives **outside this repository**:
+
+| Item | Location |
+| --- | --- |
+| Keystore | `C:\Users\abhay\nimcuet-keystore\nimcuet-release.jks` (PKCS12, alias `nimcuet`, RSA 2048, 10 000-day validity) |
+| Credentials | `mobile/android/keystore.properties` (git-ignored) |
+| Signing config | `mobile/android/app/build.gradle` — loaded only when `keystore.properties` exists |
+
+```powershell
+cd mobile\android
+.\gradlew.bat assembleRelease
+# output: mobile\android\app\build\outputs\apk\release\app-release.apk
+```
+
+The keystore and its passwords are **never committed** (`*.jks`, `*.keystore`,
+`keystore.properties` are ignored in `mobile/.gitignore` and `mobile/android/.gitignore`). Back the
+keystore up somewhere safe: losing it means you can never ship an update that installs over an
+existing install. The signing block is conditional — without `keystore.properties` the release build
+still runs but produces an *unsigned* APK.
+
+The Gradle distribution is cached under `%USERPROFILE%\.gradle`. If the Gradle wrapper's download
+times out on a slow network, pre-fetch it with `curl` into
+`%USERPROFILE%\.gradle\wrapper\dists\gradle-8.14.3-all\<hash>\gradle-8.14.3-all.zip`; the wrapper
+then unzips it instead of downloading.
 
 ---
 

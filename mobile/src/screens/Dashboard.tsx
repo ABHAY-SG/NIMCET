@@ -1,17 +1,22 @@
 import { Link } from "react-router-dom";
+import type { User } from "@supabase/supabase-js";
 import { useAuth } from "../lib/auth";
 import { useAsync } from "../lib/useAsync";
 import {
   computeStats,
+  displayMarks,
+  displayMinutes,
   fetchAnnouncements,
   formatDate,
   listMyAttempts,
   listPublishedTests,
+  partsForTest,
   type Announcement,
   type AttemptRow,
   type StudentTest,
 } from "../lib/data";
-import { Alert, Card, ScreenTitle, Spinner } from "../components/ui";
+import { Alert, SectionHead, Spinner, Stat } from "../components/ui";
+import { Icon } from "../components/icons";
 
 type DashData = {
   attempts: AttemptRow[];
@@ -20,9 +25,24 @@ type DashData = {
   attemptsError: string | null;
 };
 
+function displayName(user: User | null | undefined): string {
+  if (!user) return "student";
+  const meta = (user.user_metadata ?? {}) as {
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
+    name?: string;
+  };
+  const full =
+    [meta.first_name, meta.last_name].filter(Boolean).join(" ").trim() ||
+    (meta.full_name ?? "").trim() ||
+    (meta.name ?? "").trim();
+  return full.split(/\s+/)[0] || (user.email ?? "").split("@")[0] || "student";
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
-  const name = user?.email?.split("@")[0] ?? "student";
+  const name = displayName(user);
 
   const { loading, data, error } = useAsync<DashData>(async () => {
     const [attempts, tests, announcements] = await Promise.allSettled([
@@ -39,90 +59,229 @@ export default function Dashboard() {
     };
   }, [user?.id]);
 
-  if (loading) return <Spinner label="Loading your dashboard…" />;
+  if (loading) return <Spinner label="Preparing your dashboard" />;
   if (error) return <Alert kind="error">{error}</Alert>;
 
-  const stats = computeStats(data?.attempts ?? []);
-  const latest = (data?.attempts ?? [])[0] ?? null;
+  const attempts = data?.attempts ?? [];
+  const tests = data?.tests ?? [];
+  const announcements = data?.announcements ?? [];
+  const stats = computeStats(attempts);
+  const latest = attempts[0] ?? null;
 
   return (
-    <div className="mx-auto w-full max-w-md">
-      <ScreenTitle title={`Hi, ${name}`} subtitle="Your NIMCET prep, on the go." />
+    <div className="screen">
+      <div className="pt-5">
+        <section className="hero reveal">
+          <span aria-hidden className="hero-orb hero-orb-a" />
+          <span aria-hidden className="hero-orb hero-orb-b" />
+          <span aria-hidden className="hero-ring" />
 
-      <div className="grid grid-cols-2 gap-3">
-        <Link to="/mocks" className="card p-4 active:scale-[0.98] transition-transform">
-          <div className="text-2xl">📝</div>
-          <div className="mt-2 text-sm font-semibold">Mock Tests</div>
-          <div className="text-xs text-muted">
-            {data?.tests.length ?? 0} published
+          <div className="relative z-10">
+            <div className="flex items-center justify-between gap-3">
+              <span className="eyebrow">Your practice room</span>
+              <span className="pill pill-gold">NIMCET 2026</span>
+            </div>
+
+            <h1 className="hero-title mt-4">
+              Hello, <em>{name}.</em>
+            </h1>
+            <p className="hero-sub mt-2.5">
+              One paper at a time. Sharpen the weak spots, protect the streak and
+              walk into exam day already calm.
+            </p>
+
+            <div className="hero-actions">
+              <Link to="/mocks" className="btn btn-primary">
+                Start a mock
+                <Icon name="arrowUpRight" size={16} />
+              </Link>
+              <Link to="/profile" className="btn btn-ghost">
+                Profile
+              </Link>
+            </div>
+
+            <div className="hero-strip">
+              <span className="meta-chip">
+                <Icon name="book" size={13} />
+                <span className="mono">{tests.length}</span> papers live
+              </span>
+              <span className="meta-chip">
+                <Icon name="clock" size={13} />
+                <span className="mono">{attempts.length}</span> attempts
+              </span>
+            </div>
           </div>
-        </Link>
-        <Link to="/profile" className="card p-4 active:scale-[0.98] transition-transform">
-          <div className="text-2xl">👤</div>
-          <div className="mt-2 text-sm font-semibold">Profile</div>
-          <div className="text-xs text-muted">Account & settings</div>
-        </Link>
+        </section>
       </div>
 
       {data?.attemptsError ? (
-        <div className="mt-3">
+        <div className="mt-4">
           <Alert kind="error">{data.attemptsError}</Alert>
         </div>
       ) : null}
 
-      <Card className="mt-3">
-        <h2 className="text-sm font-semibold">Performance</h2>
-        {stats ? (
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <Stat label="Attempts" value={String(stats.count)} />
-            <Stat label="Best score" value={String(stats.best)} />
-            <Stat label="Average" value={String(stats.average)} />
-            <Stat label="Accuracy" value={stats.accuracy === null ? "—" : `${stats.accuracy}%`} />
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-muted">
-            No attempts yet. Take a mock test and your scores, accuracy and history will appear here.
-          </p>
-        )}
-        {latest ? (
-          <p className="mt-3 border-t border-line pt-3 text-xs text-muted">
-            Last attempt: <span className="text-fg">{latest.test}</span> ·{" "}
-            <span className="mono">{Number(latest.score) || 0}</span> on {formatDate(latest.created_at)}
-          </p>
-        ) : null}
-      </Card>
+      <SectionHead
+        title="Performance"
+        action={
+          <Link to="/profile" className="section-link">
+            History
+            <Icon name="chevronRight" size={13} />
+          </Link>
+        }
+      />
 
-      {data && data.announcements.length > 0 ? (
-        <div className="mt-5">
-          <h2 className="mb-2 text-sm font-semibold text-muted">Announcements</h2>
-          <div className="flex flex-col gap-2">
-            {data.announcements.map((a) => (
-              <Card key={a.id}>
-                <h3 className="text-sm font-semibold">{a.title}</h3>
-                <p className="mt-1 whitespace-pre-line text-sm text-muted">{a.body}</p>
-                <p className="mt-2 text-xs text-muted">{formatDate(a.created_at)}</p>
-              </Card>
-            ))}
+      {stats ? (
+        <div className="stat-grid reveal" style={{ "--d": "60ms" } as React.CSSProperties}>
+          <Stat icon="trophy" label="Best score" value={String(stats.best)} note="your highest attempt" />
+          <Stat
+            icon="target"
+            label="Accuracy"
+            value={stats.accuracy === null ? "—" : String(stats.accuracy)}
+            suffix={stats.accuracy === null ? undefined : "%"}
+            note="correct ÷ answered"
+          />
+          <Stat icon="layers" label="Average" value={String(stats.average)} note={`${stats.count} attempts tracked`} />
+          <Stat
+            icon="hash"
+            label="Questions"
+            value={String(stats.attemptedQuestions)}
+            note="attempted in total"
+          />
+        </div>
+      ) : (
+        <div className="empty reveal">
+          <span className="empty-icon">
+            <Icon name="target" size={24} />
+          </span>
+          <p className="eyebrow">A clean slate</p>
+          <h2 className="display mt-2 text-[1.5rem]">Your first scorecard is waiting.</h2>
+          <p className="mt-2 max-w-[32ch] text-[13px] leading-relaxed text-muted">
+            Take one paper and this space fills with your best score, accuracy and
+            progress — no invented numbers, ever.
+          </p>
+          <Link to="/mocks" className="btn btn-primary mt-5 w-full">
+            Browse mock tests
+            <Icon name="arrowRight" size={16} />
+          </Link>
+        </div>
+      )}
+
+      {latest ? (
+        <div className="mt-3 reveal" style={{ "--d": "120ms" } as React.CSSProperties}>
+          <div className="latest">
+            <span className="latest-score mono">{Number(latest.score) || 0}</span>
+            <div className="min-w-0 flex-1">
+              <p className="kicker">Last attempt</p>
+              <p className="latest-title mt-1">{latest.test}</p>
+              <p className="latest-meta">
+                {latest.correct} correct · {latest.wrong} wrong · {latest.skipped} skipped
+              </p>
+            </div>
+            <span className="meta-chip shrink-0">
+              <Icon name="calendar" size={12} />
+              {formatDate(latest.created_at)}
+            </span>
           </div>
         </div>
       ) : null}
 
-      <Card className="mt-5 border-dashed">
-        <span className="pill mb-2">Coming soon</span>
-        <p className="text-sm text-muted">
-          The in-app exam runner and per-question solutions are the next step. Until then, full mock
-          tests can be taken on the website.
-        </p>
-      </Card>
-    </div>
-  );
-}
+      <SectionHead
+        title="Mock tests"
+        action={
+          <Link to="/mocks" className="section-link">
+            View all
+            <Icon name="chevronRight" size={13} />
+          </Link>
+        }
+      />
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-line bg-pill px-3 py-2">
-      <div className="text-xs text-muted">{label}</div>
-      <div className="mono mt-0.5 text-lg font-semibold">{value}</div>
+      {tests.length === 0 ? (
+        <div className="card card-quiet p-4 text-[13px] text-muted">
+          No papers are published yet. New tests appear here automatically.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {tests.slice(0, 3).map((test, index) => {
+            const marks = displayMarks(test);
+            const parts = partsForTest(test);
+            return (
+              <Link
+                key={test.id}
+                to={`/mocks/${test.id}/instructions`}
+                className="test-card reveal"
+                style={{ "--d": `${140 + index * 60}ms` } as React.CSSProperties}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="test-index">PAPER {String(index + 1).padStart(2, "0")}</p>
+                    <h3 className="test-title mt-1.5">{test.title}</h3>
+                  </div>
+                  <span className="test-arrow">
+                    <Icon name="arrowUpRight" size={15} />
+                  </span>
+                </div>
+                <div className="test-meta">
+                  <span className="meta-chip">
+                    <Icon name="hash" size={12} />
+                    <span className="mono">{test.question_ids.length}</span> questions
+                  </span>
+                  <span className="meta-chip">
+                    <Icon name="clock" size={12} />
+                    <span className="mono">{displayMinutes(test)}</span> min
+                  </span>
+                  {marks !== null ? (
+                    <span className="meta-chip">
+                      <Icon name="trophy" size={12} />
+                      <span className="mono">{marks}</span> marks
+                    </span>
+                  ) : null}
+                  {parts ? (
+                    <span className="meta-chip">
+                      <Icon name="layers" size={12} />
+                      <span className="mono">{parts.length}</span> parts
+                    </span>
+                  ) : null}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {announcements.length > 0 ? (
+        <>
+          <SectionHead
+            title="Notice board"
+            action={<span className="kicker">{announcements.length} live</span>}
+          />
+          <div className="flex flex-col gap-2.5">
+            {announcements.slice(0, 3).map((notice) => (
+              <article key={notice.id} className="card card-quiet p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-[13.5px] font-bold">{notice.title}</h3>
+                  <span className="kicker shrink-0">{formatDate(notice.created_at)}</span>
+                </div>
+                <p className="mt-1.5 line-clamp-3 whitespace-pre-line text-[12.5px] leading-relaxed text-muted">
+                  {notice.body}
+                </p>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      <div className="card card-dashed mt-5 flex items-start gap-3 p-4">
+        <span className="empty-icon empty-icon-sm shrink-0">
+          <Icon name="sparkles" size={18} />
+        </span>
+        <div>
+          <p className="text-[12.5px] font-bold">The in-app paper is next.</p>
+          <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
+            Question palette, part navigation and the live countdown are being built on
+            the server-owned exam clock. Until then, full mocks open on the website.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { Alert, Card, Spinner } from "../components/ui";
+import { Alert, Spinner } from "../components/ui";
+import { Icon } from "../components/icons";
+import AuthShell from "../components/AuthShell";
 
 export default function Login() {
   const {
@@ -20,6 +22,7 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsVerify, setNeedsVerify] = useState(false);
@@ -74,15 +77,18 @@ export default function Login() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-sm">
-      <div className="mb-8 mt-6 text-center">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-btn text-2xl font-black text-btn-fg">
-          N
-        </div>
-        <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Welcome back</h1>
-        <p className="mt-1 text-sm text-muted">Log in to continue your NIMCET prep.</p>
-      </div>
-
+    <AuthShell
+      mode="in"
+      title="Welcome"
+      accent="back."
+      subtitle="Your papers, your progress and the next attempt — all waiting exactly where you left them."
+      footer={
+        <>
+          New to NimCuet?{" "}
+          <Link to="/signup">Create your account</Link>
+        </>
+      }
+    >
       {!configured ? (
         <div className="mb-4">
           <Alert kind="error">
@@ -104,15 +110,22 @@ export default function Login() {
         </div>
       ) : null}
 
-      <Card>
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          {error ? <Alert kind="error">{error}</Alert> : null}
-          {resent ? <Alert kind="ok">Confirmation email sent. Check your inbox.</Alert> : null}
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        {error ? (
+          <Alert kind="error" shake>
+            {error}
+          </Alert>
+        ) : null}
+        {resent ? <Alert kind="ok">Confirmation email sent. Check your inbox.</Alert> : null}
 
-          <label className="field">
-            <span className="label">Email</span>
+        <label className="field">
+          <span className="label">Email address</span>
+          <span className="input-wrap">
+            <span className="input-icon">
+              <Icon name="mail" size={17} />
+            </span>
             <input
-              className="input"
+              className="input has-icon"
               type="email"
               inputMode="email"
               autoComplete="email"
@@ -122,75 +135,78 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
             />
-          </label>
+          </span>
+        </label>
 
-          <label className="field">
-            <span className="label">Password</span>
+        <label className="field">
+          <span className="label">Password</span>
+          <span className="input-wrap">
+            <span className="input-icon">
+              <Icon name="lock" size={17} />
+            </span>
             <input
-              className="input"
-              type="password"
+              className="input has-icon has-action"
+              type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Your password"
             />
-          </label>
-
-          <button className="btn btn-primary btn-block" type="submit" disabled={busy || !configured}>
-            {busy ? "Logging in…" : "Log in"}
-          </button>
-
-          {needsVerify ? (
             <button
-              className="btn btn-ghost btn-block"
               type="button"
-              onClick={onResend}
-              disabled={resending}
+              className="input-action"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
             >
-              {resending ? "Sending…" : "Resend confirmation email"}
+              <Icon name={showPassword ? "eyeOff" : "eye"} size={18} />
             </button>
-          ) : null}
-        </form>
-      </Card>
+          </span>
+        </label>
 
-      <OAuthButtons />
-
-      <p className="mt-6 text-center text-sm text-muted">
-        New here?{" "}
-        <Link to="/signup" className="font-semibold text-accent">
-          Create an account
-        </Link>
-      </p>
-    </div>
-  );
-}
-
-/**
- * Google / GitHub buttons. Intentionally disabled: the provider hand-off lands
- * on the website callback, whose PKCE exchange runs server-side and cannot see
- * the app's code verifier — completing it on-device is a later task. Showing
- * them disabled (rather than faking a login) is deliberate.
- */
-function OAuthButtons() {
-  return (
-    <div className="mt-4">
-      <div className="flex items-center gap-3 py-2">
-        <span className="h-px flex-1 bg-line" />
-        <span className="text-xs text-muted">or</span>
-        <span className="h-px flex-1 bg-line" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <button className="btn btn-ghost btn-block" type="button" disabled>
-          Continue with Google
+        <button className="btn btn-primary btn-block mt-1" type="submit" disabled={busy || !configured}>
+          {busy ? (
+            <>
+              <span className="btn-spinner" aria-hidden />
+              Signing in…
+            </>
+          ) : (
+            <>
+              Log in
+              <Icon name="arrowRight" size={17} />
+            </>
+          )}
         </button>
-        <button className="btn btn-ghost btn-block" type="button" disabled>
-          Continue with GitHub
+
+        {needsVerify ? (
+          <button
+            className="btn btn-ghost btn-block"
+            type="button"
+            onClick={onResend}
+            disabled={resending}
+          >
+            {resending ? "Sending…" : "Resend confirmation email"}
+          </button>
+        ) : null}
+      </form>
+
+      <div className="divider">or continue with</div>
+      <div className="oauth-row">
+        <button className="oauth-btn" type="button" disabled title="Google sign-in is not available yet">
+          <Icon name="google" size={15} />
+          Google
+          <span className="pill pill-neutral">Soon</span>
+        </button>
+        <button className="oauth-btn" type="button" disabled title="GitHub sign-in is not available yet">
+          <Icon name="github" size={15} />
+          GitHub
+          <span className="pill pill-neutral">Soon</span>
         </button>
       </div>
-      <p className="mt-2 text-center text-xs text-muted">
-        Google / GitHub sign-in is not available yet.
+      <p className="mt-3 text-center text-[10px] leading-4 text-faint">
+        Social sign-in is being finished. Email works today.
       </p>
-    </div>
+    </AuthShell>
   );
 }
