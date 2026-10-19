@@ -18,12 +18,15 @@
 //   * Secrets are never printed: only key presence and length.
 
 import { existsSync, readFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 
 const TASK_FILE = "bank-task.json";
 
 function log(...parts) {
   console.log("[bank-task]", ...parts);
 }
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 if (!existsSync(TASK_FILE)) {
   process.exit(0);
@@ -43,11 +46,19 @@ const chunk = (s) => {
   for (let i = 0; i < s.length; i += 900) out.push(s.slice(i, i + 900));
   return out;
 };
-const emit = (tag, obj) => {
-  const b64 = Buffer.from(JSON.stringify(obj), "utf8").toString("base64");
+
+// Vercel's build-log stream keeps only a bounded number of events, so the dump
+// is gzipped and base64'd to fit, emitted as indexed chunks that the reader can
+// check for completeness (every index 0..total-1 must be present).
+async function emitBlob(tag, obj) {
+  const b64 = gzipSync(Buffer.from(JSON.stringify(obj), "utf8"), { level: 9 }).toString("base64");
   const parts = chunk(b64);
-  parts.forEach((p, i) => console.log(`${tag}|${i}|${parts.length}|${p}`));
-};
+  log(`${tag} payload: ${parts.length} chunks, ${b64.length} b64 chars`);
+  for (let i = 0; i < parts.length; i += 1) {
+    console.log(`${tag}|${i}|${parts.length}|${parts[i]}`);
+    await sleep(20);
+  }
+}
 
 async function rest(path, init = {}) {
   const res = await fetch(`${base}/rest/v1/${path}`, {
@@ -82,7 +93,6 @@ async function run() {
       log("tests error:", JSON.stringify(tests.body).slice(0, 400));
       return;
     }
-    for (const t of tests.body) emit("BANKT", t);
 
     const qs = await rest("questions?select=*&order=section.asc,created_at.asc&limit=2000");
     log(`questions: status=${qs.status} count=${Array.isArray(qs.body) ? qs.body.length : "?"}`);
@@ -90,7 +100,12 @@ async function run() {
       log("questions error:", JSON.stringify(qs.body).slice(0, 400));
       return;
     }
-    for (const q of qs.body) emit("BANKQ", q);
+
+    await emitBlob("BANKD", {
+      generatedAt: new Date().toISOString(),
+      tests: tests.body,
+      questions: qs.body,
+    });
     log(`dump complete: ${qs.body.length} questions, ${tests.body.length} tests`);
     return;
   }
@@ -127,7 +142,7 @@ async function run() {
       return;
     }
     log(`verify rows: ${qs.body.length}`);
-    for (const q of qs.body) emit("BANKQ", q);
+    await emitBlob("BANKD", { generatedAt: new Date().toISOString(), tests: [], questions: qs.body });
     return;
   }
 
