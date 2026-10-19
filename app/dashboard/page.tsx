@@ -134,6 +134,7 @@ export default function DashboardPage() {
   const [note, setNote] = useState("");
   const [todayLine, setTodayLine] = useState("");
   const [sideOpen, setSideOpen] = useState(false);
+  const [sideCollapsed, setSideCollapsed] = useState(false);
   const [view, setView] = useState<DashView>("home");
   const [notices, setNotices] = useState<Array<{ id: string; title: string; body: string; created_at: string }>>([]);
   const [showAllNotices, setShowAllNotices] = useState(false);
@@ -168,6 +169,24 @@ export default function DashboardPage() {
       if (raw) setLocalAttempts(JSON.parse(raw));
     } catch {}
   }, []);
+
+  // Remember the sidebar's compact/expanded choice across dashboard visits.
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe read of a browser-only preference.
+      setSideCollapsed(localStorage.getItem("nimcuet.dash.side.collapsed") === "1");
+    } catch {}
+  }, []);
+
+  const toggleSideCollapsed = () => {
+    setSideCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("nimcuet.dash.side.collapsed", next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  };
 
   // Published notices from the admin panel. Drafts never reach this endpoint.
   // Failure is silent: the section simply doesn't render.
@@ -390,8 +409,21 @@ export default function DashboardPage() {
         />
       )}
       <main className="mx-auto w-full px-4 pb-20 pt-24 sm:px-6 lg:px-8">
-        <DashSide mobileOpen={sideOpen} onClose={() => setSideOpen(false)} view={view} onSelect={(v) => setView(v)} />
-        <div id="attempts" className="min-w-0 scroll-mt-24 md:ml-[18.5rem]">
+        <DashSide
+          mobileOpen={sideOpen}
+          onClose={() => setSideOpen(false)}
+          view={view}
+          onSelect={(v) => setView(v)}
+          collapsed={sideCollapsed}
+          onToggleCollapsed={toggleSideCollapsed}
+          streak={streakSummary}
+        />
+        <div
+          id="attempts"
+          className={`min-w-0 scroll-mt-24 transition-[margin-left] duration-300 ease-out ${
+            sideCollapsed ? "md:ml-[8rem]" : "md:ml-[18.5rem]"
+          }`}
+        >
       {view === "home" && (
       <>
       <Reveal>
