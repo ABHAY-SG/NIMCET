@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import MockDemo, { SAMPLE_MARKS, SAMPLE_QUESTION_COUNT, type MockQuestion } from "@/components/mockdemo";
+import MockDemo, { type MockQuestion } from "@/components/mockdemo";
 import MockCard from "@/components/mock-card";
 import MockExam from "@/components/mock-exam";
 import MockInstructions, { type SchemeRow } from "@/components/mock-instructions";
@@ -423,7 +423,17 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
         </div>
       </section>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-6 flex items-center justify-between gap-3 px-0.5">
+        <p className="text-[12px] font-bold" style={{ color: "var(--muted)" }}>
+          {visibleTests.length} {visibleTests.length === 1 ? "mock test" : "mock tests"}
+          {kind !== "All" ? ` · ${kind}` : ""}
+        </p>
+        <p className="hidden text-[11px] font-semibold sm:block" style={{ color: "var(--muted)" }}>
+          Full-length · NIMCET pattern · instant scorecard
+        </p>
+      </div>
+
+      <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {visibleTests.map((t) => {
           const done = attempted[t.title] ?? 0;
           return (
@@ -445,23 +455,9 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
           <div className="rounded-2xl p-6 text-center text-sm sm:col-span-2 xl:col-span-3" style={{ background: "var(--card)", border: "1px dashed var(--border)", color: "var(--muted)" }}>
             {query || kind !== "All"
               ? "No tests match this filter — clear the search or pick another filter."
-              : "No published mocks yet — build a custom mock from Test Builder in the sidebar, or try the free sample below."}
+              : "No published mocks yet — build a custom mock from Test Builder in the sidebar."}
           </div>
         )}
-        <MockCard
-          title="Free sample mock"
-          questions={SAMPLE_QUESTION_COUNT}
-          minutes={12}
-          marks={SAMPLE_MARKS}
-          difficulty="Mixed"
-          tag="Sample"
-          free
-          attempted={0}
-          icon="🆓"
-          iconBg="#dcfce7"
-          iconFg="#15803d"
-          onStart={() => setRun({ qs: [], title: "SAMPLE MOCK", testName: "Free sample mock (12Q)", attemptName: "Free sample mock (12Q)", minutes: 12 })}
-        />
       </div>
     </div>
   );

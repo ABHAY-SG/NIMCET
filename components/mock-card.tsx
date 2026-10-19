@@ -18,12 +18,94 @@ function RetryIcon() {
   );
 }
 
-function Stat({ icon, iconStyle, value, label }: { icon: string; iconStyle: React.CSSProperties; value: ReactNode; label: string }) {
+const iconProps = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+function QuestionsIcon() {
   return (
-    <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{ background: "var(--pill)" }}>
-      <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[13px]" style={iconStyle}>{icon}</span>
-      <span className="mono text-[13px] font-extrabold" style={{ color: "var(--text)" }}>{value}</span>
-      <span className="text-[11px] font-semibold" style={{ color: "var(--muted)" }}>{label}</span>
+    <svg {...iconProps} className="h-[15px] w-[15px]">
+      <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 15.5z" />
+      <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h4.5a1.5 1.5 0 0 0 1.5-1.5z" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg {...iconProps} className="h-[15px] w-[15px]">
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M12 7.5V12l3 1.75" />
+    </svg>
+  );
+}
+
+function TrophyIcon({ className = "h-[15px] w-[15px]" }: { className?: string }) {
+  return (
+    <svg {...iconProps} className={className}>
+      <path d="M8 4h8v4.5a4 4 0 0 1-8 0z" />
+      <path d="M8 5.5H5.5V7A2.5 2.5 0 0 0 8 9.5M16 5.5h2.5V7A2.5 2.5 0 0 1 16 9.5" />
+      <path d="M12 12.5V16M9 19.5h6M10.5 16h3" />
+    </svg>
+  );
+}
+
+function TargetIcon() {
+  return (
+    <svg {...iconProps} className="h-[15px] w-[15px]">
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function levelTone(level: string): { fg: string; bg: string } {
+  const l = level.toLowerCase();
+  if (l.includes("hard") || l.includes("difficult")) return { fg: "#dc2626", bg: "color-mix(in srgb, #dc2626 13%, transparent)" };
+  if (l.includes("medium") || l.includes("moderate")) return { fg: "#d97706", bg: "color-mix(in srgb, #d97706 15%, transparent)" };
+  if (l.includes("easy")) return { fg: "#15803d", bg: "color-mix(in srgb, #15803d 13%, transparent)" };
+  return { fg: "#64748b", bg: "color-mix(in srgb, #64748b 14%, transparent)" };
+}
+
+function toneOf(fg: string): { fg: string; bg: string } {
+  return { fg, bg: `color-mix(in srgb, ${fg} 14%, transparent)` };
+}
+
+function Stat({
+  icon,
+  tone,
+  value,
+  label,
+}: {
+  icon: ReactNode;
+  tone: { fg: string; bg: string };
+  value: ReactNode;
+  label: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <span
+        aria-hidden
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
+        style={{ background: tone.bg, color: tone.fg }}
+      >
+        {icon}
+      </span>
+      <span className="flex min-w-0 items-baseline gap-1.5">
+        <span className="mono shrink-0 text-[15px] font-extrabold leading-none" style={{ color: "var(--text)" }}>
+          {value}
+        </span>
+        <span className="truncate text-[11.5px] font-semibold" style={{ color: "var(--muted)" }}>
+          {label}
+        </span>
+      </span>
     </div>
   );
 }
@@ -37,9 +119,6 @@ export default function MockCard({
   tag,
   free,
   attempted,
-  icon = "🏆",
-  iconBg = "#fef3c7",
-  iconFg = "#d97706",
   onStart,
 }: {
   title: string;
@@ -50,35 +129,72 @@ export default function MockCard({
   tag?: string;
   free: boolean;
   attempted: number;
-  icon?: string;
-  iconBg?: string;
-  iconFg?: string;
   onStart: () => void;
 }) {
+  const level = levelTone(difficulty);
+
   return (
     <article
-      className="group flex flex-col rounded-2xl p-5 transition-transform hover:-translate-y-0.5"
-      style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+      className="mock-card group relative flex flex-col overflow-hidden rounded-[20px] p-5"
+      style={{
+        background: "var(--card)",
+        border: "1px solid var(--border)",
+        boxShadow: "0 1px 2px rgba(2, 6, 23, 0.03), 0 18px 40px -28px rgba(2, 6, 23, 0.35)",
+      }}
     >
-      <div className="flex items-start gap-3">
+      <span aria-hidden className="mock-card-accent" />
+
+      <div className="flex items-start gap-3.5">
         <span
           aria-hidden
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105"
-          style={{ background: iconBg, color: iconFg, border: `1px solid color-mix(in srgb, ${iconFg} 22%, transparent)` }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105"
+          style={{
+            background: "linear-gradient(145deg, #fef3c7, #fde68a)",
+            color: "#b45309",
+            border: "1px solid rgba(180, 83, 9, 0.18)",
+            boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 6px 14px -10px rgba(180, 83, 9, 0.7)",
+          }}
         >
-          {icon}
+          <TrophyIcon className="h-[21px] w-[21px]" />
         </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-extrabold leading-snug" style={{ color: "var(--text)" }}>{title}</h3>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+
+        <div className="min-w-0 flex-1 pt-0.5">
+          <h3
+            className="line-clamp-2 text-[17px] font-extrabold leading-[1.3] tracking-tight"
+            style={{ color: "var(--text)" }}
+            title={title}
+          >
+            {title}
+          </h3>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {tag && (
-              <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" style={{ background: "var(--pill)", color: "var(--muted)" }}>{tag}</span>
+              <span
+                className="rounded-md px-2 py-[3px] text-[9.5px] font-bold uppercase"
+                style={{
+                  letterSpacing: "0.08em",
+                  background: "var(--pill)",
+                  color: "var(--muted)",
+                }}
+              >
+                {tag}
+              </span>
             )}
-            <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" style={{ background: "var(--pill)", color: free ? "#15803d" : "#b45309" }}>
+            <span
+              className="rounded-md px-2 py-[3px] text-[9.5px] font-bold uppercase"
+              style={{
+                letterSpacing: "0.08em",
+                background: free ? "rgba(21, 128, 61, 0.1)" : "rgba(180, 83, 9, 0.1)",
+                color: free ? "#15803d" : "#b45309",
+              }}
+            >
               {free ? "Free" : "Premium"}
             </span>
             {attempted > 0 && (
-              <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" style={{ background: "var(--pill)", color: "var(--muted)" }}>
+              <span
+                className="inline-flex items-center gap-1 rounded-md px-2 py-[3px] text-[9.5px] font-bold uppercase"
+                style={{ letterSpacing: "0.08em", background: "var(--pill)", color: "var(--muted)" }}
+              >
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: "#15803d" }} />
                 Attempted ×{attempted}
               </span>
             )}
@@ -86,22 +202,43 @@ export default function MockCard({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <Stat icon="📘" iconStyle={{ background: "#dbeafe", color: "#1d4ed8" }} value={questions} label="Questions" />
-        <Stat icon="🕒" iconStyle={{ background: "#ede9fe", color: "#6d28d9" }} value={`${minutes} min`} label="Duration" />
-        <Stat icon="🏆" iconStyle={{ background: "#fef3c7", color: "#b45309" }} value={Math.round(marks * 10) / 10} label="Marks" />
-        <Stat icon="🎯" iconStyle={{ background: "#dcfce7", color: "#15803d" }} value={difficulty} label="Level" />
+      <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3.5">
+        <Stat
+          icon={<QuestionsIcon />}
+          tone={toneOf("#2563eb")}
+          value={questions}
+          label="Questions"
+        />
+        <Stat
+          icon={<ClockIcon />}
+          tone={toneOf("#7c3aed")}
+          value={minutes}
+          label="Minutes"
+        />
+        <Stat
+          icon={<TrophyIcon />}
+          tone={toneOf("#d97706")}
+          value={Math.round(marks * 10) / 10}
+          label="Marks"
+        />
+        <Stat icon={<TargetIcon />} tone={level} value={difficulty} label="Level" />
       </div>
 
-      <button
-        type="button"
-        onClick={onStart}
-        className="cta-glow mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-sm font-extrabold text-white"
-        style={{ background: "linear-gradient(120deg, #0f766e, #115e59)", boxShadow: "0 14px 30px -16px rgba(15, 118, 110, 0.75)" }}
-      >
-        {attempted > 0 ? <RetryIcon /> : <PlayIcon />}
-        {attempted > 0 ? "Reattempt" : "Start Test"}
-      </button>
+      <div className="mt-auto pt-5">
+        <div aria-hidden className="h-px w-full" style={{ background: "var(--border)" }} />
+        <button
+          type="button"
+          onClick={onStart}
+          className="cta-glow mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-sm font-extrabold text-white transition-colors"
+          style={{
+            background: "linear-gradient(120deg, #0f5d55, #0b3f3a)",
+            boxShadow: "0 14px 28px -18px rgba(11, 63, 58, 0.85)",
+          }}
+        >
+          {attempted > 0 ? <RetryIcon /> : <PlayIcon />}
+          {attempted > 0 ? "Reattempt" : "Start Test"}
+        </button>
+      </div>
     </article>
   );
 }
