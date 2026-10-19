@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Agent tooling scripts (CommonJS by design, not app source):
     ".opencode/**",
+    // Separate Capacitor/Vite client — has its own toolchain, not Next.js app source:
+    "mobile/**",
   ]),
 ]);
 

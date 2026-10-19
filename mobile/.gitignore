@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# build output (bundled into the native app by `cap sync`)
+dist/
+dist-ssr/
+
+# local env (Vite reads VITE_* from here)
+.env
+.env.*
+!.env.example
+
+# native build artifacts (added by `cap add android`)
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/.idea/
+*.apk
+*.aab
+*.keystore
+
+# misc
+*.local
+.DS_Store
