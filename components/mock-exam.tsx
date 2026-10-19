@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { PALETTE } from "./mock-instructions";
+import { MathText } from "./math-text";
 
 type Part = { label: string; minutes: number; count: number };
 type Q = { id: string; section: string; stem: string; options: string[]; plus: number; minus: number };
@@ -566,7 +567,7 @@ export default function MockExam({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13.5px] font-semibold leading-6" style={{ color: "var(--text)" }}>
-                      {d.stem}
+                      <MathText>{d.stem}</MathText>
                     </p>
                     <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
                       <span className="mono rounded px-2 py-0.5 font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>
@@ -602,7 +603,7 @@ export default function MockExam({
                             <span className="mono text-[11px] font-extrabold" style={{ color: "var(--muted)" }}>
                               {LETTERS[oi]}
                             </span>
-                            <span className="flex-1">{opt}</span>
+                            <span className="flex-1"><MathText>{opt}</MathText></span>
                             {isCorrect && (
                               <span className="text-[10.5px] font-bold" style={{ color: "#16a34a" }}>
                                 correct
@@ -619,7 +620,7 @@ export default function MockExam({
                     </ul>
                     {d.exp && (
                       <p className="mt-2 text-[12.5px] leading-5" style={{ color: "var(--muted)" }}>
-                        <strong>Why:</strong> {d.exp}
+                        <strong>Why:</strong> <MathText>{d.exp}</MathText>
                       </p>
                     )}
                   </div>
@@ -725,7 +726,7 @@ export default function MockExam({
                 )}
               </div>
               <p className="mt-3 text-[15px] font-semibold leading-7" style={{ color: "var(--text)" }}>
-                {q.stem}
+                <MathText>{q.stem}</MathText>
               </p>
               <div className="mt-4 space-y-2">
                 {q.options.map((opt, i) => {
@@ -748,7 +749,7 @@ export default function MockExam({
                       >
                         {LETTERS[i]}
                       </span>
-                      <span className="flex-1">{opt}</span>
+                      <span className="flex-1"><MathText>{opt}</MathText></span>
                     </button>
                   );
                 })}

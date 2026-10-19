@@ -12,6 +12,7 @@ import {
   type ExamPart,
 } from "@/lib/exam-parts";
 import { PALETTE } from "@/components/mock-instructions";
+import { MathText } from "@/components/math-text";
 
 export type MockQuestion = {
   tag: string; stem: string; opts: string[]; ans?: number;
@@ -498,11 +499,11 @@ export default function MockDemo({
               const ok = d.ok ?? (d.picked != null && d.picked === d.correct);
               return (
                 <div key={i} className="rounded-xl p-3.5 text-sm" style={{ border: "1px solid var(--border)" }}>
-                  <p className="font-bold">Q{i + 1}. {d.stem}</p>
+                  <p className="font-bold">Q{i + 1}. <MathText>{d.stem}</MathText></p>
                   <p className="mt-1" style={{ color: ok ? "#16a34a" : d.picked == null ? "var(--muted)" : "#dc2626" }}>
                     {d.picked == null ? `Skipped — answer: ${d.opts[d.correct] ?? d.correct}` : ok ? `Your answer: ${d.opts[d.picked]} ✓` : `Your answer: ${d.opts[d.picked]} ✘ (correct: ${d.opts[d.correct] ?? d.correct})`}
                   </p>
-                  <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>Why: {d.exp}</p>
+                  <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>Why: <MathText>{d.exp}</MathText></p>
                 </div>
               );
             })}
@@ -631,7 +632,7 @@ export default function MockDemo({
       <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_290px]">
         <div className="min-w-0">
           <p className="mono text-[10px] font-bold uppercase" style={{ color: "var(--accent)", letterSpacing: "0.14em" }}>{q.tag}</p>
-          <p className="mt-2 text-[15px] font-bold leading-7" style={{ color: "var(--text)" }}>{q.stem}</p>
+          <p className="mt-2 text-[15px] font-bold leading-7" style={{ color: "var(--text)" }}><MathText>{q.stem}</MathText></p>
           <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
             {q.opts.map((o, i) => {
               const sel = answers[idx] === i;
@@ -662,7 +663,7 @@ export default function MockDemo({
                   >
                     {String.fromCharCode(65 + i)}
                   </span>
-                  <span className="min-w-0 flex-1 leading-6" style={{ color: "var(--text)" }}>{o}</span>
+                  <span className="min-w-0 flex-1 leading-6" style={{ color: "var(--text)" }}><MathText>{o}</MathText></span>
                   <span
                     aria-hidden
                     className="h-[18px] w-[18px] shrink-0 rounded-full"

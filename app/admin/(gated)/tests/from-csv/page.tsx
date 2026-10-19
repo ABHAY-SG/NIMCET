@@ -8,6 +8,7 @@ import { adminMutate } from "@/components/admin/hooks";
 import { FULL_LENGTH_QUESTIONS, type ParsedRow } from "@/lib/question-rows";
 import { parseMockCsv, titleFromFilename, type MockTemplate, type SectionSummary, type SubjectSummary } from "@/lib/mock-csv";
 import { FULL_MOCK_MAX_MARKS, FULL_MOCK_MINUTES, FULL_MOCK_QUESTIONS, FULL_MOCK_TEMPLATE, SUBJECTS } from "@/lib/nimcet-full-mock";
+import { MathText } from "@/components/math-text";
 import { fmtNum } from "@/lib/format";
 
 const LETTERS = ["A", "B", "C", "D", "E"];
@@ -323,7 +324,7 @@ export default function AdminTestsFromCsv() {
               <span className="mono text-[12px] font-extrabold" style={{ color: "var(--muted)" }}>
                 Q{i + 1}.
               </span>
-              <p className="flex-1 text-[13.5px] font-semibold leading-6">{q.stem}</p>
+              <p className="flex-1 text-[13.5px] font-semibold leading-6"><MathText>{q.stem}</MathText></p>
               <Badge tone={diffTone(q.difficulty)}>{q.difficulty}</Badge>
             </div>
             <ul className="mt-2.5 space-y-1.5 pl-6">
@@ -338,14 +339,14 @@ export default function AdminTestsFromCsv() {
                   <span className="mono text-[11px] font-extrabold" style={{ color: "var(--muted)" }}>
                     {LETTERS[oi]}
                   </span>
-                  <span className="flex-1">{opt}</span>
+                  <span className="flex-1"><MathText>{opt}</MathText></span>
                   {showKey && oi === q.answer && <Badge tone="green">Correct</Badge>}
                 </li>
               ))}
             </ul>
             {showKey && q.explanation && (
               <p className="mt-2 pl-6 text-[12.5px] leading-5" style={{ color: "var(--muted)" }}>
-                <strong>Explanation:</strong> {q.explanation}
+                <strong>Explanation:</strong> <MathText>{q.explanation}</MathText>
               </p>
             )}
             {showKey && (

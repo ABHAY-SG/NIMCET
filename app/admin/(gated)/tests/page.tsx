@@ -21,6 +21,7 @@ import {
 import { Icon } from "@/components/admin/icons";
 import { adminMutate, downloadFile, useAdminData, usePageSize } from "@/components/admin/hooks";
 import { fmtDate, fmtNum } from "@/lib/format";
+import { MathText } from "@/components/math-text";
 import {
   checkFullMockComposition,
   FULL_MOCK_MINUTES,
@@ -948,7 +949,7 @@ export default function AdminTests() {
                           {i + 1}
                         </span>
                         <span className="min-w-0 flex-1 truncate text-[12.5px]">
-                          {q ? q.stem : `Question ${id.slice(0, 8)}… (not in bank view)`}
+                          {q ? <MathText>{q.stem}</MathText> : `Question ${id.slice(0, 8)}… (not in bank view)`}
                         </span>
                         {q && <Badge tone={q.difficulty === "Easy" ? "green" : q.difficulty === "Hard" ? "red" : "amber"}>{q.difficulty}</Badge>}
                         {editor.template === FULL_MOCK_TEMPLATE && q && (
@@ -1022,7 +1023,7 @@ export default function AdminTests() {
                           borderColor: picked ? "color-mix(in srgb, var(--accent) 35%, transparent)" : "transparent",
                         }}
                       >
-                        <span className="min-w-0 flex-1 truncate text-[12.5px]">{q.stem}</span>
+                        <span className="min-w-0 flex-1 truncate text-[12.5px]"><MathText>{q.stem}</MathText></span>
                         <Badge tone="neutral">{subjectForSection(q.section)?.short ?? (q.section || "—")}</Badge>
                         <Badge tone={q.difficulty === "Easy" ? "green" : q.difficulty === "Hard" ? "red" : "amber"}>{q.difficulty}</Badge>
                         <span className="mono shrink-0 text-[11px]" style={{ color: "var(--muted)" }}>
@@ -1094,7 +1095,7 @@ export default function AdminTests() {
                       <span className="mono text-[12px] font-extrabold" style={{ color: "var(--muted)" }}>
                         Q{i + 1}.
                       </span>
-                      <p className="flex-1 text-[13.5px] leading-6 font-semibold">{q.stem}</p>
+                      <p className="flex-1 text-[13.5px] leading-6 font-semibold"><MathText>{q.stem}</MathText></p>
                       <Badge tone={q.difficulty === "Easy" ? "green" : q.difficulty === "Hard" ? "red" : "amber"}>{q.difficulty}</Badge>
                     </div>
                     <ul className="mt-2.5 space-y-1.5 pl-6">
@@ -1109,14 +1110,14 @@ export default function AdminTests() {
                           <span className="mono text-[11px] font-extrabold" style={{ color: "var(--muted)" }}>
                             {LETTERS[oi]}
                           </span>
-                          <span className="flex-1">{opt}</span>
+                          <span className="flex-1"><MathText>{opt}</MathText></span>
                           {showKey && oi === q.answer && <Badge tone="green">Correct</Badge>}
                         </li>
                       ))}
                     </ul>
                     {showKey && q.explanation && (
                       <p className="mt-2 pl-6 text-[12.5px] leading-5" style={{ color: "var(--muted)" }}>
-                        <strong>Explanation:</strong> {q.explanation}
+                        <strong>Explanation:</strong> <MathText>{q.explanation}</MathText>
                       </p>
                     )}
                     {showKey && (

@@ -21,6 +21,7 @@ import { Icon } from "@/components/admin/icons";
 import { adminMutate, downloadFile, useAdminData, usePageSize } from "@/components/admin/hooks";
 import { parseCsv } from "@/lib/csv";
 import { fmtDate } from "@/lib/format";
+import { MathText } from "@/components/math-text";
 
 type QRow = {
   id: string;
@@ -525,7 +526,7 @@ export default function AdminQuestions() {
                         />
                       </td>
                       <td className="max-w-[340px]">
-                        <span className="block truncate font-semibold">{q.stem}</span>
+                        <span className="block truncate font-semibold"><MathText>{q.stem}</MathText></span>
                         <span className="block text-[11.5px]" style={{ color: "var(--muted)" }}>
                           {q.exam} · answer {LETTERS[q.answer] ?? "?"}
                         </span>
@@ -709,7 +710,7 @@ export default function AdminQuestions() {
               {preview.topic && <Badge tone="neutral">{preview.topic}</Badge>}
               <Badge tone={preview.difficulty === "Easy" ? "green" : preview.difficulty === "Hard" ? "red" : "amber"}>{preview.difficulty}</Badge>
             </div>
-            <p className="text-[14px] leading-7 font-semibold">{preview.stem}</p>
+            <p className="text-[14px] leading-7 font-semibold"><MathText>{preview.stem}</MathText></p>
             <ul className="mt-3 space-y-2">
               {(preview.options ?? []).map((opt, i) => (
                 <li
@@ -723,7 +724,7 @@ export default function AdminQuestions() {
                   <span className="mono text-[11.5px] font-extrabold" style={{ color: "var(--muted)" }}>
                     {LETTERS[i]}
                   </span>
-                  <span className="flex-1">{opt}</span>
+                  <span className="flex-1"><MathText>{opt}</MathText></span>
                   {showKey && i === preview.answer && <Badge tone="green">Correct</Badge>}
                 </li>
               ))}
@@ -731,7 +732,7 @@ export default function AdminQuestions() {
             {showKey && (
               <div className="mt-4 space-y-1.5 rounded-xl px-3.5 py-3 text-[12.5px]" style={{ background: "var(--pill)" }}>
                 <p>
-                  <strong>Explanation:</strong> {preview.explanation || "—"}
+                  <strong>Explanation:</strong> <MathText>{preview.explanation || "—"}</MathText>
                 </p>
                 <p className="mono" style={{ color: "var(--muted)" }}>
                   Marks: +{preview.plus} / {preview.minus}
