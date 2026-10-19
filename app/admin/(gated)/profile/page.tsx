@@ -352,15 +352,19 @@ export default function AdminProfile() {
             </div>
           ) : (
             <>
-              <div className="-mt-11 flex flex-wrap items-end justify-between gap-4">
-                <div className="flex min-w-0 items-end gap-4">
+              <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+                {/* Avatar floats over the cover on its own (negative margin
+                    lives here, not on the row) and is explicitly stacked
+                    above it — text therefore always starts at the cover
+                    line and the circle is never sliced by the photo. */}
+                <div className="flex min-w-0 flex-col items-start gap-x-4 gap-y-3 sm:flex-row">
                   <span
-                    className="inline-flex shrink-0 rounded-full p-1.5"
+                    className="relative z-10 -mt-12 inline-flex shrink-0 rounded-full p-1.5"
                     style={{ background: "var(--card)", boxShadow: "0 14px 34px -20px rgba(2, 6, 23, 0.55)" }}
                   >
                     <Avatar src={avatarSrc} name={displayName} size={84} />
                   </span>
-                  <div className="min-w-0 pb-1">
+                  <div className="w-full min-w-0 sm:w-auto">
                     <div className="flex flex-wrap items-center gap-2">
                       <h1 className="dash-display truncate text-[21px] font-extrabold tracking-tight">{displayName}</h1>
                       <Badge tone="violet">Administrator</Badge>
@@ -370,7 +374,7 @@ export default function AdminProfile() {
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 pb-1">
+                <div className="ml-auto flex flex-wrap items-center gap-2 pb-1">
                   <input
                     ref={avatarFileRef}
                     type="file"
