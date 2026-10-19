@@ -1,5 +1,5 @@
 -- ============================================================================
--- NIMCET MOCK - 01 · generated from NIMCET_Mock_01_Questions.csv by scripts/import-mock-csv.mjs
+-- NIMCET MOCK - 01 · generated from nimcet-mock-01-questions.csv by scripts/import-mock-csv.mjs
 -- DO NOT EDIT BY HAND — fix the CSV and regenerate instead.
 --
 -- HOW TO RUN (one paste):
@@ -37,28 +37,28 @@ create temporary table seed_import (
 ) on commit drop;
 
 insert into seed_import (seq, exam, section, topic, difficulty, stem, options, answer, explanation, plus, minus) values
-  (1, 'nimcet', 'maths', 'Function and Relation', 'Easy', 'The 2 function in x are f(x) = e2x and g(x) = ln x then find gof(x) is', jsonb_build_array('x', '2x', 'ex', 'ln x'), 1, 'Given f(x) = e2x and g(x) = ln x
-gof(x) = g(f(x))
-gof(x) = g(e2x)
-gof(x) = ln e2x 
-gof(x) = 2x ln e
-gof(x) = 2x {∵ ln e = 1}', 12, -3),
-  (2, 'nimcet', 'maths', 'Line', 'Easy', 'Find the equation of a line having a slope of -2 and passes through the intersection if 2x - y = 1 and x + 2y = 3', jsonb_build_array('y - 2x + 1 = 0', 'y + 2x - 3 = 0', '2y - x - 3 = 0', '2y + x + 1 = 0'), 1, 'Given lines are:
-2x - y = 1 ...(i)
-x + 2y = 3 ...(ii)
-Adding 2 × (i) to (ii)
-⇒ 5x = 5
-⇒ x = 1
-Putting value of x in (i)
-2(1) - y = 1
-⇒ y = 1
-The intersection is (1, 1)
-So line has the slope -2 and passes through (1, 1)
-∴ Equation of the perpendicular line is
-(y - y1) = m (x - x1)
-⇒ y - 1 = -2 (x - 1)
-⇒ y + 2x - 3 = 0', 12, -3),
-  (3, 'nimcet', 'maths', 'Differentiability', 'Easy', 'If \(y = \frac{{12\tan x\; - \;4{{\tan }^3}x}}{{9\; - \;27{{\tan }^2}x}}\) then find \(\frac{{{d^2}y}}{{d{x^2}}}\) ?', jsonb_build_array('8 sec2 3x tan 3x', '24 sec2 3x tan 3x', '(4/3) sec2 3x', '4 sec2 3x'), 0, 'Given: \(y = \frac{{12\tan x\; - \;4{{\tan }^3}x}}{{9\; - \;27{{\tan }^2}x}}\)
+  (1, 'nimcet', 'maths', 'Function and Relation', 'Easy', 'The two functions of x are \(f(x) = {e^{2x}}\) and \(g(x) = \ln x\), then find \(gof(x)\).', jsonb_build_array('\(x\)', '\(2x\)', '\({e^x}\)', '\(\ln x\)'), 1, 'Given \(f(x) = {e^{2x}}\) and \(g(x) = \ln x\)
+\(gof(x) = g(f(x))\)
+\(gof(x) = g({e^{2x}})\)
+\(gof(x) = \ln {e^{2x}}\)
+\(gof(x) = 2x\ln e\)
+\(gof(x) = 2x\)   (∵ \(\ln e = 1\))', 12, -3),
+  (2, 'nimcet', 'maths', 'Line', 'Easy', 'Find the equation of a line having a slope of \(-2\) and passing through the intersection of \(2x - y = 1\) and \(x + 2y = 3\).', jsonb_build_array('\(y - 2x + 1 = 0\)', '\(y + 2x - 3 = 0\)', '\(2y - x - 3 = 0\)', '\(2y + x + 1 = 0\)'), 1, 'Given lines are:
+\(2x - y = 1\;\;...(i)\)
+\(x + 2y = 3\;\;...(ii)\)
+Adding \(2 \times (i)\) to (ii)
+\( \Rightarrow 5x = 5\)
+\( \Rightarrow x = 1\)
+Putting the value of \(x\) in (i)
+\(2(1) - y = 1\)
+\( \Rightarrow y = 1\)
+The intersection point is \((1,\,1)\).
+The line has slope \(-2\) and passes through \((1,\,1)\).
+∴ Equation of the line is
+\(y - {y_1} = m(x - {x_1})\)
+\( \Rightarrow y - 1 = - 2(x - 1)\)
+\( \Rightarrow y + 2x - 3 = 0\)', 12, -3),
+  (3, 'nimcet', 'maths', 'Differentiability', 'Easy', 'If \(y = \frac{{12\tan x\; - \;4{{\tan }^3}x}}{{9\; - \;27{{\tan }^2}x}}\) then find \(\frac{{{d^2}y}}{{d{x^2}}}\) ?', jsonb_build_array('\(8{\sec ^2}3x\tan 3x\)', '\(24{\sec ^2}3x\tan 3x\)', '\(\frac{4}{3}{\sec ^2}3x\)', '\(4{\sec ^2}3x\)'), 0, 'Given: \(y = \frac{{12\tan x\; - \;4{{\tan }^3}x}}{{9\; - \;27{{\tan }^2}x}}\)
 To find: \(\frac{{{d^2}y}}{{d{x^2}}}\)
 \(y = \frac{{12\tan x\; - \;4{{\tan }^3}x}}{{9 - 27{{\tan }^2}x}}\)
 \(\Rightarrow y = \frac{{4\left( {3\tan x - {{\tan }^3}x} \right)}}{{9\left( {1\; - \;3{{\tan }^2}x} \right)}}\)
@@ -75,21 +75,21 @@ Here, we have to find the coefficient of variation for the same observations.
 As we know, 
 Coefficient of variation = \(\frac{\text{standard deviation}}{\text{mean}}\) × 100 
 → Coefficient of variation = \(\frac{6.5}{12.5}\) × 100 = 52%', 12, -3),
-  (5, 'nimcet', 'maths', 'Sets', 'Easy', 'Which of the following is the roster form of the set A = {4x2 - x - 5 = 0 : x ∈ I}', jsonb_build_array('{1, -1.25}', '{1}', '{-1, 1.25}', '{-1}'), 3, 'Given: A = {4x2 - x - 5 = 0 : x ∈ I}
-4x2 - x - 5 = 0
-⇒ (x + 1)(4x - 5) = 0
-⇒ x = -1, 1.25
-For set A, x ∈ I
-∴ Roster form of set A = {-1}', 12, -3),
+  (5, 'nimcet', 'maths', 'Sets', 'Easy', 'Which of the following is the roster form of the set \(A = \{ 4{x^2} - x - 5 = 0:x \in I\}\) ?', jsonb_build_array('\(\{ 1,\, - 1.25\}\)', '\(\{ 1\}\)', '\(\{ - 1,\,1.25\}\)', '\(\{ - 1\}\)'), 3, 'Given: \(A = \{ 4{x^2} - x - 5 = 0:x \in I\}\)
+\(4{x^2} - x - 5 = 0\)
+\( \Rightarrow (x + 1)(4x - 5) = 0\)
+\( \Rightarrow x = - 1,\,1.25\)
+For the set \(A\), \(x \in I\)
+∴ Roster form of set \(A = \{ - 1\}\)', 12, -3),
   (6, 'nimcet', 'maths', 'Matrices', 'Easy', 'If \(\rm A=\begin{bmatrix}0 & \rm -i \\ \rm i & \ \ \ 0 \end{bmatrix}\) and \(\rm B=\begin{bmatrix}1 & \ \ \ 0 \\ 0 & -1 \end{bmatrix}\) are matrices, then AB + BA is:', jsonb_build_array('a diagonal matrix', 'an invertible matrix', 'a unit matrix', 'a null matrix'), 3, 'Given: \(\rm A=\begin{bmatrix}0 & \rm -i \\ \rm i & \ \ \ 0 \end{bmatrix}\)and \(\rm B=\begin{bmatrix}1 & \ \ \ 0 \\ 0 & -1 \end{bmatrix}\)
  \(\rm AB=\begin{bmatrix}0 & \rm -i \\ \rm i & \ \ \ 0 \end{bmatrix}\times\begin{bmatrix}1 & \ \ \ 0 \\ 0 & -1 \end{bmatrix}=\begin{bmatrix}0+0& 0+\rm i \\ \rm i+0 & 0+0 \end{bmatrix}=\begin{bmatrix}0 & \rm i \\ \rm i & 0 \end{bmatrix}\)
 And \(\rm BA=\begin{bmatrix}1 & \ \ \ 0 \\ 0 & -1 \end{bmatrix}\times\begin{bmatrix}0 & \rm -i \\ \rm i & \ \ \ 0 \end{bmatrix}=\begin{bmatrix}0+0& \rm -i+0 \\ 0-\rm i &\ \ \ 0+0 \end{bmatrix}=\begin{bmatrix}\ \ \ 0 & \rm -i \\ \rm -i &\ \ \ 0 \end{bmatrix}\)
 \(\rm \therefore AB+BA=\begin{bmatrix}0 & \rm i \\ \rm i & 0 \end{bmatrix}+\begin{bmatrix}\ \ \ 0 & \rm -i \\ \rm -i &\ \ \ 0 \end{bmatrix}=\begin{bmatrix}0+0 & \rm i-i\\ \rm i-i & 0+0 \end{bmatrix}=\begin{bmatrix}0 & 0\\ 0 & 0 \end{bmatrix}\)', 12, -3),
-  (7, 'nimcet', 'maths', 'Differential Equations', 'Medium', 'If integrating factor of x(1 - x2) dy + (2x2y - y - ax3) dx = 0 is \({e^{\int {Pdx} }}\), then P is equal to', jsonb_build_array('\(\frac{{2{x^2} - a{x^3}}}{{x(1 - {x^2})}}\)', '\(2x^3-1\)', '\(\frac{{2{x^2} - 1}}{{a{x^3}}}\)', '\(\frac{{2{x^2} - 1}}{{x(1 - {x^2})}}\)'), 3, 'Given, x (1-x2) dy + (2x2y -y -ax3) dx = 0
-⇒ x (1- x2) \(\frac{dy}{dx}\)+ 2x2 - y - ax3 = 0
-⇒ x (1- x2) \(\frac {dy}{dx}\) + (2x2 - 1) y = ax3
-\(\frac {dy}{dx}\) + [\(\frac {2x^2-1}{x (1- x^2)}\)] y = \(\frac{ax^3}{x (1 - x^2)}\)
-on comparing with equation (A) we get, P = \(\frac{2x^2-1}{x (1- x^2)}\)', 12, -3),
+  (7, 'nimcet', 'maths', 'Differential Equations', 'Medium', 'If the integrating factor of \(x(1 - {x^2})\,dy + (2{x^2}y - y - a{x^3})\,dx = 0\) is \({e^{\int {Pdx} }}\), then \(P\) is equal to', jsonb_build_array('\(\frac{{2{x^2} - a{x^3}}}{{x(1 - {x^2})}}\)', '\(2x^3-1\)', '\(\frac{{2{x^2} - 1}}{{a{x^3}}}\)', '\(\frac{{2{x^2} - 1}}{{x(1 - {x^2})}}\)'), 3, 'Given, \(x(1 - {x^2})\,dy + (2{x^2}y - y - a{x^3})\,dx = 0\)
+\( \Rightarrow x(1 - {x^2})\frac{{dy}}{{dx}} + (2{x^2}y - y - a{x^3}) = 0\)
+\( \Rightarrow x(1 - {x^2})\frac{{dy}}{{dx}} + (2{x^2} - 1)y = a{x^3}\)
+\(\frac{{dy}}{{dx}} + \frac{{2{x^2} - 1}}{{x(1 - {x^2})}}y = \frac{{a{x^3}}}{{x(1 - {x^2})}}\)
+Comparing with \(\frac{{dy}}{{dx}} + Py = Q\), we get \(P = \frac{{2{x^2} - 1}}{{x(1 - {x^2})}}\)', 12, -3),
   (8, 'nimcet', 'maths', 'Indefinite Integrals', 'Medium', 'Evaluate: \(\smallint \frac{{dx}}{{x\left\{ {6 \cdot {{\left( {\log x} \right)}^2} + 7\log x + 2} \right\}}}\)', jsonb_build_array('\(\log \left| {\frac{{2\log x - 1}}{{3\log x + 2}}} \right| + C\)', '\(\log \left| {\frac{{2\log x + 1}}{{3\log x - 2}}} \right| + C\)', '\(\log \left| {\frac{{2\log x + 1}}{{3\log x + 2}}} \right| + C\)', '\(\log \left| {\frac{{2\log x - 1}}{{3\log x - 2}}} \right| + C\)'), 2, 'Here we have to find the value of \(\smallint \frac{{dx}}{{x\left\{ {6 \cdot {{\left( {\log x} \right)}^2} + 7\log x + 2} \right\}}}\)
 Let log x = t and dx/x = dt
 \(⇒ \smallint \frac{{dx}}{{x\left\{ {6 \cdot {{\left( {\log x} \right)}^2} + 7\log x + 2} \right\}}} = \;\smallint \frac{{dt}}{{\left( {6{t^2} + 7t + 2} \right)}}\)
@@ -119,15 +119,15 @@ AB = \(\begin{bmatrix} 1& -1 &0 \\ 3& 2 & -1 \end{bmatrix}\) × \(\begin{bmatrix
 AB = \(\begin{bmatrix} 1-3+0 \\ 3+6-5 \end{bmatrix}\)
 AB = \(\begin{bmatrix} -2 \\ 4 \end{bmatrix}\)
 ∴ (AB)T = \(\begin{bmatrix} -2 & 4 \end{bmatrix}\)', 12, -3),
-  (11, 'nimcet', 'maths', 'Differentiability', 'Easy', 'If \(\rm \sqrt y\) = sin x + cos x then \(\rm \dfrac {dy}{dx}\) is', jsonb_build_array('2 sin 2x', '2 cos 2x', 'cos x - sin x', 'None of the above'), 1, 'Given: \(\rm \sqrt y\) = sin x + cos x
-To Find: \(\rm \dfrac {dy}{dx}\)
-\(\rm \sqrt y\) = sin x + cos x
+  (11, 'nimcet', 'maths', 'Differentiability', 'Easy', 'If \(\rm \sqrt y\) = sin x + cos x then \(\rm \dfrac {dy}{dx}\) is', jsonb_build_array('2 sin 2x', '2 cos 2x', 'cos x - sin x', 'None of the above'), 1, 'Given: \(\rm \sqrt y = \sin x + \cos x\)
+To find: \(\rm \dfrac{{dy}}{{dx}}\)
+\(\rm \sqrt y = \sin x + \cos x\)
 Squaring both sides, we get
-⇒ y = (sin x + cos x)2
-⇒ y = sin2 x + cos2 x + 2sin x cos x
-⇒ y = 1 + sin 2x (∵ 2sin x cos x = sin 2x)
-Differentiating with respect to x, we get
-\(\rm \dfrac {dy}{dx} = 0 + 2 \times \cos 2x = 2 \cos 2x\)', 12, -3),
+\( \Rightarrow y = {(\sin x + \cos x)^2}\)
+\( \Rightarrow y = {\sin ^2}x + {\cos ^2}x + 2\sin x\cos x\)
+\( \Rightarrow y = 1 + \sin 2x\)   (∵ \(2\sin x\cos x = \sin 2x\))
+Differentiating with respect to \(x\), we get
+\(\rm \dfrac{{dy}}{{dx}} = 0 + 2\cos 2x = 2\cos 2x\)', 12, -3),
   (12, 'nimcet', 'maths', 'Trigonometric Equations', 'Medium', 'Find the principal solution of the equation sec x = 2 ?', jsonb_build_array('\(\pi/2\)', '\(\pi/3\)', '\(5\pi/3\)', 'Both B and C'), 3, 'The given equation is:
 \[
 \sec x = 2
@@ -165,7 +165,7 @@ Thus, the derivative is:
 \frac{dy}{dx} = \frac{-2}{3x^3}
 \]', 12, -3),
   (14, 'nimcet', 'maths', 'Indefinite Integrals', 'Medium', 'Evaluate: \(\smallint \frac{{{{\sec }^2}x}}{{\sqrt {16 + {{\tan }^2}x} }}dx\)', jsonb_build_array('\(\log \left| {\tan x - \sqrt {16 + {{\tan }^2}x} \;} \right| + C\)', '\(\log \left| {\tan x + \sqrt {16 + {{\tan }^2}x} \;} \right| + C\)', '\(\log \left| {\tan x + \sqrt {4 + {{\tan }^2}x} \;} \right| + C\)', '\(\log \left| {\tan x - \sqrt {4 + {{\tan }^2}x} \;} \right| + C\)'), 1, 'Here we have to find the value of \(\smallint \frac{{{{\sec }^2}x}}{{\sqrt {16 + {{\tan }^2}x} }}dx\)
-Let tan x = t then sec2 x dx = dt
+Let \(\tan x = t\), then \({\sec ^2}x\,dx = dt\)
 \(\Rightarrow \smallint \frac{{{{\sec }^2}x}}{{\sqrt {16 + {{\tan }^2}x} }}dx = \;\smallint \frac{{dt}}{{\sqrt {16 + {t^2}} }}\)
 Now by comparing \(\;\smallint \frac{{dt}}{{\sqrt {16 + {t^2}} }}\) with \(\smallint \frac{{dx}}{{\sqrt {{x^2} + {a^2}} }}\) we get, a = 4
 As we know that, \(\smallint \frac{{dx}}{{\sqrt {{x^2} + {a^2}} }} = \log \left| {x + \sqrt {{x^2} + {a^2}} } \right| + C\) where C is a constant
@@ -210,15 +210,15 @@ Substitute \( p = 1 \):
 \[
 \rm -q = -3 \quad \Rightarrow \quad \mathbf{q = 3}
 \]', 12, -3),
-  (16, 'nimcet', 'maths', 'Function and Relation', 'Easy', 'Let, R = {(a, b): a, b ϵ N and a2 = b}, then what is the relation R', jsonb_build_array('Reflexive', 'Symmetric', 'Transitive', 'None of the above'), 3, 'Here, R = {(a, b): a, b ϵ N and a2 = b}
-1. Relation R is not reflexive since, 2 ≠ 22
-2. Since, 22 = 4 so, (2, 4) belong to R
-But, 4 ≠ 2 and so, R is not symmetric
-3. Since, 42 = 16, so (4, 16) belong to R
-Also, 162 = 256, so (16, 256) belong to R
-But, 42 ≠ 256 so R is not transitive.
-So, R satisfies none of the reflexivity, symmetry and transitivity.
-Hence, option (4) is correct.', 12, -3),
+  (16, 'nimcet', 'maths', 'Function and Relation', 'Easy', 'Let \(R = \{ (a,\,b):a,\,b \in N\) and \({a^2} = b\}\), then what is the relation \(R\) ?', jsonb_build_array('Reflexive', 'Symmetric', 'Transitive', 'None of the above'), 3, 'Here, \(R = \{ (a,\,b):a,\,b \in N\) and \({a^2} = b\}\)
+1. Relation \(R\) is not reflexive since \(2 \ne {2^2}\).
+2. Since \({2^2} = 4\), so \((2,\,4)\) belongs to \(R\).
+But \(4 \ne 2\), so \(R\) is not symmetric.
+3. Since \({4^2} = 16\), so \((4,\,16)\) belongs to \(R\).
+Also, \({16^2} = 256\), so \((16,\,256)\) belongs to \(R\).
+But \({4^2} \ne 256\), so \(R\) is not transitive.
+So, \(R\) satisfies none of reflexivity, symmetry and transitivity.
+Hence, option D is correct.', 12, -3),
   (17, 'nimcet', 'maths', 'Probability', 'Medium', 'If x is a random variable with Probability Mass Function \(\rm p(x)=\left \{\begin{matrix}\rm kx, & \rm x=1,2,3 \\ 0,& \rm otherwise \end{matrix}\right.\), then k = ?', jsonb_build_array('\(\rm \dfrac{1}{5}\)', '\(\rm \dfrac{1}{4}\)', '\(\rm \dfrac{1}{6}\)', '\(\rm \dfrac{2}{3}\)'), 2, 'Given that \(\rm p(x)=\left \{\begin{matrix}\rm kx, & \rm x=1,2,3 \\ 0,& \rm otherwise \end{matrix}\right.\).
 ⇒ p(1) = k, p(2) = 2k, p(3) = 3k and p(x) = 0 otherwise.
 We also know that Σ p(x) = 1.
@@ -333,16 +333,15 @@ And we know that (GM)2 = (AM) × (HM)
 ⇒ HM = \(\frac{81}{27}\)
 = 3 
 Hence, option (3) is correct.', 12, -3),
-  (28, 'nimcet', 'maths', 'Probability', 'Medium', 'A man is known to speak truth 2 out of 3 times. He throws a die and reports that number obtained is a four. Find the probability that the number obtained is actually a four.', jsonb_build_array('1/14', '2/7', '3/7', '5/7'), 1, 'Let A be the event that the man reports that number four is obtained.
-Let E1 be the event that four is obtained and E2 be its complementary event.
-Then, P (E1) = Probability that four occurs = 1/6
-P (E2) = Probability that four does not occurs = 1 – P (E1) = 1 − 1/6 = 5/6
-Also, P (A|E1) = Probability that man reports four and it is actually a four = 2/3
-P (A|E2) = Probability that man reports four and it is not a four = 1/3
-By using Bayes’ theorem,
-Probability that number obtained is actually a four.
-\(P\left( {E1{\rm{|}}A} \right) = \frac{{P\left( {E1} \right)P(A|E1)}}{{P\left( {E1} \right)P\left( {A{\rm{|}}E1} \right) + P\left( {E2} \right)P(A|E2)}}\)
-\(\Rightarrow P\left( {E1{\rm{|}}A} \right) = \frac{{1/6 \times 2/3}}{{1/6 \times 2/3 + 5/6 \times 1/3}} = 2/7\)', 12, -3),
+  (28, 'nimcet', 'maths', 'Probability', 'Medium', 'A man is known to speak truth 2 out of 3 times. He throws a die and reports that number obtained is a four. Find the probability that the number obtained is actually a four.', jsonb_build_array('1/14', '2/7', '3/7', '5/7'), 1, 'Let \(A\) be the event that the man reports that number four is obtained.
+Let \(E_1\) be the event that four is obtained and \(E_2\) be its complementary event.
+Then, \(P(E_1)\) = Probability that four occurs = \(1/6\)
+\(P(E_2)\) = Probability that four does not occur = \(1 - P(E_1) = 1 - 1/6 = 5/6\)
+Also, \(P(A|E_1)\) = Probability that the man reports four and it is actually a four = \(2/3\)
+\(P(A|E_2)\) = Probability that the man reports four and it is not a four = \(1/3\)
+By using Bayes'' theorem, the probability that the number obtained is actually a four:
+\(P\left( {E_1|A} \right) = \frac{{P\left( {E_1} \right)P(A|E_1)}}{{P\left( {E_1} \right)P\left( {A|E_1} \right) + P\left( {E_2} \right)P(A|E_2)}}\)
+\( \Rightarrow P\left( {E_1|A} \right) = \frac{{1/6 \times 2/3}}{{1/6 \times 2/3 + 5/6 \times 1/3}} = 2/7\)', 12, -3),
   (29, 'nimcet', 'maths', 'Ellipse', 'Medium', 'If the latus rectum of an ellipse is equal to half of the minor axis, then what is its eccentricity?', jsonb_build_array('2 / √3', '1 / √3', '√3 / 2', '1 / √2'), 2, 'Given, the latus rectum of an ellipse is equal to half of the minor axis.
 Suppose, the equation of ellipse is \(\rm \frac{x^2}{a^2}+\frac{y^2}{b^2} = 1\)
 length of Latus rectum of ellipse = \(\rm \frac{2b^2}{a}\)
@@ -397,27 +396,28 @@ Replacing m in eqn (ii)
 \({\rm{y}} = \frac{{{\rm{dy}}}}{{{\rm{dx}}}}{\rm{x}} + \sqrt {1 + {{\left( {\frac{{{\rm{dy}}}}{{{\rm{dx}}}}{\rm{\;}}} \right)}^2}} \)
 \( \Rightarrow {\rm{\;y}} - \frac{{{\rm{dy}}}}{{{\rm{dx}}}}{\rm{x}} = \sqrt {1 + {{\left( {\frac{{{\rm{dy}}}}{{{\rm{dx}}}}{\rm{\;}}} \right)}^2}} \)
 \( \Rightarrow {\left( {{\rm{y}} - \frac{{{\rm{dy}}}}{{{\rm{dx}}}}{\rm{x}}} \right)^2}{\rm{\;}} = 1 + {\left( {\frac{{{\rm{dy}}}}{{{\rm{dx}}}}{\rm{\;}}} \right)^2}\)', 12, -3),
-  (34, 'nimcet', 'maths', 'Binomial Theorem', 'Medium', 'If the third term in the binomial expansion of (1 + x)m is (-1/8)x² then the rational value of m is', jsonb_build_array('2', '\(\frac 12\)', '3', 'None of these'), 1, 'Given: the third term in the binomial expansion of (1 + x)m is (-1/8)x²
+  (34, 'nimcet', 'maths', 'Binomial Theorem', 'Medium', 'If the third term in the binomial expansion of \({(1 + x)^m}\) is \((-1/8){x^2}\), then the rational value of \(m\) is', jsonb_build_array('2', '\(\frac 12\)', '3', 'None of these'), 1, 'Given: the third term in the binomial expansion of \({(1 + x)^m}\) is \((-1/8){x^2}\)
 \(\rm (1+x)^m= 1+mx+\frac{m(m-1)}{2!}x^2+\frac{m(m-1)(m-2)}{3!}x^3 +....\)
-So, the third term in the binomial expansion of (1 + x)m is \(\rm \frac{m(m-1)}{2!}x^2\)
-\(\rm \frac{m(m-1)}{2!}x^2\) = (-1/8)x2
-⇒ \(\rm \frac{m(m-1)}{2}= \frac {-1}{8}\)
-⇒ 4m2 - 4m + 1 = 0
-⇒ (2m - 1)2 = 0
-⇒ 2m - 1 = 0
-∴ m = \(\frac 12\)', 12, -3),
-  (35, 'nimcet', 'maths', 'Sequence And Series', 'Medium', 'If the sequence {sn} is a geometric progression and s2 s11 = sp s8, then what is the value of p?', jsonb_build_array('1', '3', '5', 'can not be determined'), 2, 'Given: s2 s11 = sp s8
-the sequence {sn} is a geometric progression
-As we know, nth term of the GP is arn - 1
-So, S2 = ar2 - 1 = ar
-S11 = ar11 - 1 = ar10
-Sp = arp - 1
-S8 = ar8 - 1 = ar7
-Now, 
-s2 s11 = sp s8
-⇒ ar × ar10 = arp - 1 × ar7
-⇒ rp - 1 = r 4
-∴ p = 5', 12, -3),
+So, the third term in the binomial expansion of \({(1 + x)^m}\) is \(\rm \frac{m(m-1)}{2!}x^2\)
+\(\rm \frac{m(m-1)}{2!}x^2\) = \((-1/8){x^2}\)
+\( \Rightarrow \rm \frac{m(m-1)}{2}= \frac {-1}{8}\)
+\( \Rightarrow 4{m^2} - 4m + 1 = 0\)
+\( \Rightarrow {(2m - 1)^2} = 0\)
+\( \Rightarrow 2m - 1 = 0\)
+∴ \(m = \frac 12\)', 12, -3),
+  (35, 'nimcet', 'maths', 'Sequence And Series', 'Medium', 'If the sequence \(\{ {s_n}\} \) is a geometric progression and \({s_2}{s_{11}} = {s_p}{s_8}\), then what is the value of \(p\) ?', jsonb_build_array('1', '3', '5', 'can not be determined'), 2, 'Given: \({s_2}{s_{11}} = {s_p}{s_8}
+The sequence \(\{ {s_n}\} \) is a geometric progression.
+As we know, the \({n^{th}}\) term of a GP is \(a{r^{n - 1}}\).
+So, \({s_2} = a{r^{2 - 1}} = ar\)
+\({s_{11}} = a{r^{11 - 1}} = a{r^{10}}\)
+\({s_p} = a{r^{p - 1}}\)
+\({s_8} = a{r^{8 - 1}} = a{r^7}\)
+Now,
+\({s_2}{s_{11}} = {s_p}{s_8}\)
+\( \Rightarrow ar \cdot a{r^{10}} = a{r^{p - 1}} \cdot a{r^7}\)
+\( \Rightarrow {r^{11}} = {r^{p + 6}}\)
+\( \Rightarrow 11 = p + 6\)
+∴ \(p = 5\)', 12, -3),
   (36, 'nimcet', 'maths', 'Line', 'Easy', 'What is the inclination of the line x - y + √3 = 0 ?', jsonb_build_array('30°', '60°', '45°', '90°'), 2, 'Given: x - y + √3 = 0
 We will first express the equation of the line in the standard form.
 Thus the equation of the line is y = x + √3 
@@ -493,15 +493,17 @@ To find: the probability that they will fall two heads and one tail
 Taking two heads and one tail,
 Thus, Favourable outcomes are = {(H,H,T) , (H,T,H), (T,H,H)} = 3
 Hence the probability that they will fall two heads and one tail = 3/8', 12, -3),
-  (43, 'nimcet', 'maths', 'Circle', 'Medium', 'Find the radius of the circle , 5x2 + 5y2 - 20x - 6y + 15 = 0', jsonb_build_array('\(\frac{\sqrt{34}}{5}\)', '\(\frac{\sqrt{37}}{5}\)', '\(\frac{6}{5}\)', '\(\sqrt{\frac{6}{5}}\)'), 0, 'Given equation of circle is , 5x2 + 5y2 - 20x - 6y + 15 = 0 
-⇒ x2 + y2 - 4x - \(\frac{6}{5}\)y + 3 = 0 ....(i)
-On compare eq. (i) with standard equation of circle x2 + y2 + 2gx + 2fy + c = 0 
-We get , g = -2 , f = \(\frac{-3}{5}\) and c = 3 
-As we know that , radius of circle = \(\rm\sqrt{g^{2}+f^{2}-c}\) 
-⇒ radius = \(\sqrt{(-2)^{2}+\left ( \frac{-3}{5} \right )^{2}-3}\) = \(\sqrt{4+\frac{9}{25}-3}\) 
-⇒ radius = \(\frac{\sqrt{34}}{5}\) units. 
-The correct option is 1.', 12, -3),
-  (44, 'nimcet', 'maths', 'Matrices', 'Easy', 'If A is skew symmetric matrix, then A2 is a', jsonb_build_array('null matrix', 'unitary matrix', 'skew symmetic', 'symmetric'), 3, '', 12, -3),
+  (43, 'nimcet', 'maths', 'Circle', 'Medium', 'Find the radius of the circle \(5{x^2} + 5{y^2} - 20x - 6y + 15 = 0\).', jsonb_build_array('\(\frac{\sqrt{34}}{5}\)', '\(\frac{\sqrt{37}}{5}\)', '\(\frac{6}{5}\)', '\(\sqrt{\frac{6}{5}}\)'), 0, 'Given equation of the circle is \(5{x^2} + 5{y^2} - 20x - 6y + 15 = 0\)
+\( \Rightarrow {x^2} + {y^2} - 4x - \frac{6}{5}y + 3 = 0\;\;...(i)\)
+On comparing eq. (i) with the standard equation of a circle \({x^2} + {y^2} + 2gx + 2fy + c = 0\),
+we get \(g = - 2\), \(f = \frac{{ - 3}}{5}\) and \(c = 3\).
+As we know, radius of the circle \( = \sqrt {{g^2} + {f^2} - c} \)
+\( \Rightarrow r = \sqrt {{{( - 2)}^2} + {{\left( {\frac{{ - 3}}{5}} \right)}^2} - 3} = \sqrt {4 + \frac{9}{{25}} - 3} \)
+\( \Rightarrow r = \frac{{\sqrt {34} }}{5}\) units.
+Hence, option A is correct.', 12, -3),
+  (44, 'nimcet', 'maths', 'Matrices', 'Easy', 'If \(A\) is a skew symmetric matrix, then \({A^2}\) is a', jsonb_build_array('null matrix', 'unitary matrix', 'skew symmetric', 'symmetric'), 3, 'For a skew symmetric matrix \(A\), \({A^T} = - A\).
+Then \({({A^2})^T} = {({A^T})^2} = {( - A)^2} = {A^2}\).
+Hence, \({A^2}\) is a symmetric matrix.', 12, -3),
   (45, 'nimcet', 'maths', 'Sequence And Series', 'Medium', 'Find the sum of the series \( 1 \cdot 2 + 2 \cdot 3 + 3 \cdot 4 + 4 \cdot 5 + \dots + 8 \cdot 9 \) ?', jsonb_build_array('240', '260', '225', '264'), 0, 'Here, we have to find the sum of the series: 
 \[
 1 \cdot 2 + 2 \cdot 3 + 3 \cdot 4 + 4 \cdot 5 + \dots + 8 \cdot 9
