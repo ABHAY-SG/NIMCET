@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AndroidAppIcon from "@/components/android-app-icon";
 import { APK_PATH } from "@/lib/android-app";
+import AndroidAppModal from "@/components/android-app-modal";
 
 const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERATING SYSTEMS", "DBMS", "NETWORKS", "REASONING"];
 
@@ -37,6 +38,7 @@ const GLYPHS: Array<[string, number, number]> = [
 
 export default function Hero() {
   const secRef = useRef<HTMLElement>(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const sec = secRef.current;
@@ -121,20 +123,14 @@ export default function Hero() {
             >
               Explore the pattern
             </Link>
-            <a
-              href={APK_PATH}
-              download
-              title="Download the NimCuet Android app"
+            <button
+              onClick={() => setShowModal(true)}
               className="cta-glow flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold"
-              style={{
-                background: "color-mix(in srgb, var(--accent) 12%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--accent) 45%, var(--border))",
-                color: "var(--accent)",
-              }}
+              style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 45%, var(--border))", color: "var(--accent)" }}
             >
-              <AndroidAppIcon size={15} />
-              Get Android App
-            </a>
+              <AndroidAppIcon size={15} /> Explore the NimCuet App
+            </button>
+            <AndroidAppModal open={showModal} onClose={() => setShowModal(false)} />
           </div>
 
           <div className="rise mt-7 flex items-center justify-center gap-7 lg:justify-start" style={{ animationDelay: "0.62s" }}>
@@ -231,22 +227,38 @@ export default function Hero() {
                 <circle cx="390" cy="240" r="4" style={{ fill: "var(--gold-3)" }} />
               </g>
 
-              {/* monogram orb */}
+              {/* monogram orb — brand is clickable home, plus an app entry point */}
               <g className="core-breathe">
                 <circle cx="240" cy="240" r="88" strokeWidth="1" style={{ fill: "color-mix(in srgb, var(--nav-bg) 72%, transparent)", stroke: "var(--border)" }} />
                 <circle cx="240" cy="240" r="88" style={{ fill: "url(#coreOrbG)" }} />
-                {/* brand wordmark, in place of the monogram */}
-                <image href="/logo.png" x="165" y="214" width="150" height="26" className="orb-logo" preserveAspectRatio="xMidYMid meet" />
-                <text
-                  x="240"
-                  y="292"
-                  textAnchor="middle"
-                  fontSize="8"
-                  className="mono"
-                  style={{ fill: "color-mix(in srgb, var(--text) 46%, transparent)", letterSpacing: "0.22em" }}
-                >
-                  REAL QUESTION PAPERS
-                </text>
+                {/* brand wordmark, in place of the monogram — links home */}
+                <a href="/" title="NimCuet home" style={{ cursor: "pointer" }}>
+                  <image href="/logo.png" x="165" y="214" width="150" height="26" className="orb-logo" preserveAspectRatio="xMidYMid meet" />
+                  <text
+                    x="240"
+                    y="292"
+                    textAnchor="middle"
+                    fontSize="8"
+                    className="mono"
+                    style={{ fill: "color-mix(in srgb, var(--text) 46%, transparent)", letterSpacing: "0.22em" }}
+                  >
+                    REAL QUESTION PAPERS
+                  </text>
+                </a>
+                {/* get the Android app */}
+                <a href={APK_PATH} download title="Download the NimCuet Android app" style={{ cursor: "pointer" }}>
+                  <AndroidAppIcon size={11} />
+                  <text
+                    x="240"
+                    y="313"
+                    textAnchor="middle"
+                    fontSize="7"
+                    className="mono"
+                    style={{ fill: "var(--accent)", letterSpacing: "0.14em", fontWeight: "600" }}
+                  >
+                    Get Android App
+                  </text>
+                </a>
               </g>
 
               {/* ground reflection */}
