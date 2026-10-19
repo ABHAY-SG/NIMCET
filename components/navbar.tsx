@@ -105,11 +105,13 @@ export default function Navbar() {
   const isActive = (id: string) => (pathname === "/" ? active === id : pageId === id);
 
   useEffect(() => {
-    // Session-aware buttons: a logged-in visitor must see Dashboard, never a
-    // misleading Log in prompt. Read-only check — touches no auth flow.
-    // Staff accounts additionally get a direct Admin panel entry, so the two
-    // areas (student dashboard / admin console) are both one click away and
-    // never have to be found through each other.
+    // Session-aware action: the public navbar carries EXACTLY ONE entry point
+    // for a signed-in visitor, chosen by role — "Admin panel" for staff, else
+    // "Dashboard". The student dashboard and the admin console stay separate
+    // areas and are never cross-linked from here, so a public page can't read
+    // as a hub with two competing destinations. Anonymous visitors keep the
+    // Log in / Get Started pair below and never see either label.
+    // Read-only check — touches no auth flow.
     (async () => {
       try {
         const sb = getAuthClient();
@@ -256,28 +258,14 @@ export default function Navbar() {
           </div>
 
           {loggedIn ? (
-            isAdmin ? (
-              <>
-                <a href="/dashboard" className={plainCls + " hidden sm:block"}>Dashboard</a>
-                <a
-                  href="/admin"
-                  className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
-                  style={{ background: "var(--text)", color: "var(--bg)" }}
-                >
-                  Admin panel
-                  <span className="carr text-[15px]">→</span>
-                </a>
-              </>
-            ) : (
-              <a
-                href="/dashboard"
-                className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
-                style={{ background: "var(--text)", color: "var(--bg)" }}
-              >
-                Dashboard
-                <span className="carr text-[15px]">→</span>
-              </a>
-            )
+            <a
+              href={isAdmin ? "/admin" : "/dashboard"}
+              className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
+              style={{ background: "var(--text)", color: "var(--bg)" }}
+            >
+              {isAdmin ? "Admin panel" : "Dashboard"}
+              <span className="carr text-[15px]">→</span>
+            </a>
           ) : (
             <>
               <a href="/login-choice" className={plainCls + " hidden sm:block"}>Log in</a>
@@ -315,10 +303,13 @@ export default function Navbar() {
             </a>
           ))}
           {loggedIn ? (
-            <>
-              <a href="/dashboard" onClick={() => setOpen(false)} className={plainCls}>Dashboard →</a>
-              {isAdmin && <a href="/admin" onClick={() => setOpen(false)} className={plainCls}>Admin panel →</a>}
-            </>
+            <a
+              href={isAdmin ? "/admin" : "/dashboard"}
+              onClick={() => setOpen(false)}
+              className={plainCls}
+            >
+              {isAdmin ? "Admin panel" : "Dashboard"} →
+            </a>
           ) : (
             <a href="/login-choice" onClick={() => setOpen(false)} className={plainCls}>Log in</a>
           )}
