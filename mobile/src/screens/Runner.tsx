@@ -15,7 +15,7 @@ export default function Runner() {
       <ScreenTitle title="Test Runner" subtitle="Full-screen exam experience." />
 
       <Card>
-        <span className="pill mb-2">Phase 2</span>
+        <span className="pill mb-2">Coming soon</span>
         <h2 className="text-sm font-semibold">Server-authoritative runner</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           Question palette, part navigation, mark-for-review and the live countdown are built on the

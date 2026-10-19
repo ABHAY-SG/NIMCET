@@ -1,51 +1,97 @@
 import { Link } from "react-router-dom";
-import { Card, Placeholder, ScreenTitle } from "../components/ui";
+import { useAuth } from "../lib/auth";
+import { useAsync } from "../lib/useAsync";
+import {
+  displayMarks,
+  displayMinutes,
+  fetchBank,
+  listPublishedTests,
+  partsForTest,
+  type BankQuestion,
+  type StudentTest,
+} from "../lib/data";
+import { Alert, Placeholder, ScreenTitle, Spinner } from "../components/ui";
 
-// Official NIMCET 2026 paper structure — the same numbers the website's
-// lib/nimcet-full-mock.ts enforces server-side. Shown here as static,
-// factual reference (no fabricated test data).
-const PATTERN = [
-  { part: "Part I", subject: "Mathematics", q: 50, min: 70, marks: "+12 / −3" },
-  { part: "Part II", subject: "Analytical Ability & Reasoning", q: 40, min: 30, marks: "+6 / −1.5" },
-  { part: "Part III", subject: "Computer Awareness", q: 20, min: 20, marks: "+6 / −1.5" },
-  { part: "Part III", subject: "General English", q: 10, min: 20, marks: "+4 / −1" },
-];
+type MocksData = { tests: StudentTest[]; bank: BankQuestion[] };
 
 export default function MockTests() {
+  const { user } = useAuth();
+  const { loading, data, error } = useAsync<MocksData>(async () => {
+    const [tests, bank] = await Promise.all([
+      listPublishedTests(60),
+      fetchBank(300).catch(() => [] as BankQuestion[]),
+    ]);
+    return { tests, bank };
+  }, [user?.id]);
+
+  if (loading) return <Spinner label="Loading mock tests…" />;
+  if (error) return <Alert kind="error">{error}</Alert>;
+
+  const tests = data?.tests ?? [];
+  const plusOf = new Map((data?.bank ?? []).map((q) => [q.id, Number(q.plus) || 0]));
+  const marksOf = (t: StudentTest): number | null => {
+    const full = displayMarks(t);
+    if (full !== null) return full;
+    if (plusOf.size === 0) return null;
+    return t.question_ids.reduce((s, id) => s + (plusOf.get(id) ?? 0), 0);
+  };
+
   return (
     <div className="mx-auto w-full max-w-md">
-      <ScreenTitle title="Mock Tests" subtitle="NIMCET full-length papers with a server-run clock." />
+      <ScreenTitle title="Mock Tests" subtitle="Published papers for your account." />
 
-      <Card>
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-base font-semibold">NIMCET 2026 Full Mock</h2>
-          <span className="pill">120 Q</span>
-        </div>
-        <p className="mt-1 text-sm text-muted">120 minutes · 1000 marks · 3 timed parts</p>
-
-        <ul className="mt-3 divide-y divide-line">
-          {PATTERN.map((row) => (
-            <li key={`${row.part}-${row.subject}`} className="flex items-center justify-between py-2">
-              <div>
-                <div className="text-sm font-medium">{row.subject}</div>
-                <div className="text-xs text-muted">
-                  {row.part} · {row.q} Q · {row.min} min
+      {tests.length === 0 ? (
+        <Placeholder
+          phase="Empty"
+          title="No published mock tests yet"
+          body="When an administrator publishes a test it appears here automatically — same catalogue as the website."
+        />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {tests.map((t) => {
+            const parts = partsForTest(t);
+            const marks = marksOf(t);
+            return (
+              <Link key={t.id} to={`/mocks/${t.id}/instructions`} className="card block p-4 active:scale-[0.99] transition-transform">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-semibold">{t.title}</h3>
+                    <p className="mt-0.5 text-xs text-muted">
+                      {t.exam}
+                      {t.tag ? ` · ${t.tag}` : ""}
+                    </p>
+                  </div>
+                  <span className="pill shrink-0">{t.free ? "Free" : "Premium"}</span>
                 </div>
-              </div>
-              <span className="mono text-xs text-muted">{row.marks}</span>
-            </li>
-          ))}
-        </ul>
 
-        <Link to="/mocks/nimcet-2026/instructions" className="btn btn-primary btn-block mt-4">
-          View instructions
-        </Link>
-      </Card>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+                  <span>
+                    <span className="mono text-fg">{t.question_ids.length}</span> questions
+                  </span>
+                  <span>
+                    <span className="mono text-fg">{displayMinutes(t)}</span> minutes
+                  </span>
+                  {marks !== null ? (
+                    <span>
+                      <span className="mono text-fg">{marks}</span> marks
+                    </span>
+                  ) : null}
+                  {parts ? (
+                    <span>
+                      <span className="mono text-fg">{parts.length}</span> timed parts
+                    </span>
+                  ) : null}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mt-4">
         <Placeholder
-          title="Your available papers"
-          body="The published-test list, per-student availability and resume-an-attempt entry points load from the existing /api/student APIs here in Phase 2."
+          title="In-app exam runner"
+          body="Taking the paper on the phone (server-owned timer, part navigation, auto-submit) is the next milestone. Tapping a test today opens its instructions."
         />
       </div>
     </div>

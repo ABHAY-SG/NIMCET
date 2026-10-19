@@ -4,7 +4,7 @@ import { useAuth } from "../lib/auth";
 import { Alert, Card, Spinner } from "../components/ui";
 
 export default function Signup() {
-  const { ready, configured, session, emailVerified, signUp } = useAuth();
+  const { ready, configured, session, emailVerified, signUp, resendVerification } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -13,6 +13,8 @@ export default function Signup() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [awaiting, setAwaiting] = useState(false);
+  const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
 
   if (!ready) return <Spinner label="Checking your session…" />;
   if (session && emailVerified) {
@@ -45,6 +47,17 @@ export default function Signup() {
     }
   }
 
+  async function onResend() {
+    setResending(true);
+    try {
+      const { error: err } = await resendVerification(email);
+      if (err) setError(err);
+      else setResent(true);
+    } finally {
+      setResending(false);
+    }
+  }
+
   if (awaiting) {
     return (
       <div className="mx-auto w-full max-w-sm">
@@ -59,10 +72,28 @@ export default function Signup() {
             log in.
           </p>
         </div>
+        {error ? (
+          <div className="mt-4">
+            <Alert kind="error">{error}</Alert>
+          </div>
+        ) : null}
+        {resent ? (
+          <div className="mt-4">
+            <Alert kind="ok">Confirmation email sent again.</Alert>
+          </div>
+        ) : null}
         <div className="mt-6 flex flex-col gap-2">
           <Link to="/login?verify=1" className="btn btn-primary btn-block">
             I&apos;ve verified — log in
           </Link>
+          <button
+            className="btn btn-ghost btn-block"
+            type="button"
+            onClick={onResend}
+            disabled={resending}
+          >
+            {resending ? "Sending…" : "Resend confirmation email"}
+          </button>
           <Link to="/login" className="btn btn-ghost btn-block">
             Back to login
           </Link>

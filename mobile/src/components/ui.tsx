@@ -33,7 +33,7 @@ export function ScreenTitle({ title, subtitle }: { title: string; subtitle?: str
 export function Placeholder({
   title,
   body,
-  phase = "Phase 2",
+  phase = "Coming soon",
 }: {
   title: string;
   body: string;

@@ -4,7 +4,16 @@ import { useAuth } from "../lib/auth";
 import { Alert, Card, Spinner } from "../components/ui";
 
 export default function Login() {
-  const { ready, configured, session, emailVerified, signIn } = useAuth();
+  const {
+    ready,
+    configured,
+    session,
+    emailVerified,
+    signIn,
+    resendVerification,
+    notice,
+    clearNotice,
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
   const [params] = useSearchParams();
@@ -13,11 +22,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsVerify, setNeedsVerify] = useState(false);
+  const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const verifiedBanner = params.get("verify") === "1";
   const from = location.state?.from ?? "/dashboard";
 
-  // Already signed in (and verified) → straight into the app.
   useEffect(() => {
     if (ready && session && emailVerified) navigate(from, { replace: true });
   }, [ready, session, emailVerified, from, navigate]);
@@ -28,21 +39,37 @@ export default function Login() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setNeedsVerify(false);
+    setResent(false);
+    clearNotice();
     try {
       const { error: err } = await signIn(email, password);
       if (err) {
-        setError(
-          // Supabase's raw text for an unconfirmed account is not helpful, so
-          // map it to the same instruction the server's 403 gives.
-          /email not confirmed/i.test(err)
-            ? "Verify your email first — open the confirmation link we sent, then log in."
-            : err
-        );
+        setError(err);
+        setNeedsVerify(/verify your email/i.test(err));
         return;
       }
       navigate(from, { replace: true });
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onResend() {
+    if (!email.trim()) {
+      setError("Enter your email above, then tap resend.");
+      return;
+    }
+    setResending(true);
+    try {
+      const { error: err } = await resendVerification(email);
+      if (err) setError(err);
+      else {
+        setResent(true);
+        setError(null);
+      }
+    } finally {
+      setResending(false);
     }
   }
 
@@ -57,10 +84,18 @@ export default function Login() {
       </div>
 
       {!configured ? (
-        <Alert kind="error">
-          Supabase is not configured for the app. Add <code>VITE_SUPABASE_URL</code> and{" "}
-          <code>VITE_SUPABASE_ANON_KEY</code> to <code>mobile/.env.local</code> and rebuild.
-        </Alert>
+        <div className="mb-4">
+          <Alert kind="error">
+            Supabase is not configured for the app. Add <code>VITE_SUPABASE_URL</code> and{" "}
+            <code>VITE_SUPABASE_ANON_KEY</code> to <code>mobile/.env.local</code> and rebuild.
+          </Alert>
+        </div>
+      ) : null}
+
+      {notice ? (
+        <div className="mb-4">
+          <Alert kind="error">{notice}</Alert>
+        </div>
       ) : null}
 
       {verifiedBanner ? (
@@ -72,6 +107,7 @@ export default function Login() {
       <Card>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           {error ? <Alert kind="error">{error}</Alert> : null}
+          {resent ? <Alert kind="ok">Confirmation email sent. Check your inbox.</Alert> : null}
 
           <label className="field">
             <span className="label">Email</span>
@@ -104,6 +140,17 @@ export default function Login() {
           <button className="btn btn-primary btn-block" type="submit" disabled={busy || !configured}>
             {busy ? "Logging in…" : "Log in"}
           </button>
+
+          {needsVerify ? (
+            <button
+              className="btn btn-ghost btn-block"
+              type="button"
+              onClick={onResend}
+              disabled={resending}
+            >
+              {resending ? "Sending…" : "Resend confirmation email"}
+            </button>
+          ) : null}
         </form>
       </Card>
 
@@ -120,10 +167,10 @@ export default function Login() {
 }
 
 /**
- * Google / GitHub buttons. Intentionally disabled in Phase 1: the provider
- * hand-off lands on the website callback, whose PKCE exchange runs server-side
- * and cannot see the app's code verifier — completing it on-device is a Phase 2
- * task. Showing them disabled (rather than faking a login) is deliberate.
+ * Google / GitHub buttons. Intentionally disabled: the provider hand-off lands
+ * on the website callback, whose PKCE exchange runs server-side and cannot see
+ * the app's code verifier — completing it on-device is a later task. Showing
+ * them disabled (rather than faking a login) is deliberate.
  */
 function OAuthButtons() {
   return (
@@ -142,7 +189,7 @@ function OAuthButtons() {
         </button>
       </div>
       <p className="mt-2 text-center text-xs text-muted">
-        Google / GitHub sign-in arrives in the next update.
+        Google / GitHub sign-in is not available yet.
       </p>
     </div>
   );

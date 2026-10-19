@@ -14,7 +14,7 @@ export default function Results() {
       <ScreenTitle title="Results" subtitle="Scorecard and solutions." />
 
       <Card>
-        <span className="pill mb-2">Phase 2</span>
+        <span className="pill mb-2">Coming soon</span>
         <h2 className="text-sm font-semibold">Honest scorecards</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           Overall score, per-subject breakdown, accuracy and question-by-question solutions render
