@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import AndroidAppIcon from "@/components/android-app-icon";
-import { APK_PATH } from "@/lib/android-app";
 import AndroidAppModal from "@/components/android-app-modal";
 
 const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERATING SYSTEMS", "DBMS", "NETWORKS", "REASONING"];
@@ -38,7 +36,7 @@ const GLYPHS: Array<[string, number, number]> = [
 
 export default function Hero() {
   const secRef = useRef<HTMLElement>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   useEffect(() => {
     const sec = secRef.current;
@@ -123,14 +121,6 @@ export default function Hero() {
             >
               Explore the pattern
             </Link>
-            <button
-              onClick={() => setShowModal(true)}
-              className="cta-glow flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold"
-              style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 45%, var(--border))", color: "var(--accent)" }}
-            >
-              <AndroidAppIcon size={15} /> Explore the NimCuet App
-            </button>
-            <AndroidAppModal open={showModal} onClose={() => setShowModal(false)} />
           </div>
 
           <div className="rise mt-7 flex items-center justify-center gap-7 lg:justify-start" style={{ animationDelay: "0.62s" }}>
@@ -151,10 +141,10 @@ export default function Hero() {
         </div>
 
         {/* Compass core — decor only */}
-        <div aria-hidden className="rise" style={{ animationDelay: "0.35s" }}>
+        <div className="rise" style={{ animationDelay: "0.35s" }}>
           <div className="hero-par-2 relative mx-auto w-[min(80vw,320px)] sm:w-[340px] lg:w-[400px]">
-            <div className="core-glow pointer-events-none absolute -inset-[16%]" />
-            <svg viewBox="0 0 480 480" className="relative block h-auto w-full">
+            <div aria-hidden className="core-glow pointer-events-none absolute -inset-[16%]" />
+            <svg viewBox="0 0 480 480" className="relative block h-auto w-full" aria-label="NimCuet Android app download">
               <defs>
                 <radialGradient id="coreOrbG" cx="0.38" cy="0.3" r="0.92">
                   <stop offset="0" className="core-stop-a" stopOpacity="0.34" />
@@ -227,38 +217,47 @@ export default function Hero() {
                 <circle cx="390" cy="240" r="4" style={{ fill: "var(--gold-3)" }} />
               </g>
 
-              {/* monogram orb — brand is clickable home, plus an app entry point */}
+              {/* Monogram orb and brand wordmark */}
               <g className="core-breathe">
-                <circle cx="240" cy="240" r="88" strokeWidth="1" style={{ fill: "color-mix(in srgb, var(--nav-bg) 72%, transparent)", stroke: "var(--border)" }} />
+                <circle cx="240" cy="240" r="88" stroke="none" style={{ fill: "color-mix(in srgb, var(--nav-bg) 72%, transparent)" }} />
                 <circle cx="240" cy="240" r="88" style={{ fill: "url(#coreOrbG)" }} />
-                {/* brand wordmark, in place of the monogram — links home */}
-                <a href="/" title="NimCuet home" style={{ cursor: "pointer" }}>
-                  <image href="/logo.png" x="165" y="214" width="150" height="26" className="orb-logo" preserveAspectRatio="xMidYMid meet" />
+                <g
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Open Android app download details"
+                  className="orb-download"
+                  onClick={() => setShowDownloadModal(true)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setShowDownloadModal(true);
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                >
+                  <circle
+                    className="orb-hit-area"
+                    cx="240"
+                    cy="240"
+                    r="87"
+                    fill="transparent"
+                    stroke="transparent"
+                    strokeWidth="2"
+                  />
+                  <image href="/logo.png" x="165" y="216" width="150" height="26" className="orb-logo" preserveAspectRatio="xMidYMid meet" />
                   <text
+                    className="orb-download-label"
                     x="240"
-                    y="292"
+                    y="266"
                     textAnchor="middle"
-                    fontSize="8"
-                    className="mono"
-                    style={{ fill: "color-mix(in srgb, var(--text) 46%, transparent)", letterSpacing: "0.22em" }}
+                    fontSize="10"
+                    textLength="128"
+                    lengthAdjust="spacingAndGlyphs"
+                    style={{ fill: "var(--accent)", fontFamily: "var(--font-serif), Georgia, serif", fontSize: "9", fontWeight: "600", fontStyle: "italic", letterSpacing: "0.12em" }}
                   >
-                    REAL QUESTION PAPERS
+                    DOWNLOAD ANDROID APP ↓
                   </text>
-                </a>
-                {/* get the Android app */}
-                <a href={APK_PATH} download title="Download the NimCuet Android app" style={{ cursor: "pointer" }}>
-                  <AndroidAppIcon size={11} />
-                  <text
-                    x="240"
-                    y="313"
-                    textAnchor="middle"
-                    fontSize="7"
-                    className="mono"
-                    style={{ fill: "var(--accent)", letterSpacing: "0.14em", fontWeight: "600" }}
-                  >
-                    Get Android App
-                  </text>
-                </a>
+                </g>
               </g>
 
               {/* ground reflection */}
@@ -268,13 +267,7 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Scroll cue */}
-      <div aria-hidden className="pointer-events-none absolute bottom-24 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 md:flex">
-        <span className="mono text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.3em" }}>
-          Scroll
-        </span>
-        <span className="scroll-line" />
-      </div>
+      <AndroidAppModal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} />
 
       {/* Subject ticker — loop math unchanged */}
       <div aria-hidden className="marquee-mask relative overflow-hidden py-2.5" style={{ borderTop: "1px solid var(--border)" }}>

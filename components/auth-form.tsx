@@ -359,7 +359,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           <span className="inline-flex w-fit items-center rounded-2xl bg-white/95 px-4 py-2.5" style={{ boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)" }}>
             <img src="/logo.png" alt="NimCuet" className="block h-7 w-auto" />
           </span>
-          <p className="mt-4 max-w-xs text-xl font-extrabold leading-snug text-white" style={{ textShadow: "0 2px 18px rgba(0,0,0,0.5)" }}>
+          <p className="display mt-4 max-w-xs text-2xl font-semibold leading-snug text-white" style={{ textShadow: "0 2px 18px rgba(0,0,0,0.5)" }}>
             {mode === "in" ? "Welcome back to the practice room." : "Your rank journey starts with one account."}
           </p>
           <p className="serif-it mt-2 max-w-xs text-[17px] leading-7 text-white/85" style={{ textShadow: "0 2px 14px rgba(0,0,0,0.5)" }}>
@@ -369,7 +369,7 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
           </p>
         </div>
         <div className="auth-form-col relative z-10 p-5 sm:p-6">
-          <h1 className="text-xl font-extrabold tracking-tight">
+          <h1 className="display text-3xl font-semibold tracking-tight">
             {mode === "in" ? "Welcome back" : "Join NimCuet"}
           </h1>
           <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>

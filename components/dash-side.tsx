@@ -37,6 +37,7 @@ const ICONS: Record<string, React.ReactNode> = {
   tag: (<I><path d="M3 12V4h8l9 9-8 8-9-9z" /><circle cx="8" cy="9" r="1.5" /></I>),
   chat: (<I><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.5 0-3-.4-4.2-1L3 20l1.5-5.3A8.5 8.5 0 1 1 21 11.5z" /></I>),
   flask: (<I><path d="M9 3h6" /><path d="M10 3v6.2l-5.3 9.4A1.8 1.8 0 0 0 6.3 21h11.4a1.8 1.8 0 0 0 1.6-2.4L14 9.2V3" /><path d="M7.5 15h9" /></I>),
+  android: (<I><path d="M12 20c-4.4 0-8-3.6-8-8h16c-4.4 0-8 3.6-8 8zM12 4c-4.4 0-8 3.6-8 8v.5l3 9.5 3-9.5v.5c0 4.4 3.6 8 8 8s8-3.6 8-8-.5-9.5-3-9.5-3-4.5-3-8z" /></I>),
 };
 
 const HOME_ITEM: Item = { label: "Home", icon: ICONS.home, view: "home" };
@@ -76,7 +77,13 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
 // same visual language as the install card on the landing page.
 function AppTilesIcon({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden focusable="false">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      aria-hidden
+      focusable="false"
+    >
       <rect x="4.5" y="2.5" width="23" height="27" rx="5.5" fill="#6b4a9e" />
       <rect x="8" y="6" width="16" height="20" rx="2" fill="#f8f5ff" />
       <rect x="9.5" y="8" width="13" height="3.2" rx="0.8" fill="#3b82f6" />
@@ -196,12 +203,8 @@ function AppPromo({ collapsed }: { collapsed: boolean }) {
         download
         title="Get Android App"
         aria-label="Download the NimCuet Android app"
-        className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl transition-transform hover:-translate-y-0.5"
-        style={{
-          background: "linear-gradient(160deg, #0d5c55 0%, #083f3b 100%)",
-          border: "1px solid rgba(255,255,255,0.16)",
-          boxShadow: "0 16px 30px -18px rgba(8,63,59,0.9)",
-        }}
+        className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform hover:-translate-y-0.5"
+        style={{ background: "var(--card)", borderColor: "var(--border)" }}
       >
         <AppTilesIcon size={24} />
       </a>
@@ -211,27 +214,26 @@ function AppPromo({ collapsed }: { collapsed: boolean }) {
     <a
       href={APK_PATH}
       download
-      className="group block rounded-[22px] px-3.5 pb-3.5 pt-4 text-center transition-transform hover:-translate-y-0.5"
+      aria-label="Download the NimCuet Android app"
+      className="group block rounded-[20px] p-3.5 text-center transition-transform hover:-translate-y-0.5"
       style={{
-        background: "linear-gradient(160deg, #0d5c55 0%, #083f3b 100%)",
+        background: "linear-gradient(155deg, #102b36 0%, #123f43 58%, #145452 100%)",
         border: "1px solid rgba(255,255,255,0.12)",
-        boxShadow: "0 22px 42px -26px rgba(8,63,59,0.95)",
+        boxShadow: "0 20px 40px -28px rgba(8,63,59,0.9)",
       }}
     >
-      <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: "rgba(255,255,255,0.1)" }}>
-        <AppTilesIcon size={26} />
+      <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.1)" }}>
+        <AppTilesIcon size={25} />
       </span>
-      <span className="mt-2.5 block text-[14px] font-extrabold" style={{ color: "#ffffff" }}>
-        Practice Anywhere
-      </span>
-      <span className="mt-1 block text-[10.5px] font-medium leading-4" style={{ color: "#a9d8d1" }}>
-        Get the NimCuet Android app for daily tests &amp; push alerts
+      <span className="mt-2.5 block text-[13px] font-extrabold text-white">Practice anywhere</span>
+      <span className="mt-1 block text-[10.5px] leading-4" style={{ color: "#c4ded9" }}>
+        Daily tests and alerts, in a focused mobile app.
       </span>
       <span
-        className="mt-3 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-extrabold transition-transform group-hover:scale-[1.02]"
+        className="mt-3 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[11px] font-extrabold transition-transform group-hover:scale-[1.02]"
         style={{ background: "#fbe7a1", color: "#0b3d38" }}
       >
-        <AndroidAppIcon size={13} /> Get Android App
+        <AndroidAppIcon size={14} /> Get Android App
       </span>
     </a>
   );
