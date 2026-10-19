@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useId } from "react";
+import { useEffect, useRef, useId } from "react";
 import { APK_PATH } from "@/lib/android-app";
 
 export default function AndroidAppModal({
