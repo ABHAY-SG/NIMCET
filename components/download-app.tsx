@@ -1,7 +1,8 @@
 import { statSync } from "node:fs";
 import path from "node:path";
 import Reveal from "@/components/reveal";
-import { APK_PATH, APK_SHA256_PATH } from "@/lib/android-app";
+import ApkDownloadCta from "@/components/apk-download-cta";
+import { APK_SHA256_PATH } from "@/lib/android-app";
 
 const POINTS: Array<{ title: string; body: string; icon: React.ReactNode }> = [
   {
@@ -123,14 +124,7 @@ export default function DownloadApp() {
               </ul>
 
               <div className="apk-cta-row mt-7">
-                <a href={APK_PATH} download className="cta-glow apk-download">
-                  <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden focusable="false">
-                    <path d="M12 3v11" />
-                    <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
-                    <path d="M4 18.5v.5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-.5" />
-                  </svg>
-                  Download for Android
-                </a>
+                <ApkDownloadCta />
                 <p className="apk-meta">
                   Android 7.0+ · {size} · free
                 </p>
