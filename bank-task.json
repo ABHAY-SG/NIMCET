@@ -1,0 +1,4 @@
+{
+  "mode": "dump",
+  "note": "Temporary build-time maintenance task. Read by scripts/bank-task.mjs (prebuild). Removed once the bank audit is finished."
+}
