@@ -114,6 +114,7 @@ async function run() {
     const updates = Array.isArray(task.updates) ? task.updates : [];
     log(`updates: ${updates.length}`);
     let ok = 0;
+    let unchanged = 0;
     let failed = 0;
     for (const u of updates) {
       const res = await rest(`questions?id=eq.${u.id}&select=id`, {
@@ -124,12 +125,24 @@ async function run() {
       const rows = Array.isArray(res.body) ? res.body.length : 0;
       if (res.status === 200 && rows === 1) {
         ok += 1;
+      } else if (res.status === 200 && rows === 0) {
+        unchanged += 1;
       } else {
         failed += 1;
         log(`FAIL id=${u.id} status=${res.status} body=${JSON.stringify(res.body).slice(0, 300)}`);
       }
     }
-    log(`apply complete: ok=${ok} failed=${failed}`);
+    log(`apply complete: ok=${ok} unchanged=${unchanged} failed=${failed}`);
+
+    // Emit the whole bank back so the result can be verified from the build log.
+    const tests = await rest("tests?select=*&order=title.asc");
+    const qs = await rest("questions?select=*&order=section.asc,created_at.asc&limit=2000");
+    if (tests.status === 200 && qs.status === 200) {
+      log(`post-apply state: ${qs.body.length} questions, ${tests.body.length} tests`);
+      await emitBlob("BANKD", { generatedAt: new Date().toISOString(), tests: tests.body, questions: qs.body });
+    } else {
+      log("post-apply dump failed:", tests.status, qs.status);
+    }
     return;
   }
 
