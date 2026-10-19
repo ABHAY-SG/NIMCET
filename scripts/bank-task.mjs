@@ -6,9 +6,31 @@
 // (supabase/migrations/0002_hardening.sql + 0004_no_definer_view.sql), so the
 // bank can only be read or written with SUPABASE_SERVICE_ROLE_KEY. That value
 // is a Vercel "Secret" env var (write-only) and is therefore not readable from
-// a developer machine. Vercel *does* expose it to `npm run build`, so this
-// script runs as a `prebuild` step and talks to PostgREST with exactly the same
-// service-role connection the app's server routes use.
+// a developer machine. Vercel *does* expose it to `npm run build`, so the script
+// is designed to run as a `prebuild` step and talks to PostgREST with exactly the
+// same service-role connection the app's server routes use.
+//
+// MODES (bank-task.json holds the work):
+//   { "mode": "dump" }                        -> read the whole bank back out
+//   { "mode": "apply", "updates": [ ... ] }   -> patch questions by primary key
+//   { "mode": "verify", "ids": [ ... ] }      -> read specific rows back
+// Results are gzipped + base64 and printed as indexed `BANKD|i|n|chunk` lines
+// so they survive the Vercel build-log event cap; decode them with a few lines
+// of node (zlib.gunzipSync(Buffer.from(chunk, "base64"))).
+//
+// HOW TO RUN IT AGAIN: the hook is intentionally NOT left in package.json, so a
+// stray bank-task.json can never write to the database during a normal deploy.
+// To use it, temporarily add `"prebuild": "node scripts/bank-task.mjs"` back to
+// package.json, commit bank-task.json, push, then read the production build log.
+// Afterwards remove the hook and delete bank-task.json again.
+//
+// COMPANIONS:
+//   scripts/fix-mock-01-notation.mjs  - the correction table + generator for
+//                                       supabase/sql/fix-nimcet-mock-01-math.sql
+//                                       (`--dry`, `--write`, `--revert`, `--verify`)
+//   scripts/audit-question-bank.mjs   - read-only audit of a dump: KaTeX parse
+//                                       errors, notation defects, structural
+//                                       checks and a dump-vs-seed-CSV diff
 //
 // SAFETY:
 //   * It is a no-op unless ./bank-task.json exists in the repo root.
