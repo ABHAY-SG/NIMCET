@@ -1,16 +1,18 @@
 -- ============================================================================
--- NIMCET MOCK - 01 · mathematics notation fixes
+-- NIMCET MOCK - 01 · content fixes
 --
--- Powers/subscripts that were stored as plain text (`e2x`, `4x2`, `sec2 3x`,
--- `A2`, `y1`, `s11`) are rewritten as LaTeX so KaTeX typesets them. The
--- corrected text mirrors supabase/seed/nimcet-mock-01-questions.csv.
+-- Fixes notation that stopped KaTeX from typesetting correctly:
+--   · powers/subscripts stored as plain text (e2x, 4x2, sec2 3x, A2, a2, y1, s2 s11)
+--   · \begin{array}{*{20}{c}} — unsupported column spec, rendered as a red error
+--   · a missing \) that swallowed the rest of an explanation into one maths span
+--   · ∛ inside maths (no KaTeX metrics) and ϵ used for 'element of'
+-- The corrected text mirrors supabase/seed/nimcet-mock-01-questions.csv.
 --
 -- HOW TO RUN (one paste):
 --   Supabase Dashboard -> SQL Editor -> New query -> paste this file -> Run.
 --
--- Idempotent and non-destructive: each row is matched by its ORIGINAL stem,
--- so re-running after the fix changes nothing, and nothing is ever deleted.
--- After running once this file can be discarded.
+-- Idempotent and non-destructive: each row is matched by its ORIGINAL stem, so
+-- re-running after the fix changes nothing, and nothing is ever deleted.
 -- ============================================================================
 
 begin;
@@ -143,6 +145,40 @@ Hence, option D is correct.$fix$
   if n = 0 then raise warning 'CSV row 16: no question matched (already fixed?)'; end if;
   total := total + n;
 
+  -- CSV row 19
+  update public.questions
+     set stem = $fix$Let, A = {(2n, 3n): n ∈ N} and B = {(3n, 5n): n ∈ N}. What is (A ∩ B) equal to?$fix$,
+         options = jsonb_build_array($fix${(2n, 3n): n ∈ N}$fix$, $fix${(2n, 5n): n ∈ N}$fix$, $fix${(n, 3n): n ∈ N}$fix$, $fix$ϕ$fix$),
+         explanation = $fix$A = {(2n, 3n): n ∈ N}
+= {(2, 3), (4, 6), (6, 9), ………} And
+B = {(3n, 5n): n ∈ N}
+= {(3, 5), (6, 10), (9, 15), ………}
+There is no member common to both the sets
+∴ A ∩ B = ϕ
+Hence, option D is correct.$fix$
+   where stem = $fix$Let, A = {(2n, 3n): n ϵ N} and B = {(3n, 5n): n ϵ N}. What is (A ∩ B) equal to?$fix$;
+  get diagnostics n = row_count;
+  if n = 0 then raise warning 'CSV row 19: no question matched (already fixed?)'; end if;
+  total := total + n;
+
+  -- CSV row 26
+  update public.questions
+     set stem = $fix$If A = \(\left[ {\begin{array}{ccc} 1&{3 + x}&2\\ {1 - x}&2&{y + 1}\\ 2&{5 - y}&3 \end{array}} \right]\) is a symmetric matrix, then 3x + y is equal to?$fix$,
+         explanation = $fix$\(A = \left[ {\begin{array}{ccc} 1&{3 + x}&2\\ {1 - x}&2&{y + 1}\\ 2&{5 - y}&3 \end{array}} \right]\)
+\(A = {A^t}\)
+ \( A^t=\left[ {\begin{array}{ccc} 1&{1 - x}&2\\ {3 + x}&2&{5 - y}\\ 2&{y + 1}&3 \end{array}} \right] = \left[ {\begin{array}{ccc} 1&{3 + x}&2\\ {1 - x}&2&{y + 1}\\ 2&{5 - y}&3 \end{array}} \right] = A\)
+On comparing 
+3 + x = 1 - x
+⇒ x = - 1
+And, y + 1 = 5 - y
+⇒ y = 2
+3x + y = 3(-1) + 2
+∴ 3x + y = -1$fix$
+   where stem = $fix$If A = \(\left[ {\begin{array}{*{20}{c}} 1&{3 + x}&2\\ {1 - x}&2&{y + 1}\\ 2&{5 - y}&3 \end{array}} \right]\) is a symmetric matrix, then 3x + y is equal to?$fix$;
+  get diagnostics n = row_count;
+  if n = 0 then raise warning 'CSV row 26: no question matched (already fixed?)'; end if;
+  total := total + n;
+
   -- CSV row 28
   update public.questions
      set explanation = $fix$Let \(A\) be the event that the man reports that number four is obtained.
@@ -179,7 +215,7 @@ So, the third term in the binomial expansion of \({(1 + x)^m}\) is \(\rm \frac{m
   -- CSV row 35
   update public.questions
      set stem = $fix$If the sequence \(\{ {s_n}\} \) is a geometric progression and \({s_2}{s_{11}} = {s_p}{s_8}\), then what is the value of \(p\) ?$fix$,
-         explanation = $fix$Given: \({s_2}{s_{11}} = {s_p}{s_8}
+         explanation = $fix$Given: \({s_2}{s_{11}} = {s_p}{s_8}\)
 The sequence \(\{ {s_n}\} \) is a geometric progression.
 As we know, the \({n^{th}}\) term of a GP is \(a{r^{n - 1}}\).
 So, \({s_2} = a{r^{2 - 1}} = ar\)
@@ -225,7 +261,17 @@ Hence, \({A^2}\) is a symmetric matrix.$fix$
   if n = 0 then raise warning 'CSV row 44: no question matched (already fixed?)'; end if;
   total := total + n;
 
-  raise notice 'NIMCET MOCK - 01 math fix: % question row(s) updated.', total;
+  -- CSV row 80
+  update public.questions
+     set explanation = $fix$Reasoning Analogy Solution Solution Breakdown The problem requires us to identify the relationship between the first pair of numbers and then apply that same relationship to the second pair to find the missing number.
+The analogy is: 343 : 7 :: 6859 : ? Step 1: Analyze the relationship in the first pair (343 : 7) We need to find how 343 and 7 are related. Let's test for powers and roots. We can calculate the cube of 7: $7^3 = 7 \times 7 \times 7 = 49 \times 7 = 343$. The relationship is that the first number is the cube of the second number. Conversely, the second number is the cube root of the first number ($\sqrt[3]{343} = 7$). Step 2: Apply the relationship to the second pair (6859 : ?) Using the same logic, we need to find the cube root of 6859. Let the missing number be 'x'. The equation is $x^3 = 6859$. We can observe that the number 6859 ends in 9. The only digit (from 0-9) whose cube also ends in 9 is 9 itself ($9^3 = 729$). This means our answer must end in the digit 9. Looking at the options, the only number that ends in 9 is 19. To confirm, we can calculate $19^3$: $19 \times 19 \times 19 = 361 \times 19 = 6859$. Conclusion The missing number that completes the analogy is 19.
+This corresponds to option C.$fix$
+   where stem = $fix$343 : 7 :: 6859 : ?$fix$;
+  get diagnostics n = row_count;
+  if n = 0 then raise warning 'CSV row 80: no question matched (already fixed?)'; end if;
+  total := total + n;
+
+  raise notice 'NIMCET MOCK - 01 content fix: % question row(s) updated.', total;
 end $$;
 
 commit;
