@@ -388,7 +388,7 @@ export default function AdminTestsFromCsv() {
               label="Template"
               hint={
                 templateMode
-                  ? "Official structure enforced: 50/40/20/10 questions · 70 + 30 + 20 minutes · per-subject marks · exactly 4 options each."
+                  ? "Official structure enforced: 50/40/20/10 questions · 70 + 30 + 20 minutes · per-subject marks · 4–5 options each."
                   : "Generic 120-question paper — your marking scheme applies, timing stays a single 120-minute clock."
               }
             >
@@ -526,7 +526,7 @@ export default function AdminTestsFromCsv() {
 
           <p className="mt-2 text-[12px] leading-5" style={{ color: "var(--muted)" }}>
             {templateMode
-              ? "Template mode: exactly 50/40/20/10 questions from the four NIMCET subjects, 4 options each, and the per-subject marks shown above are enforced on every row. Identical questions already in the bank are reused, never duplicated."
+              ? "Template mode: exactly 50/40/20/10 questions from the four NIMCET subjects, 4–5 options each, and the per-subject marks shown above are enforced on every row. Identical questions already in the bank are reused, never duplicated."
               : "Marking note: a row's own plus/minus values always win; the defaults above apply only where those columns are blank. Identical questions already in the bank are reused — never duplicated."}
           </p>
         </Card>
