@@ -181,7 +181,7 @@ export async function POST(req: Request) {
     const missing = (["exam", "stem", "options", "answer"] as const).filter((k) => body[k] === undefined);
     if (missing.length > 0) {
       return NextResponse.json(
-        { error: "Exam, question text, all 4 options and the correct answer are required." },
+        { error: "Exam, question text, options and the correct answer are required." },
         { status: 400 }
       );
     }

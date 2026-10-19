@@ -7,7 +7,7 @@
 //
 // Template mode ("nimcet-2026") additionally enforces the official paper:
 // section → subject mapping, 50/40/20/10 counts, per-subject marks and
-// exactly 4 options per question — the same verdict the server will return.
+// 4–5 options per question — the same verdict the server will return.
 
 import { parseCsv } from "./csv";
 import { FULL_LENGTH_QUESTIONS, parseRow, type ParsedRow } from "./question-rows";
@@ -136,10 +136,6 @@ export function parseMockCsv(
     );
     if (typeof out === "string") {
       errors.push(out);
-      return;
-    }
-    if (subject && out.options.length !== 4) {
-      errors.push(`Row ${i + 1}: exactly 4 options are required for a NIMCET full mock.`);
       return;
     }
     if (subject && (Math.abs(out.plus - subject.plus) > 1e-9 || Math.abs(out.minus - subject.minus) > 1e-9)) {

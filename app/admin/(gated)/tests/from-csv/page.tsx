@@ -7,7 +7,7 @@ import { Icon } from "@/components/admin/icons";
 import { adminMutate } from "@/components/admin/hooks";
 import { FULL_LENGTH_QUESTIONS, type ParsedRow } from "@/lib/question-rows";
 import { parseMockCsv, titleFromFilename, type MockTemplate, type SectionSummary, type SubjectSummary } from "@/lib/mock-csv";
-import { FULL_MOCK_MINUTES, FULL_MOCK_TEMPLATE } from "@/lib/nimcet-full-mock";
+import { FULL_MOCK_MAX_MARKS, FULL_MOCK_MINUTES, FULL_MOCK_QUESTIONS, FULL_MOCK_TEMPLATE, SUBJECTS } from "@/lib/nimcet-full-mock";
 import { fmtNum } from "@/lib/format";
 
 const LETTERS = ["A", "B", "C", "D", "E"];
@@ -74,6 +74,8 @@ export default function AdminTestsFromCsv() {
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [previewKey, setPreviewKey] = useState<number | null>(null);
   const [showKey, setShowKey] = useState(true);
+  /** Files whose full error list is expanded (keyed by FileEntry.key). */
+  const [expandedErrors, setExpandedErrors] = useState<Set<number>>(new Set());
 
   // Sanitized defaults applied to every row that has no plus/minus/exam of its
   // own — kept valid so a half-typed scheme can never produce bad rows.
@@ -165,6 +167,15 @@ export default function AdminTestsFromCsv() {
   const removeFile = (key: number) => {
     setFiles((prev) => prev.filter((f) => f.key !== key));
     setPreviewKey((k) => (k === key ? null : k));
+  };
+
+  const toggleErrors = (key: number) => {
+    setExpandedErrors((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
 
   // ---- create ----
@@ -377,7 +388,7 @@ export default function AdminTestsFromCsv() {
               label="Template"
               hint={
                 templateMode
-                  ? "Official structure enforced: 50/40/20/10 questions · 70 + 30 + 20 minutes · per-subject marks · 4 options each."
+                  ? "Official structure enforced: 50/40/20/10 questions · 70 + 30 + 20 minutes · per-subject marks · exactly 4 options each."
                   : "Generic 120-question paper — your marking scheme applies, timing stays a single 120-minute clock."
               }
             >
@@ -416,25 +427,52 @@ export default function AdminTestsFromCsv() {
             <Field label="Tag" hint="Short label shown to students.">
               <TextInput value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Full mock" disabled={busyAll} />
             </Field>
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="Marking +" hint={templateMode ? "Per subject" : "Default correct mark."}>
-                <TextInput
-                  type="number"
-                  value={plus}
-                  onChange={(e) => setPlus(e.target.value)}
-                  disabled={busyAll || templateMode}
-                />
-              </Field>
-              <Field label="Marking −" hint={templateMode ? "Per subject" : "Default wrong mark."}>
-                <TextInput
-                  type="number"
-                  value={minus}
-                  onChange={(e) => setMinus(e.target.value)}
-                  disabled={busyAll || templateMode}
-                />
-              </Field>
-            </div>
+            {!templateMode && (
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Marking +" hint="Default correct mark.">
+                  <TextInput type="number" value={plus} onChange={(e) => setPlus(e.target.value)} disabled={busyAll} />
+                </Field>
+                <Field label="Marking −" hint="Default wrong mark.">
+                  <TextInput type="number" value={minus} onChange={(e) => setMinus(e.target.value)} disabled={busyAll} />
+                </Field>
+              </div>
+            )}
           </div>
+
+          {templateMode && (
+            <div className="mt-4 rounded-2xl p-3.5" style={{ background: "var(--pill)" }}>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span className="text-[13px] font-extrabold">Subject-wise marking</span>
+                <Badge tone="violet">Official NIMCET 2026 — enforced</Badge>
+                <span className="text-[12px]" style={{ color: "var(--muted)" }}>
+                  Every row must match its subject&rsquo;s marks — leave the plus/minus columns blank to fill them automatically.
+                </span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {SUBJECTS.map((s) => (
+                  <div
+                    key={s.key}
+                    className="rounded-xl px-3 py-2"
+                    style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
+                  >
+                    <p
+                      className="text-[11px] font-extrabold uppercase"
+                      style={{ color: "var(--muted)", letterSpacing: "0.08em" }}
+                    >
+                      {s.short}
+                    </p>
+                    <p className="mono mt-0.5 text-[12.5px] font-bold">
+                      {s.count} Q · +{s.plus} / {s.minus}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mono mt-2 text-[11.5px]" style={{ color: "var(--muted)" }}>
+                Total {FULL_MOCK_QUESTIONS} questions · {FULL_MOCK_MAX_MARKS} marks · {FULL_MOCK_MINUTES} minutes (70 + 30 + 20,
+                Part III shares one clock).
+              </p>
+            </div>
+          )}
 
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
             <label className="flex cursor-pointer items-center gap-2 text-[13px] font-bold">
@@ -488,7 +526,7 @@ export default function AdminTestsFromCsv() {
 
           <p className="mt-2 text-[12px] leading-5" style={{ color: "var(--muted)" }}>
             {templateMode
-              ? "Template mode: each section must map to one of the four NIMCET subjects and carry its official marks (+12/−3, +6/−1.5, +6/−1.5, +4/−1) — leave the columns blank to fill them automatically. Identical questions already in the bank are reused, never duplicated."
+              ? "Template mode: exactly 50/40/20/10 questions from the four NIMCET subjects, 4 options each, and the per-subject marks shown above are enforced on every row. Identical questions already in the bank are reused, never duplicated."
               : "Marking note: a row's own plus/minus values always win; the defaults above apply only where those columns are blank. Identical questions already in the bank are reused — never duplicated."}
           </p>
         </Card>
@@ -635,6 +673,7 @@ export default function AdminTestsFromCsv() {
                         type="button"
                         className="admin-btn admin-btn-danger px-2 py-1.5"
                         title="Remove file"
+                        aria-label={`Remove ${f.name}`}
                         disabled={f.status === "creating"}
                         onClick={() => removeFile(f.key)}
                       >
@@ -666,12 +705,23 @@ export default function AdminTestsFromCsv() {
                         {f.errors.length} problem{f.errors.length === 1 ? "" : "s"} found
                       </p>
                       <ul className="mt-1.5 space-y-1">
-                        {f.errors.slice(0, MAX_ERRORS_SHOWN).map((e, i) => (
-                          <li key={i}>• {e}</li>
-                        ))}
+                        {f.errors
+                          .slice(0, expandedErrors.has(f.key) ? f.errors.length : MAX_ERRORS_SHOWN)
+                          .map((e, i) => (
+                            <li key={i}>• {e}</li>
+                          ))}
                       </ul>
                       {f.errors.length > MAX_ERRORS_SHOWN && (
-                        <p className="mt-1">…and {f.errors.length - MAX_ERRORS_SHOWN} more.</p>
+                        <button
+                          type="button"
+                          className="mt-1 cursor-pointer font-extrabold underline underline-offset-2"
+                          style={{ color: "#ef4444" }}
+                          onClick={() => toggleErrors(f.key)}
+                        >
+                          {expandedErrors.has(f.key)
+                            ? "Show fewer"
+                            : `…and ${f.errors.length - MAX_ERRORS_SHOWN} more — show all`}
+                        </button>
                       )}
                       <p className="mt-1.5" style={{ color: "var(--muted)" }}>
                         Row numbers count data rows after the header.
@@ -730,7 +780,7 @@ export default function AdminTestsFromCsv() {
             <ul className="mt-2 space-y-1.5 leading-5" style={{ color: "var(--muted)" }}>
               <li>
                 • Required columns: <code>stem</code>, <code>optionA</code>–<code>optionD</code>, <code>answer</code>{" "}
-                (A–D) — exactly {FULL_LENGTH_QUESTIONS} data rows.
+                (A–E — E needs <code>optionE</code>) — exactly {FULL_LENGTH_QUESTIONS} data rows.
               </li>
               <li>
                 • Optional: <code>exam</code> (falls back to the Exam field above), <code>section</code>,{" "}
@@ -741,7 +791,7 @@ export default function AdminTestsFromCsv() {
               <li>
                 • NIMCET Full Mock template: sections must map to Mathematics (50Q · +12/−3), Analytical Ability &amp;
                 Logical Reasoning (40Q · +6/−1.5), Computer Awareness (20Q · +6/−1.5) and General English (10Q · +4/−1) —
-                4 options each, 120 minutes in three timed parts.
+                4–5 options each, 120 minutes in three timed parts.
               </li>
               <li>• Duplicate question text inside one file is rejected; identical text already in the bank is reused.</li>
             </ul>

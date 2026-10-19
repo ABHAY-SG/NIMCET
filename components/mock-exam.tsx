@@ -56,7 +56,7 @@ type Result = {
 
 type ApiError = { error?: string };
 
-const LETTERS = ["A", "B", "C", "D"];
+const LETTERS = ["A", "B", "C", "D", "E"];
 const PART_SHORT = ["Part I", "Part II", "Part III"];
 const partShort = (i: number) => PART_SHORT[i] ?? `Part ${i + 1}`;
 

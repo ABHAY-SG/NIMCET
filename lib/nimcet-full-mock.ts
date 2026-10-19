@@ -182,12 +182,15 @@ export function checkFullMockComposition(rows: CompositionRow[]): CompositionOut
 
     let bad = false;
     const options = Array.isArray(r.options) ? r.options : [];
-    if (options.length !== 4 || options.some((o) => typeof o !== "string" || !String(o).trim())) {
-      issues.push(`Question ${where} (${subject.short}): needs exactly 4 non-empty options.`);
+    if (
+      (options.length !== 4 && options.length !== 5) ||
+      options.some((o) => typeof o !== "string" || !String(o).trim())
+    ) {
+      issues.push(`Question ${where} (${subject.short}): needs 4 or 5 non-empty options.`);
       bad = true;
     }
     const answer = Number(r.answer);
-    if (!Number.isInteger(answer) || answer < 0 || answer > 3) {
+    if (!Number.isInteger(answer) || answer < 0 || answer >= options.length) {
       issues.push(`Question ${where} (${subject.short}): the correct answer is missing or invalid.`);
       bad = true;
     }

@@ -28,7 +28,7 @@ const s = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 // created_at ordering / published flag stay compatible with the student hub.
 //
 // template: "nimcet-2026" switches on the official full-mock rules — subject
-// counts (50/40/20/10), per-subject marks, 4 options per question, 120
+// counts (50/40/20/10), per-subject marks, 4–5 options per question, 120
 // minutes, and the three timed parts stored on the test. Blank marks cells
 // pick up the subject's official marks; contradicting values are rejected.
 export async function POST(req: Request) {
@@ -104,12 +104,6 @@ export async function POST(req: Request) {
         }
         const out = parseRow(r, i, { exam, plus: subject.plus, minus: subject.minus });
         if (typeof out === "string") return NextResponse.json({ error: out }, { status: 400 });
-        if (out.options.length !== 4) {
-          return NextResponse.json(
-            { error: `Row ${i + 1}: exactly 4 options are required for a NIMCET full mock.` },
-            { status: 400 }
-          );
-        }
         if (Math.abs(out.plus - subject.plus) > 1e-9 || Math.abs(out.minus - subject.minus) > 1e-9) {
           return NextResponse.json(
             {
