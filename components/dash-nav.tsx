@@ -5,6 +5,8 @@ import { signOutAll } from "@/lib/supabase";
 import { THEMES, applyTheme, useTheme, type ThemeId } from "@/lib/theme";
 import { formatStreak } from "@/lib/streak";
 import { ThemeIcon } from "@/components/theme-fab";
+import AndroidAppIcon from "@/components/android-app-icon";
+import { APK_PATH } from "@/lib/android-app";
 import PasswordPrompt from "@/components/password-prompt";
 
 export type StreakSummary = {
@@ -105,6 +107,20 @@ export default function DashNav({
           </a>
         </div>
         <div className="relative flex shrink-0 items-center gap-1.5">
+          {/* Hidden on the narrowest phones, where the top row is already full:
+              the dashboard menu carries the same link as a labelled entry there. */}
+          <span className="hidden sm:block">
+            <a
+              href={APK_PATH}
+              download
+              aria-label="Download the NimCuet Android app"
+              title="Get Android App"
+              className={iconBtn}
+              style={{ border: "1px solid color-mix(in srgb, var(--accent) 45%, var(--border))", color: "var(--accent)" }}
+            >
+              <AndroidAppIcon />
+            </a>
+          </span>
           {streak && (
             <button
               type="button"

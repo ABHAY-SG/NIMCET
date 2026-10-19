@@ -1,5 +1,7 @@
 "use client";
 import { useEffect } from "react";
+import AndroidAppIcon from "@/components/android-app-icon";
+import { APK_PATH } from "@/lib/android-app";
 
 export type DashView =
   | "home"
@@ -13,7 +15,7 @@ export type DashView =
   | "pricing"
   | "feedback";
 
-type Item = { label: string; icon: React.ReactNode; view?: DashView; href?: string; soon?: boolean };
+type Item = { label: string; icon: React.ReactNode; view?: DashView; href?: string; download?: boolean; soon?: boolean };
 
 function I({ children }: { children: React.ReactNode }) {
   return (
@@ -66,6 +68,12 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
       { label: "Feedback", icon: ICONS.chat, view: "feedback" },
     ],
   },
+  {
+    title: "App",
+    items: [
+      { label: "Get Android App", icon: <AndroidAppIcon size={18} />, href: APK_PATH, download: true },
+    ],
+  },
 ];
 
 function Row({
@@ -115,7 +123,7 @@ function Row({
     );
   }
   return (
-    <a href={item.href} className={cls} style={style}>
+    <a href={item.href} download={item.download} className={cls} style={style}>
       {inner}
     </a>
   );

@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import AndroidAppIcon from "@/components/android-app-icon";
+import { APK_PATH } from "@/lib/android-app";
 
 const TICKER = ["CALCULUS", "PROBABILITY", "MATRICES", "DATA STRUCTURES", "OPERATING SYSTEMS", "DBMS", "NETWORKS", "REASONING"];
 
@@ -119,6 +121,20 @@ export default function Hero() {
             >
               Explore the pattern
             </Link>
+            <a
+              href={APK_PATH}
+              download
+              title="Download the NimCuet Android app"
+              className="cta-glow flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold"
+              style={{
+                background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--accent) 45%, var(--border))",
+                color: "var(--accent)",
+              }}
+            >
+              <AndroidAppIcon size={15} />
+              Get Android App
+            </a>
           </div>
 
           <div className="rise mt-7 flex items-center justify-center gap-7 lg:justify-start" style={{ animationDelay: "0.62s" }}>

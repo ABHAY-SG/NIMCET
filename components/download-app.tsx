@@ -1,10 +1,5 @@
 import Reveal from "@/components/reveal";
-
-// The signed release APK is committed under public/downloads and served straight
-// from this site — there is no Play Store listing, so the link points at the file
-// itself. Keeping the path in one place stops the button and the notes drifting.
-const APK_PATH = "/downloads/NimCuet.apk";
-const APK_SHA256_PATH = "/downloads/NimCuet.apk.sha256";
+import { APK_PATH, APK_SHA256_PATH } from "@/lib/android-app";
 
 const POINTS: Array<[string, string]> = [
   ["Mobile-first", "a purpose-built Android UI, not the website shrunk down to a phone."],
