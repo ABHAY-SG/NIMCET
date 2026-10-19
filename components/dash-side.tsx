@@ -1,7 +1,17 @@
 "use client";
 import { useEffect } from "react";
 
-export type DashView = "home" | "mock" | "builder" | "history" | "contact" | "pricing" | "feedback";
+export type DashView =
+  | "home"
+  | "mock"
+  | "nimcet-pyq"
+  | "cuet-mock"
+  | "cuet-pyq"
+  | "builder"
+  | "history"
+  | "contact"
+  | "pricing"
+  | "feedback";
 
 type Item = { label: string; icon: React.ReactNode; view?: DashView; href?: string; soon?: boolean };
 
@@ -32,6 +42,14 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
     title: "NIMCET",
     items: [
       { label: "NIMCET Mock", icon: ICONS.play, view: "mock" },
+      { label: "NIMCET PYQ", icon: ICONS.book, view: "nimcet-pyq" },
+    ],
+  },
+  {
+    title: "CUET",
+    items: [
+      { label: "CUET Mock", icon: ICONS.play, view: "cuet-mock" },
+      { label: "CUET PYQ", icon: ICONS.book, view: "cuet-pyq" },
     ],
   },
   {

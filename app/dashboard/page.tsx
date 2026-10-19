@@ -692,7 +692,16 @@ export default function DashboardPage() {
       </>
       )}
       {view === "mock" && (
-        <MockHub attempted={attemptedCounts} />
+        <MockHub attempted={attemptedCounts} exam="nimcet" />
+      )}
+      {view === "nimcet-pyq" && (
+        <MockHub attempted={attemptedCounts} exam="nimcet" collection="pyq" />
+      )}
+      {view === "cuet-mock" && (
+        <MockHub attempted={attemptedCounts} exam="cuet" />
+      )}
+      {view === "cuet-pyq" && (
+        <MockHub attempted={attemptedCounts} exam="cuet" collection="pyq" />
       )}
       {view === "builder" && (
         <MockBuilder />

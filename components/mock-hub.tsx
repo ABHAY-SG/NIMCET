@@ -107,7 +107,73 @@ function dominantDifficulty(ids: string[], byId: Map<string, BankRow>): string {
 
 const KINDS = ["All", "Free", "Premium", "Attempted"] as const;
 
-export default function MockHub({ attempted }: { attempted: Record<string, number> }) {
+type HubExam = "nimcet" | "cuet";
+type HubSet = "mock" | "pyq";
+
+function isCuetExam(exam: string): boolean {
+  const e = exam.toLowerCase();
+  return e === "cuet" || e === "cuet-pg-mca" || e.startsWith("cuet");
+}
+
+// PYQ papers are ordinary tests tagged as previous-year sets. Match the title,
+// tag and description so an admin can label a paper in whichever field suits.
+function isPyqTest(t: Test): boolean {
+  return /pyq|previous\s*year|past\s*paper/i.test(`${t.title} ${t.tag} ${t.description}`);
+}
+
+const HUB_COPY: Record<HubExam, Record<HubSet, {
+  heading: string;
+  blurb: string;
+  meta: string;
+  noun: [string, string];
+  empty: string;
+}>> = {
+  nimcet: {
+    mock: {
+      heading: "NIMCET Mock Tests",
+      blurb: "Master NIMCET with mock tests — your path to success starts here!",
+      meta: "NIMCET pattern",
+      noun: ["mock test", "mock tests"],
+      empty: "No NIMCET mocks are published yet — check back once admin adds a paper.",
+    },
+    pyq: {
+      heading: "NIMCET PYQ",
+      blurb: "Solve previous-year NIMCET papers year by year — real patterns, real timing.",
+      meta: "Previous-year papers",
+      noun: ["PYQ set", "PYQ sets"],
+      empty: "No NIMCET PYQ sets are published yet — previous-year papers will appear here.",
+    },
+  },
+  cuet: {
+    mock: {
+      heading: "CUET PG Mock Tests",
+      blurb: "Practise for CUET PG MCA with full-length mocks and instant scorecards.",
+      meta: "CUET PG pattern",
+      noun: ["mock test", "mock tests"],
+      empty: "No CUET PG mocks are published yet — check back once admin adds a paper.",
+    },
+    pyq: {
+      heading: "CUET PG PYQ",
+      blurb: "Work through CUET PG previous-year questions and learn the paper's rhythm.",
+      meta: "Previous-year papers",
+      noun: ["PYQ set", "PYQ sets"],
+      empty: "No CUET PG PYQ sets are published yet — previous-year papers will appear here.",
+    },
+  },
+};
+
+export default function MockHub({
+  attempted,
+  exam,
+  collection = "mock",
+}: {
+  attempted: Record<string, number>;
+  /** Restrict the hub to one exam. Omit to show the whole catalogue. */
+  exam?: HubExam;
+  /** Mock papers (default) or previous-year question sets. */
+  collection?: HubSet;
+}) {
+  const copy = HUB_COPY[exam ?? "nimcet"][collection];
   const [tests, setTests] = useState<Test[]>([]);
   const [bank, setBank] = useState<BankRow[]>([]);
   const [query, setQuery] = useState("");
@@ -159,6 +225,11 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
   };
 
   const visibleTests = tests.filter((t) => {
+    if (exam) {
+      const e = t.exam.toLowerCase();
+      if (exam === "nimcet" ? e !== "nimcet" : !isCuetExam(e)) return false;
+    }
+    if (collection === "pyq" ? !isPyqTest(t) : isPyqTest(t)) return false;
     if (query && !t.title.toLowerCase().includes(query.toLowerCase())) return false;
     if (kind === "Free" && !t.free) return false;
     if (kind === "Premium" && t.free) return false;
@@ -395,9 +466,9 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
         style={{ background: "linear-gradient(120deg, #0f766e 0%, #15803d 45%, #1d4ed8 130%)", boxShadow: "0 40px 90px -35px rgba(13, 60, 60, 0.7)" }}
       >
         <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(600px 220px at 85% 0%, rgba(255,255,255,0.16), transparent 65%)" }} />
-        <h1 className="dash-display relative text-3xl font-extrabold tracking-tight sm:text-4xl">NIMCET Mock Tests</h1>
+        <h1 className="dash-display relative text-3xl font-extrabold tracking-tight sm:text-4xl">{copy.heading}</h1>
         <p className="relative mt-2 max-w-xl text-sm leading-6" style={{ color: "rgba(255,255,255,0.85)" }}>
-          Master NIMCET with mock tests — your path to success starts here!
+          {copy.blurb}
         </p>
         <div className="relative mt-5 flex flex-col gap-2.5 sm:flex-row">
           <input
@@ -425,11 +496,11 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
 
       <div className="mt-6 flex items-center justify-between gap-3 px-0.5">
         <p className="text-[12px] font-bold" style={{ color: "var(--muted)" }}>
-          {visibleTests.length} {visibleTests.length === 1 ? "mock test" : "mock tests"}
+          {visibleTests.length} {visibleTests.length === 1 ? copy.noun[0] : copy.noun[1]}
           {kind !== "All" ? ` · ${kind}` : ""}
         </p>
         <p className="hidden text-[11px] font-semibold sm:block" style={{ color: "var(--muted)" }}>
-          Full-length · NIMCET pattern · instant scorecard
+          Full-length · {copy.meta} · instant scorecard
         </p>
       </div>
 
@@ -455,7 +526,7 @@ export default function MockHub({ attempted }: { attempted: Record<string, numbe
           <div className="rounded-2xl p-6 text-center text-sm sm:col-span-2 xl:col-span-3" style={{ background: "var(--card)", border: "1px dashed var(--border)", color: "var(--muted)" }}>
             {query || kind !== "All"
               ? "No tests match this filter — clear the search or pick another filter."
-              : "No published mocks yet — build a custom mock from Test Builder in the sidebar."}
+              : copy.empty}
           </div>
         )}
       </div>
