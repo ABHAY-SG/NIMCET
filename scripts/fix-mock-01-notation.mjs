@@ -121,6 +121,8 @@ const FIXES = [
     find: "",
     replace:
       "Given that \\(A\\) is a non-singular matrix of order \\(2 \\times 2\\),\nwe need to determine \\(|{A^{ - 1}}|\\), where \\(|{A^{ - 1}}|\\) represents the determinant of the inverse of \\(A\\).\nStep 1: Determinant Property of Inverse Matrix\nFor any square, non-singular matrix \\(A\\), the determinant of its inverse is given by:\n\\[\n|{A^{ - 1}}| = \\frac{1}{{|A|}}\n\\]\nwhere \\(|A|\\) is the determinant of \\(A\\).\nStep 2: Applying to a \\(2 \\times 2\\) Matrix\nSince \\(A\\) is a \\(2 \\times 2\\) matrix, this property holds, and we directly get:\n\\[\n|{A^{ - 1}}| = \\frac{1}{{|A|}}\n\\]\nConclusion\nThus, the determinant of the inverse of \\(A\\) is \\(\\dfrac{1}{{|A|}}\\).",
+    prev:
+      "Given that \\( A \\) is a non-singular matrix of order \\( 2 \\times 2 \\), \\[\\]\nwe need to determine \\( |A^{-1}| \\), where \\( |A^{-1}| \\) represents the determinant of the inverse of \\( A \\). \\[\\]\n Step 1: Determinant Property of Inverse Matrix \\[\\]\nFor any square, non-singular matrix \\( A \\), the determinant of its inverse is given by:\n\\[\n|A^{-1}| = \\frac{1}{|A|}\n\\]\nwhere \\( |A| \\) is the determinant of \\( A \\). \\[\\]\n Step 2: Applying to a \\( 2 \\times 2 \\) Matrix \\[\\]\nSince \\( A \\) is a \\( 2 \\times 2 \\) matrix, this property holds, and we directly get:\n\\[\n|A^{-1}| = \\frac{1}{|A|}\n\\]\n Conclusion \\[\\]\nThus, the determinant of the inverse of \\( A \\) is:\n\\(\n\\frac{1}{|A|}\n\\)",
     why: "stray empty display blocks; |A^{-1}| written as plain text",
   },
 
@@ -174,6 +176,14 @@ const FIXES = [
     replace:
       "⇒ \\(P\\left( {\\bar B|\\bar A} \\right) = \\dfrac{{P\\left( {\\bar A \\cap \\bar B} \\right)}}{{P\\left( {\\bar A} \\right)}} = \\dfrac{{1 - P\\left( {A \\cup B} \\right)}}{{P\\left( {\\bar A} \\right)}} = \\dfrac{{P\\left( {\\bar A} \\right)}}{{P\\left( {\\bar A} \\right)}} = 1\\)",
     why: "P(A union B) must be 1 - P(A union B) (complement), otherwise the step is false",
+  },
+  {
+    id: "2586b9eb-6462-4cd7-9904-dae34f221417",
+    field: "explanation",
+    find: "This contradicts ∵ probability of any event say A: 0 ≤ P (A) ≤ 1.",
+    replace:
+      "This contradicts the fact that the probability of any event \\(A\\) satisfies \\(0 \\le P\\left( A \\right) \\le 1\\).",
+    why: "a stray reason marker left the sentence ungrammatical",
   },
 
   // ---------- Q31: option-number reference.
@@ -549,6 +559,7 @@ function checkDelimiters(text) {
 
 const mode = process.argv[2] ?? "--dry";
 const verifyPath = mode === "--verify" ? process.argv[3] ?? "bank-dump.json" : null;
+const PREVIEW_PATH = "bank-dump-corrected.json";
 
 // ---- 1. validate the fix table itself -------------------------------------
 const errors = [];
@@ -571,28 +582,91 @@ console.log(`fix table: ${FIXES.length} fixes`);
 // ---- 2. verify mode: check a live dump already carries every replacement ----
 if (mode === "--verify") {
   const dump = JSON.parse(readFileSync(verifyPath, "utf8"));
-  const byId = new Map(dump.questions.map((q) => [q.id, q]));
+  const live = new Map(dump.questions.map((q) => [q.id, q]));
+  const fields = new Set(FIXES.map((f) => `${f.id}|${f.field}`));
   let bad = 0;
-  for (const f of FIXES) {
-    const q = byId.get(f.id);
+
+  // Several fixes can rewrite one field, so "the replacement text is present" is
+  // not reliable once a later fix rewrites the same region. The corrected dump
+  // produced by --write is the authoritative target whenever it is available.
+  if (existsSync(PREVIEW_PATH)) {
+    const preview = new Map(JSON.parse(readFileSync(PREVIEW_PATH, "utf8")).questions.map((q) => [q.id, q]));
+    for (const key of fields) {
+      const [id, field] = key.split("|");
+      const want = preview.has(id) ? getField(preview.get(id), field) : undefined;
+      const got = live.has(id) ? getField(live.get(id), field) : undefined;
+      if (got === undefined) {
+        console.log(`  MISSING ROW ${id}`);
+        bad += 1;
+      } else if (want !== got) {
+        console.log(`  MISMATCH ${id} ${field}`);
+        bad += 1;
+      }
+    }
+    console.log(
+      bad === 0
+        ? `verify: every one of the ${fields.size} corrected fields matches ${PREVIEW_PATH}`
+        : `verify: ${bad} problem(s)`,
+    );
+    process.exit(bad === 0 ? 0 : 1);
+  }
+
+  for (const key of fields) {
+    const [id, field] = key.split("|");
+    const q = live.get(id);
     if (!q) {
-      console.log(`  MISSING ROW ${f.id}`);
+      console.log(`  MISSING ROW ${id}`);
       bad += 1;
       continue;
     }
-    const value = getField(q, f.field);
-    if (value !== f.replace && !value.includes(f.replace)) {
-      if (f.find && value.includes(f.find)) {
-        console.log(`  NOT APPLIED ${f.id} ${f.field}`);
-        bad += 1;
-      } else {
-        console.log(`  UNEXPECTED CONTENT ${f.id} ${f.field}`);
-        bad += 1;
-      }
+    const value = getField(q, field);
+    const stale = FIXES.filter((f) => f.id === id && f.field === field && f.find !== "" && value.includes(f.find));
+    const fresh = FIXES.filter((f) => f.id === id && f.field === field && value.includes(f.replace));
+    if (stale.length > 0 || fresh.length === 0) {
+      console.log(`  ${stale.length > 0 ? "NOT APPLIED" : "UNEXPECTED CONTENT"} ${id} ${field}`);
+      bad += 1;
     }
   }
   console.log(bad === 0 ? "verify: every fix is present in the dump" : `verify: ${bad} problem(s)`);
   process.exit(bad === 0 ? 0 : 1);
+}
+
+// ---- 2b. revert mode: regenerate a pre-fix dump from an already-fixed one -----
+// The generator needs a dump taken before the fixes. Once the fixes are live this
+// mode rebuilds that input by undoing every replacement in reverse order, so the
+// whole pipeline stays reproducible without a database round trip.
+if (mode === "--revert") {
+  const srcPath = process.argv[3] ?? "bank-dump.json";
+  const outPath = process.argv[4] ?? "bank-dump-prefix.json";
+  const dump = JSON.parse(readFileSync(srcPath, "utf8"));
+  const byId = new Map(dump.questions.map((q) => [q.id, q]));
+  const problems = [];
+  for (const f of [...FIXES].reverse()) {
+    const q = byId.get(f.id);
+    if (!q) {
+      problems.push(`missing row ${f.id}`);
+      continue;
+    }
+    const value = getField(q, f.field);
+    if (f.find === "") {
+      setField(q, f.field, f.prev ?? ""); // whole-field fixes: `prev` keeps the original
+      continue;
+    }
+    const n = occurrences(value, f.replace);
+    if (n === 0 && occurrences(value, f.find) === 1) continue; // not applied yet
+    if (n !== 1) {
+      problems.push(`${f.id} ${f.field}: ${n} occurrence(s) of the replacement text`);
+      continue;
+    }
+    setField(q, f.field, value.split(f.replace).join(f.find));
+  }
+  if (problems.length) {
+    console.error(`cannot revert:\n${problems.map((p) => "  - " + p).join("\n")}`);
+    process.exit(1);
+  }
+  writeFileSync(outPath, JSON.stringify(dump, null, 2), "utf8");
+  console.log(`reverted ${FIXES.length} fixes -> ${outPath}`);
+  process.exit(0);
 }
 
 // ---- 3. dry run: apply the fixes to the live dump, in memory ----------------

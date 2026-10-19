@@ -172,12 +172,12 @@ As we know that, if f(2a - x) = f(x) then \(\rm \int_{0}^{2a}f(x)dx=2\int_{0}^{a
 Hence, option A is correct.$fix$
  where id = '3838d5c9-2831-4a45-9bd6-a10cc58bbb46';
 
--- P(A union B) must be 1 - P(A union B) (complement), otherwise the step is false
+-- P(A union B) must be 1 - P(A union B) (complement), otherwise the step is false; a stray reason marker left the sentence ungrammatical
 update public.questions set
   explanation = $fix$Statement 1:
 If A and B are mutually exclusive events, then P (A ∩ B) = 0.
 We know that P (A ∪ B) = P(A) + P(B) – P (A ∩ B) = 0.6 + 0.6 = 1.2 > 1
-This contradicts ∵ probability of any event say A: 0 ≤ P (A) ≤ 1.
+This contradicts the fact that the probability of any event \(A\) satisfies \(0 \le P\left( A \right) \le 1\).
 Hence statement 1 is wrong.
 Statement 2:
 Given: P(A|B) = 1

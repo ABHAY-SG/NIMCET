@@ -406,7 +406,7 @@ Now the equation of the line to be find out is
 Which of the above statement(s) is/are correct?","1 only","2 only","Both 1 and 2","Neither 1 nor 2","","B","Statement 1:
 If A and B are mutually exclusive events, then P (A ∩ B) = 0.
 We know that P (A ∪ B) = P(A) + P(B) – P (A ∩ B) = 0.6 + 0.6 = 1.2 > 1
-This contradicts ∵ probability of any event say A: 0 ≤ P (A) ≤ 1.
+This contradicts the fact that the probability of any event \(A\) satisfies \(0 \le P\left( A \right) \le 1\).
 Hence statement 1 is wrong.
 Statement 2:
 Given: P(A|B) = 1

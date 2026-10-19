@@ -76,7 +76,7 @@
     {
       "id": "2586b9eb-6462-4cd7-9904-dae34f221417",
       "fields": {
-        "explanation": "Statement 1:\nIf A and B are mutually exclusive events, then P (A ∩ B) = 0.\nWe know that P (A ∪ B) = P(A) + P(B) – P (A ∩ B) = 0.6 + 0.6 = 1.2 > 1\nThis contradicts ∵ probability of any event say A: 0 ≤ P (A) ≤ 1.\nHence statement 1 is wrong.\nStatement 2:\nGiven: P(A|B) = 1\nAs we know, P (A | B) = P(A ∩ B) / P(B) = 1\n⇒ B ⊆ A\n⇒ \\(P\\left( {\\bar B|\\bar A} \\right) = \\dfrac{{P\\left( {\\bar A \\cap \\bar B} \\right)}}{{P\\left( {\\bar A} \\right)}} = \\dfrac{{1 - P\\left( {A \\cup B} \\right)}}{{P\\left( {\\bar A} \\right)}} = \\dfrac{{P\\left( {\\bar A} \\right)}}{{P\\left( {\\bar A} \\right)}} = 1\\)\nHence, statement 2 is true."
+        "explanation": "Statement 1:\nIf A and B are mutually exclusive events, then P (A ∩ B) = 0.\nWe know that P (A ∪ B) = P(A) + P(B) – P (A ∩ B) = 0.6 + 0.6 = 1.2 > 1\nThis contradicts the fact that the probability of any event \\(A\\) satisfies \\(0 \\le P\\left( A \\right) \\le 1\\).\nHence statement 1 is wrong.\nStatement 2:\nGiven: P(A|B) = 1\nAs we know, P (A | B) = P(A ∩ B) / P(B) = 1\n⇒ B ⊆ A\n⇒ \\(P\\left( {\\bar B|\\bar A} \\right) = \\dfrac{{P\\left( {\\bar A \\cap \\bar B} \\right)}}{{P\\left( {\\bar A} \\right)}} = \\dfrac{{1 - P\\left( {A \\cup B} \\right)}}{{P\\left( {\\bar A} \\right)}} = \\dfrac{{P\\left( {\\bar A} \\right)}}{{P\\left( {\\bar A} \\right)}} = 1\\)\nHence, statement 2 is true."
       }
     },
     {
