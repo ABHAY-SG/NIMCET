@@ -4,6 +4,7 @@ import Exams from "@/components/exams";
 import Demo from "@/components/demo";
 import How from "@/components/how";
 import Pricing from "@/components/pricing";
+import DownloadApp from "@/components/download-app";
 import About from "@/components/about";
 import Faqs from "@/components/faqs";
 
@@ -42,6 +43,8 @@ export default function Home() {
       <How />
       <Divider />
       <Pricing />
+      <Divider />
+      <DownloadApp />
       <Divider />
       <About />
       <Divider />
