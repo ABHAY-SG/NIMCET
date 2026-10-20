@@ -101,9 +101,7 @@ export default function Navbar() {
   // their own nav entry instead of a wrong "Home".
   const PAGE_IDS: Record<string, string> = { "/about": "about", "/faq": "faqs", "/contact": "contact" };
   const pageId = pathname === "/" ? "" : PAGE_IDS[pathname] ?? "";
-  const isActive = (id: string) => (pathname === "/" ? active === id : pageId === id);
-
-  useEffect(() => {
+  const isActive = (id: string) => (pathname === "/" ? active === id : pageId === id);useEffect(() => {
     // Session-aware action: the public navbar carries exactly ONE entry point
     // for a signed-in visitor — "Dashboard". The admin console is deliberately
     // NOT linked from the marketing site: it has its own sign-in (/admin/login)
@@ -128,7 +126,7 @@ export default function Navbar() {
     syncAuth();
     // Deferred: supabase-js forbids calling its auth methods synchronously from
     // inside its own state-change callback.
-    const { data: { subscription } } = sb.auth.onAuthStateChange((event) => {
+    const { data: { subscription} } = sb.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
         window.setTimeout(() => { void syncAuth(); }, 0);
       }
@@ -137,6 +135,8 @@ export default function Navbar() {
       if (document.visibilityState === "visible") void syncAuth();
     };
     document.addEventListener("visibilitychange", onVisible);
+    // Re-sync on tab focus so a login in another tab updates this navbar
+    window.addEventListener("focus", () => { if (live) void syncAuth(); });
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -158,8 +158,10 @@ export default function Navbar() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("scroll", onSpy);
+      window.removeEventListener("focus", () => { if (live) void syncAuth(); });
     };
   }, []);
+
 
   const pick = (t: ThemeId) => {
     applyTheme(t);
