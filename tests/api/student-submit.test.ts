@@ -95,10 +95,14 @@ function setup(options?: {
   questions?: unknown[];
   attemptCount?: number;
   duplicate?: boolean;
+  testsError?: unknown;
 }) {
   const inserts: unknown[] = [];
   const { client, queries } = fakeSupabase((q: FakeQuery) => {
     if (q.table === "tests") {
+      if (options?.testsError && q.select?.includes("template")) {
+        return { error: options.testsError };
+      }
       let rows = (options?.tests ?? [practiceTest, fullMockTest, draftTest]) as Array<
         Record<string, unknown>
       >;
@@ -174,6 +178,17 @@ describe("POST /api/student/submit — answer-key authorization", () => {
     const { queries } = setup();
     const res = await post({ test: "x", testId: uuid(404), answers: [{ id: Q1, answer: 1 }] });
     expect(res.status).toBe(400);
+    expect(questionQueries(queries)).toHaveLength(0);
+  });
+
+  it("fails closed when the template-column query has a transient error", async () => {
+    const { queries } = setup({ testsError: { message: "connection reset by peer" } });
+    const res = await post({
+      test: "Practice 01",
+      testId: TEST_ID,
+      answers: [{ id: Q1, answer: 1 }],
+    });
+    expect(res.status).toBe(500);
     expect(questionQueries(queries)).toHaveLength(0);
   });
 

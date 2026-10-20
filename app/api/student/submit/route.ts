@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/admin-server";
 import { errorPayload, isUuid } from "@/lib/admin-queries";
 import { marksUsed } from "@/lib/exam-session";
-import { loadQuestionAccess, stringIds } from "@/lib/student-question-access";
+import { loadQuestionAccess, isMissingTemplateColumn, stringIds } from "@/lib/student-question-access";
 
 type AnswerIn = { id: string; answer: number | null };
 type BankRow = {
@@ -60,6 +60,10 @@ async function readPublishedTest(
     .eq("published", true)
     .maybeSingle<TestRow>();
   if (res.error) {
+    // Only fall back for the pre-0007 schema. A transient/permission error
+    // must fail closed, otherwise a timed test could be submitted directly
+    // because its template marker was silently lost.
+    if (!isMissingTemplateColumn(res.error)) throw res.error;
     res = await svc
       .from("tests")
       .select("id,title,question_ids")

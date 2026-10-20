@@ -58,6 +58,18 @@ function isMissingTable(e: unknown): boolean {
 }
 
 /**
+ * True ONLY for the pre-0007 schema where tests.template does not exist.
+ * Any other database error must fail closed: treating a transient error as
+ * "column missing" would turn timed-paper questions into practice questions.
+ */
+export function isMissingTemplateColumn(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const message = (e as { message?: unknown }).message;
+  if (typeof message !== "string" || !/template/i.test(message)) return false;
+  return /does not exist|could not find|undefined column/i.test(message);
+}
+
+/**
  * Loads the tests table once, tolerating databases that predate the template
  * column (migration 0007). Any other database error is re-thrown so callers
  * fail closed instead of silently granting access.
@@ -66,6 +78,10 @@ export async function loadTestAccess(svc: SupabaseClient): Promise<TestAccess> {
   let res = await svc.from("tests").select("id,title,question_ids,published,template");
   const hasTemplateColumn = !res.error;
   if (res.error) {
+    // Only a genuinely missing template column may use the pre-0007 query.
+    // A timeout/permission error must not silently make timed questions
+    // practice-readable.
+    if (!isMissingTemplateColumn(res.error)) throw res.error;
     res = await svc.from("tests").select("id,title,question_ids,published");
   }
   if (res.error) throw res.error;
