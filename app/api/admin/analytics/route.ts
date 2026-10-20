@@ -44,6 +44,17 @@ export async function GET(req: Request) {
     const dayKeys = lastNDayKeys(days);
     const inRange = attempts.filter((a) => isWithinDays(a.created_at, days));
 
+    // Group attempts by normalized test title once. The per-test comparison
+    // below used to filter the full in-range array for every test (O(tests ×
+    // attempts)); this makes it O(attempts + tests).
+    const attemptsByTitle = new Map<string, typeof inRange>();
+    for (const a of inRange) {
+      const key = normTitle(a.test);
+      const list = attemptsByTitle.get(key);
+      if (list) list.push(a);
+      else attemptsByTitle.set(key, [a]);
+    }
+
     // ---- daily series ----
     const registrations = countByDay(users.map((u) => u.created_at), dayKeys);
     const attemptsDaily = countByDay(inRange.map((a) => a.created_at), dayKeys);
@@ -78,7 +89,7 @@ export async function GET(req: Request) {
     const testsTable = testsRes.tests
       .map((t) => {
         const key = normTitle(t.title);
-        const rel = inRange.filter((a) => normTitle(a.test) === key);
+        const rel = attemptsByTitle.get(key) ?? [];
         const stats = marks.get(key);
         let ps = 0;
         let pc = 0;

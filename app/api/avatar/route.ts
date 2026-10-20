@@ -21,7 +21,15 @@ export async function GET(req: Request) {
     const at = path.lastIndexOf(marker);
     if (at >= 0) path = path.slice(at + marker.length);
     path = path.replace(/^\/+/, "");
-    if (!path) return NextResponse.json({ error: "Not authorized." }, { status: 403 });
+    // Reject traversal/empty segments before the ownership prefix check. The
+    // prefix test alone would accept "userId/../other-user/avatar.jpg".
+    if (
+      !path ||
+      path.includes("\\") ||
+      path.split("/").some((seg) => seg === "" || seg === "." || seg === "..")
+    ) {
+      return NextResponse.json({ error: "Not authorized." }, { status: 403 });
+    }
     if (!path.startsWith(`${user.id}/`)) {
       const session = await getAdminSession();
       if (session.status !== "admin") {
@@ -30,7 +38,11 @@ export async function GET(req: Request) {
     }
     const { data, error } = await svc.storage.from("avatars").createSignedUrl(path, 3600);
     if (error || !data?.signedUrl) throw error ?? new Error("Sign failed.");
-    return NextResponse.redirect(data.signedUrl);
+    const res = NextResponse.redirect(data.signedUrl);
+    // A signed URL is valid for an hour; a short private cache avoids a fresh
+    // storage round-trip on every avatar render without ever being shared.
+    res.headers.set("Cache-Control", "private, max-age=300");
+    return res;
   } catch (e) {
     const p = errorPayload(e, "Avatar unavailable.");
     return NextResponse.json({ error: p.error }, { status: p.status });

@@ -16,8 +16,8 @@ const POINTS: Array<{ title: string; body: string; icon: React.ReactNode }> = [
     ),
   },
   {
-    title: "Same papers",
-    body: "timed full-length mocks with real negative marking and instant scorecards.",
+    title: "Catalogue + dashboard",
+    body: "browse published mocks, review your attempt history and keep your profile up to date.",
     icon: (
       <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden focusable="false">
         <circle cx="12" cy="12" r="9" />
@@ -60,11 +60,11 @@ export default function DownloadApp() {
           Android App
         </p>
         <h2 className="display mt-2.5 text-3xl sm:text-4xl">
-          Practise on the go with <em style={{ color: "var(--accent)" }}>NimCuet for Android.</em>
+          Keep your prep in your pocket with <em style={{ color: "var(--accent)" }}>NimCuet for Android.</em>
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6" style={{ color: "var(--muted)" }}>
-          Install the app for a full-screen mock experience — no browser tabs, no
-          squinting at a desktop layout.
+          Sign in, browse the published mock catalogue, review your dashboard and manage
+          your profile on the go. Full-length timed mocks are taken on the website.
         </p>
       </Reveal>
 
@@ -83,28 +83,28 @@ export default function DownloadApp() {
                   <ul className="apk-phone-mocks">
                     <li>
                       <span className="apk-phone-dot" />
-                      NIMCET Mock 01
-                      <span className="apk-phone-pill">120Q</span>
+                      Mock catalogue
+                      <span className="apk-phone-pill">12</span>
                     </li>
                     <li>
                       <span className="apk-phone-dot" />
-                      CUET PG Mock 02
-                      <span className="apk-phone-pill">75Q</span>
+                      My dashboard
+                      <span className="apk-phone-pill">Stats</span>
                     </li>
                     <li>
                       <span className="apk-phone-dot" />
-                      PYQ · 2024
-                      <span className="apk-phone-pill">120Q</span>
+                      Profile
+                      <span className="apk-phone-pill">Account</span>
                     </li>
                   </ul>
-                  <span className="apk-phone-cta">Start a mock</span>
+                  <span className="apk-phone-cta">Open dashboard</span>
                 </div>
               </div>
             </div>
 
             <div className="min-w-0 flex-1">
               <h3 className="display text-[1.5rem] leading-tight sm:text-[1.7rem]">
-                The whole practice room, in your pocket.
+                Your account and catalogue, in your pocket.
               </h3>
 
               <ul className="mt-5 space-y-3.5">
@@ -126,7 +126,7 @@ export default function DownloadApp() {
               <div className="apk-cta-row mt-7">
                 <ApkDownloadCta />
                 <p className="apk-meta">
-                  Android 7.0+ · {size} · free
+                  Android 7.0+ · {size} · free · full mocks on the web
                 </p>
               </div>
             </div>

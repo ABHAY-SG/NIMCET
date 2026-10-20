@@ -136,7 +136,10 @@ export default function Navbar() {
     };
     document.addEventListener("visibilitychange", onVisible);
     // Re-sync on tab focus so a login in another tab updates this navbar
-    window.addEventListener("focus", () => { if (live) void syncAuth(); });
+    const onFocus = () => {
+      if (live) void syncAuth();
+    };
+    window.addEventListener("focus", onFocus);
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -158,7 +161,7 @@ export default function Navbar() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("scroll", onSpy);
-      window.removeEventListener("focus", () => { if (live) void syncAuth(); });
+      window.removeEventListener("focus", onFocus);
     };
   }, []);
 

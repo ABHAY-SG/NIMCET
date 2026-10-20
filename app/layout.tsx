@@ -3,6 +3,7 @@ import { Alex_Brush, Fraunces, Inter, JetBrains_Mono, Sora, Space_Grotesk } from
 import "./globals.css";
 import Chrome, { NavGate } from "@/components/chrome";
 import ScrollProgress from "@/components/scroll-progress";
+import { DEFAULT_THEME, THEMES, themeInitScript } from "@/lib/theme-config";
 
 // Self-hosted premium type stack (no runtime font CDN — Google fonts are
 // fetched at build time and served from our own domain, so text paints with
@@ -52,21 +53,19 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#c2410c",
+  themeColor: (THEMES.find((t) => t.id === DEFAULT_THEME) ?? THEMES[0]).icon,
 };
 
 // Runs before paint: applies the visitor's saved theme, falling back to the
 // sitewide default (sunrise). Validates the stored value so a corrupt entry
-// can never leave the page unstyled.
-function themeInit() {
-  return `(function(){try{var ok=['sunset','light','midnight','ocean','forest'];var t=localStorage.getItem('mcamock-theme');if(ok.indexOf(t)<0)t='sunset';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='sunset';}})();`;
-}
+// can never leave the page unstyled. The script is generated from THEMES so
+// the list cannot drift from the picker.
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="sunset" suppressHydrationWarning className={fontVars}>
+    <html lang="en" data-theme={DEFAULT_THEME} suppressHydrationWarning className={fontVars}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInit() }} />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
       </head>
       <body id="top" className="flex min-h-screen flex-col antialiased">
         <ScrollProgress />

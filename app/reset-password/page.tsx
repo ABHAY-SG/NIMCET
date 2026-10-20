@@ -3,6 +3,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_PLACEHOLDER,
+  PASSWORD_RULE,
+  passwordProblem,
+} from "@/lib/password";
 import AuthBg from "@/components/auth-bg";
 import ThemeFab from "@/components/theme-fab";
 
@@ -39,8 +46,9 @@ export default function ResetPasswordPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg("");
-    if (password.length < 8 || !/\d/.test(password) || !/[A-Z]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
-      setMsg("Password needs 8+ characters with an uppercase letter, a number and a special character.");
+    const problem = passwordProblem(password);
+    if (problem) {
+      setMsg(problem);
       return;
     }
     if (password !== confirm) {
@@ -82,7 +90,7 @@ export default function ResetPasswordPage() {
         >
           <h1 className="display text-3xl">Set new password</h1>
           <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
-            Choose a fresh 8+ character password with a number.
+            Choose a fresh password: {PASSWORD_RULE}
           </p>
           {checked && !hasSession ? (
             <div className="mt-6 rounded-2xl p-5 text-center" style={{ background: "var(--pill)", border: "1px dashed var(--border)" }}>
@@ -105,12 +113,12 @@ export default function ResetPasswordPage() {
                 id="reset-pass"
                 type="password"
                 required
-                minLength={8}
-                maxLength={128}
+                minLength={PASSWORD_MIN_LENGTH}
+                maxLength={PASSWORD_MAX_LENGTH}
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 8 characters + a number"
+                placeholder={PASSWORD_PLACEHOLDER}
                 className="inp w-full rounded-xl px-4 py-3 text-sm"
                 style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}
               />
@@ -119,7 +127,7 @@ export default function ResetPasswordPage() {
                 id="reset-confirm"
                 type="password"
                 required
-                maxLength={128}
+                maxLength={PASSWORD_MAX_LENGTH}
                 autoComplete="new-password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}

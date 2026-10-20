@@ -80,9 +80,10 @@ export default function AndroidAppModal({
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      const stack = modalStackRef.current;
       if (tokenRef.current) {
-        const i = modalStackRef.current.lastIndexOf(tokenRef.current);
-        if (i >= 0) modalStackRef.current.splice(i, 1);
+        const i = stack.lastIndexOf(tokenRef.current);
+        if (i >= 0) stack.splice(i, 1);
       }
       window.clearTimeout(t);
     };

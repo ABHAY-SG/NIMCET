@@ -1,20 +1,12 @@
 import { useSyncExternalStore } from "react";
+import { DEFAULT_THEME, THEMES, type ThemeId } from "./theme-config";
+
+export { DEFAULT_THEME, THEMES, type ThemeId } from "./theme-config";
 
 // Single source for the site theme: the same five modes everywhere.
 // Persisted across reloads via localStorage, applied via data-theme.
 // Sunrise (warm orange) is the DEFAULT for first-time visitors; anyone can
 // pick any other mode and that choice sticks.
-export const THEMES = [
-  { id: "sunset", name: "Sunrise", dot: "#c2410c", icon: "#c2410c" },
-  { id: "light", name: "Light", dot: "#ffffff", icon: "#f59e0b" },
-  { id: "midnight", name: "Midnight", dot: "#1e293b", icon: "#1e293b" },
-  { id: "ocean", name: "Ocean", dot: "#0369a1", icon: "#0369a1" },
-  { id: "forest", name: "Forest", dot: "#059669", icon: "#059669" },
-] as const;
-
-export type ThemeId = (typeof THEMES)[number]["id"];
-
-export const DEFAULT_THEME: ThemeId = "sunset";
 
 // Modes with a dark background (used by the sun/moon quick toggles). The
 // rest — sunrise, light, ocean — are light backgrounds.
