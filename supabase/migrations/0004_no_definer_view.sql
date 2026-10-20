@@ -18,6 +18,15 @@
 -- until the deploy lands.
 
 -- 1. Remove the flagged view. It holds no data (a view never does).
+begin;
+
+create table if not exists public.schema_migrations (
+  version text primary key,
+  applied_at timestamptz not null default now()
+);
+alter table public.schema_migrations enable row level security;
+revoke all on public.schema_migrations from anon, authenticated;
+
 drop view if exists public.question_bank_public;
 
 -- 2. Re-assert the base-table lock (idempotent; harmless if 0002 ran).
@@ -28,6 +37,11 @@ create policy "Locked: no direct caller access"
   on public.questions for all to anon, authenticated
   using (false)
   with check (false);
+
+insert into public.schema_migrations (version) values ('0001'), ('0002'), ('0003'), ('0004')
+  on conflict (version) do nothing;
+
+commit;
 
 -- 3. Confirm nothing else references the dropped view (expect zero rows).
 --   select * from information_schema.views

@@ -22,6 +22,16 @@
 --    signup, email verification and OAuth flows keep working exactly as is.
 
 -- ============ public question view (no answers, no explanations) ============
+
+begin;
+
+create table if not exists public.schema_migrations (
+  version text primary key,
+  applied_at timestamptz not null default now()
+);
+alter table public.schema_migrations enable row level security;
+revoke all on public.schema_migrations from anon, authenticated;
+
 --
 -- SECURITY MODEL (read carefully before "improving" this):
 -- A plain (definer-rights) view runs with the VIEW OWNER's rights, so the
@@ -85,6 +95,11 @@ drop policy if exists "Admin UI manages tests" on public.tests;
 revoke insert, update, delete on public.tests from anon, authenticated;
 -- NOTE: SELECT grants stay (published policy needs them). All test
 -- mutations go through service-role admin routes after allowlist checks.
+
+insert into public.schema_migrations (version) values ('0001'), ('0002')
+  on conflict (version) do nothing;
+
+commit;
 
 -- ============ verification queries (run these AFTER both migrations) ============
 -- Expect: view WITHOUT answer/explanation columns:

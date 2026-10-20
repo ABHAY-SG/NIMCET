@@ -21,6 +21,16 @@
 
 -- ============ 1. additive test metadata ============
 
+begin;
+
+create table if not exists public.schema_migrations (
+  version text primary key,
+  applied_at timestamptz not null default now()
+);
+alter table public.schema_migrations enable row level security;
+revoke all on public.schema_migrations from anon, authenticated;
+
+
 alter table public.tests add column if not exists description text not null default '';
 alter table public.tests add column if not exists instructions text not null default '';
 
@@ -97,6 +107,12 @@ create policy admin_audit_log_deny_all on public.admin_audit_log
 revoke all on public.announcements from anon, authenticated;
 revoke all on public.feedback from anon, authenticated;
 revoke all on public.admin_audit_log from anon, authenticated;
+
+insert into public.schema_migrations (version)
+  values ('0001'), ('0002'), ('0003'), ('0004'), ('0005')
+  on conflict (version) do nothing;
+
+commit;
 
 -- ============ verification (expected: 2 / 3 / 3 / 3) ============
 

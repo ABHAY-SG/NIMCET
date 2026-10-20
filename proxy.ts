@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-// Proxy (the Next.js 16 rename of middleware) — a SESSION gate for /admin,
-// deliberately NOT an authorization gate. It only answers "is anyone signed
-// in?" and forwards the request path so the server gate can redirect back to
-// the exact page after login.
+// Proxy (the Next.js 16 rename of middleware) — a SESSION gate for /admin and
+// /dashboard, deliberately NOT an authorization gate for staff. It only
+// answers "is anyone signed in?" and forwards the request path so the server
+// gate can redirect back to the exact page after login.
 //
-// Why the allowlist is NOT checked here: authorization depends on the
+// Why the admin allowlist is NOT checked here: authorization depends on the
 // server-only ADMIN_EMAILS value, and this layer's environment is the wrong
 // place to decide it (a stale build/deployment config here once bounced
 // legitimate admins). The authoritative checks run one layer down, on the
@@ -17,20 +17,37 @@ import { createServerClient } from "@supabase/ssr";
 // the gate; no admin data is ever served because the APIs reject them too.
 //
 // Admin and student flows are deliberately SEPARATE: a failed session check
-// here always lands on /admin/login?next=<path>, never the student /login.
+// for /admin lands on /admin/login?next=<path>; a failed check for /dashboard
+// lands on the student /login?next=<path>. Unverified students are sent to
+// /login?verify-required=1 instead of being allowed into the dashboard shell.
 //
 // Sessions self-heal: if getUser() cannot see a user (expired access token),
 // one explicit refreshSession() is attempted before the visitor is treated as
 // signed out. The refreshed cookies ride back on this same response, so a
-// plain page refresh renews the session instead of dumping the admin out.
+// plain page refresh renews the session instead of dumping the user out.
+
+function isAdminPath(path: string): boolean {
+  return path === "/admin" || path.startsWith("/admin/");
+}
 
 export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
+
+  // Development-only preview route: never serve it from a production build,
+  // even if its source file is ever accidentally committed.
+  if (path === "/sidebar-preview" || path.startsWith("/sidebar-preview/")) {
+    if (process.env.NODE_ENV === "production") {
+      return new NextResponse(null, { status: 404 });
+    }
+    return NextResponse.next();
+  }
+
+  const admin = isAdminPath(path);
   if (path === "/admin/login") return NextResponse.next();
 
   const loginUrl = () => {
     const u = req.nextUrl.clone();
-    u.pathname = "/admin/login";
+    u.pathname = admin ? "/admin/login" : "/login";
     u.search = "";
     u.searchParams.set("next", path);
     return u;
@@ -43,14 +60,14 @@ export async function proxy(req: NextRequest) {
     ""
   ).trim();
   if (!url || !key) {
-    // Cannot verify sessions at all → send to the admin sign-in (fail closed).
+    // Cannot verify sessions at all → fail closed.
     return NextResponse.redirect(loginUrl());
   }
 
-  // Forward the concrete path in a request header; the server gate uses it
-  // to build ?next= so the admin returns to the page they asked for.
+  // Forward the concrete path in a request header; the admin server gate uses
+  // it to build ?next= so the admin returns to the page they asked for.
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set("x-admin-path", path);
+  if (admin) requestHeaders.set("x-admin-path", path);
 
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   const sb = createServerClient(url, key, {
@@ -65,30 +82,48 @@ export async function proxy(req: NextRequest) {
     },
   });
 
-  let authed = false;
+  let user = null as Awaited<ReturnType<typeof sb.auth.getUser>>["data"]["user"] | null;
   try {
-    const { data: { user } } = await sb.auth.getUser();
-    authed = !!user;
+    user = (await sb.auth.getUser()).data.user;
   } catch {
-    authed = false;
+    user = null;
   }
 
-  if (!authed) {
+  if (!user) {
     // One recovery attempt: a valid refresh token must transparently renew an
-    // expired access token instead of bouncing the admin to a login screen.
+    // expired access token instead of bouncing the user to a login screen.
     try {
       const { data, error } = await sb.auth.refreshSession();
-      if (!error && data.user) authed = true;
+      if (!error && data.user) user = data.user;
     } catch {
-      authed = false;
+      user = null;
     }
   }
 
-  if (!authed) return NextResponse.redirect(loginUrl());
+  if (!user) return NextResponse.redirect(loginUrl());
+
+  // Verified-email gate for the student area. The dashboard/profile pages
+  // also enforce this client-side, but the proxy stops the shell and any
+  // server-rendered content from being shown at all.
+  if (!admin && !(user.email_confirmed_at || user.confirmed_at)) {
+    const u = req.nextUrl.clone();
+    u.pathname = "/login";
+    u.search = "";
+    u.searchParams.set("verify-required", "1");
+    u.searchParams.set("next", path);
+    return NextResponse.redirect(u);
+  }
 
   return res;
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*"],
+  matcher: [
+    "/admin",
+    "/admin/:path*",
+    "/dashboard",
+    "/dashboard/:path*",
+    "/sidebar-preview",
+    "/sidebar-preview/:path*",
+  ],
 };

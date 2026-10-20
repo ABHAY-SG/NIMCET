@@ -18,6 +18,42 @@
 -- 3. Answer keys (questions.answer/explanation) are readable by any logged-in
 --    user because the current client-side test engine scores in-browser.
 --    A server-side scorer is the proper fix; until then this is accepted.
+--
+-- RERUN SAFETY: this file is the BASE migration. It must never be replayed on
+-- a database that already has the later hardening (0002+) applied — doing so
+-- would recreate the permissive policies and grants that 0002 revoked. The
+-- guard below aborts in that case. For an existing production database, run
+-- only supabase/migrations/0008_security_remediation.sql (which backfills the
+-- ledger and re-asserts the hardening).
+
+begin;
+
+-- ============ migration ledger ============
+-- One row per applied migration. Later migrations insert their own version;
+-- 0001 refuses to run once a later version is recorded (or once the hardened
+-- state is detected on databases that predate this ledger).
+
+create table if not exists public.schema_migrations (
+  version text primary key,
+  applied_at timestamptz not null default now()
+);
+alter table public.schema_migrations enable row level security;
+revoke all on public.schema_migrations from anon, authenticated;
+
+do $$
+begin
+  if exists (select 1 from public.schema_migrations where version > '0001') then
+    raise exception 'Refusing to re-run 0001_core.sql: later migrations are recorded in public.schema_migrations. Run only the pending migrations.';
+  end if;
+  -- Fresh installs have no attempts table yet. If it exists but authenticated
+  -- can no longer INSERT, 0002 (or a later hardening migration) already ran.
+  if to_regclass('public.attempts') is not null
+     and exists (select 1 from pg_roles where rolname = 'authenticated') then
+    if not has_table_privilege('authenticated', 'public.attempts', 'INSERT') then
+      raise exception 'Refusing to re-run 0001_core.sql: the hardened least-privilege state is already applied. Run only supabase/migrations/0008_security_remediation.sql if you need to re-assert it.';
+    end if;
+  end if;
+end $$;
 
 -- ============ tables ============
 
@@ -201,3 +237,8 @@ create policy "Callback can mark unexpired challenge verified"
   on public.signup_verification_sessions for update to anon
   using (verified_at is null and expires_at > now())
   with check (verified_at is not null and expires_at > now());
+
+insert into public.schema_migrations (version) values ('0001')
+  on conflict (version) do nothing;
+
+commit;

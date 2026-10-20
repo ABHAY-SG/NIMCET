@@ -21,6 +21,13 @@
 
 begin;
 
+create table if not exists public.schema_migrations (
+  version text primary key,
+  applied_at timestamptz not null default now()
+);
+alter table public.schema_migrations enable row level security;
+revoke all on public.schema_migrations from anon, authenticated;
+
 -- 1. Template marker.
 alter table public.tests
   add column if not exists template text not null default '';
@@ -51,6 +58,14 @@ create index if not exists mock_sessions_user_test_idx
 create index if not exists mock_sessions_open_idx
   on public.mock_sessions (completed, started_at desc);
 
+-- Database-enforced invariant: at most one OPEN session per user+test. The
+-- start route relies on 23505 to return the winner's session instead of
+-- invalidating an active exam. (0008 adds the same index defensively and
+-- documents the duplicate preflight for existing databases.)
+create unique index if not exists mock_sessions_one_open_per_test_idx
+  on public.mock_sessions (user_id, test_id)
+  where completed = false;
+
 alter table public.mock_sessions enable row level security;
 
 drop policy if exists mock_sessions_deny_all on public.mock_sessions;
@@ -70,6 +85,10 @@ set template = 'nimcet-2026',
     ]'::jsonb
 where title = 'NIMCET MOCK - 01'
   and template = '';
+
+insert into public.schema_migrations (version)
+  values ('0001'), ('0002'), ('0003'), ('0004'), ('0005'), ('0006'), ('0007')
+  on conflict (version) do nothing;
 
 commit;
 

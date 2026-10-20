@@ -25,7 +25,7 @@
 
 -- ============ STEP 0: inspect the unknown function FIRST ============
 -- Run these SELECTs and read the output before running the REVOKE below:
---   select p.oid::regprocedure, p.prosecdef, p.prole::regrole as owner,
+--   select p.oid::regprocedure, p.prosecdef, p.proowner::regrole as owner,
 --          pg_get_functiondef(p.oid) as definition
 --     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 --    where n.nspname = 'public' and p.proname = 'rls_auto_enable';
@@ -40,6 +40,16 @@
 
 -- ============ 1. explicit deny-all on questions (documents locked base) ============
 
+begin;
+
+create table if not exists public.schema_migrations (
+  version text primary key,
+  applied_at timestamptz not null default now()
+);
+alter table public.schema_migrations enable row level security;
+revoke all on public.schema_migrations from anon, authenticated;
+
+
 drop policy if exists "Locked: no direct caller access" on public.questions;
 create policy "Locked: no direct caller access"
   on public.questions for all to anon, authenticated
@@ -48,27 +58,56 @@ create policy "Locked: no direct caller access"
 
 -- ============ 2. revoke public execution of the unknown function ============
 -- Safe: the function itself is untouched; only WHO may call it changes.
+-- Guarded by catalog lookup because this function is NOT version-controlled:
+-- if it does not exist (fresh project) this section is a no-op instead of an
+-- error that aborts the rest of the migration. Dynamic %s handles overloads.
 -- Restore anytime with:
 --   grant execute on function public.rls_auto_enable() to anon, authenticated;
 
-revoke execute on function public.rls_auto_enable() from public;
-revoke execute on function public.rls_auto_enable() from anon;
-revoke execute on function public.rls_auto_enable() from authenticated;
+do $$
+declare
+  fn regprocedure;
+begin
+  for fn in
+    select p.oid::regprocedure
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and p.proname = 'rls_auto_enable'
+  loop
+    execute format('revoke execute on function %s from public', fn);
+    execute format('revoke execute on function %s from anon', fn);
+    execute format('revoke execute on function %s from authenticated', fn);
+  end loop;
+end $$;
 
 -- ============ 3. avatars bucket: private, owner-only, no listing ============
 
-update storage.buckets set public = false where id = 'avatars';
+do $$
+begin
+  if exists (select 1 from information_schema.schemata where schema_name = 'storage') then
+    update storage.buckets set public = false where id = 'avatars';
 
--- Remove the old public-read policy if the earlier setup created it.
-drop policy if exists "Avatars are publicly readable" on storage.objects;
-drop policy if exists "Users manage own avatar" on storage.objects;
+    -- Remove the old public-read policy if the earlier setup created it, and
+    -- the owner policy too so this file is genuinely re-runnable.
+    execute 'drop policy if exists "Avatars are publicly readable" on storage.objects';
+    execute 'drop policy if exists "Users manage own avatar" on storage.objects';
+    execute 'drop policy if exists "Avatar owners manage own files" on storage.objects';
 
--- Owner-only direct access (signed-URL display bypasses RLS via service role
--- and is unaffected by these policies).
-create policy "Avatar owners manage own files"
-  on storage.objects for all to authenticated
-  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text)
-  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+    -- Owner-only direct access (signed-URL display bypasses RLS via service
+    -- role and is unaffected by these policies).
+    execute $policy$
+      create policy "Avatar owners manage own files"
+        on storage.objects for all to authenticated
+        using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text)
+        with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text)
+    $policy$;
+  end if;
+end $$;
+
+insert into public.schema_migrations (version) values ('0001'), ('0002'), ('0003')
+  on conflict (version) do nothing;
+
+commit;
 
 -- ============ verification queries (run AFTER all three migrations) ============
 -- Expect: exactly one row, no answer/explanation columns:
