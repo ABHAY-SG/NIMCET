@@ -1,5 +1,15 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  BookOpen,
+  Loader2,
+  RefreshCw,
+  Search,
+  SearchX,
+  Trophy,
+} from "lucide-react";
 import MockDemo, { type MockQuestion } from "@/components/mockdemo";
 import MockCard from "@/components/mock-card";
 import MockExam from "@/components/mock-exam";
@@ -181,28 +191,40 @@ export default function MockHub({
   const [run, setRun] = useState<Run | null>(null);
   const [setup, setSetup] = useState<Setup | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const loadCatalogue = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const sb = getSupabase();
+      const { data: tdata, error: tErr } = await sb
+        .from("tests")
+        .select("*")
+        .eq("published", true)
+        // Newest first so newly created mocks always surface; the cap is
+        // generous enough for the whole catalogue to stay browsable.
+        .order("created_at", { ascending: false })
+        .limit(60);
+      if (tErr) throw tErr;
+      const qRes = await fetch("/api/student/questions?limit=300", { credentials: "same-origin" });
+      const qj = (await qRes.json()) as { error?: string; rows?: BankRow[] };
+      if (!qRes.ok) throw new Error(qj.error || "Bank load failed.");
+      if (tdata) setTests((tdata as unknown as Array<Record<string, unknown>>).map(toTest));
+      setBank(qj.rows ?? []);
+    } catch (e) {
+      const message = e instanceof Error ? e.message.trim() : "";
+      setLoadError(message && message !== "Could not load the test catalogue." ? message : "Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const sb = getSupabase();
-        const { data: tdata, error: tErr } = await sb
-          .from("tests")
-          .select("*")
-          .eq("published", true)
-          // Newest first so newly created mocks always surface; the cap is
-          // generous enough for the whole catalogue to stay browsable.
-          .order("created_at", { ascending: false })
-          .limit(60);
-        if (tErr) throw tErr;
-        const qRes = await fetch("/api/student/questions?limit=300", { credentials: "same-origin" });
-        const qj = (await qRes.json()) as { error?: string; rows?: BankRow[] };
-        if (!qRes.ok) throw new Error(qj.error || "Bank load failed.");
-        if (tdata) setTests((tdata as unknown as Array<Record<string, unknown>>).map(toTest));
-        setBank(qj.rows ?? []);
-      } catch {}
-    })();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time catalogue fetch; loading state is the external request's lifecycle.
+    void loadCatalogue();
+  }, [loadCatalogue]);
 
   const bankById = useMemo(() => new Map(bank.map((q) => [q.id, q])), [bank]);
 
@@ -387,10 +409,10 @@ export default function MockHub({
             onClick={() => {
               if (window.confirm("Leave the exam? The server clock keeps running — you can resume before the section ends.")) leaveRun();
             }}
-            className="mb-3 inline-flex cursor-pointer items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1"
+            className="dash-btn dash-btn-ghost dash-btn-sm mb-3"
             style={{ color: "var(--muted)" }}
           >
-            <span aria-hidden>←</span> Back to mocks
+            <ArrowLeft size={14} /> Back to mocks
           </button>
           <MockExam testId={run.testId} title={run.testName} onExit={leaveRun} />
         </div>
@@ -401,10 +423,10 @@ export default function MockHub({
         <button
           type="button"
           onClick={leaveRun}
-          className="mb-3 inline-flex cursor-pointer items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1"
+          className="dash-btn dash-btn-ghost dash-btn-sm mb-3"
           style={{ color: "var(--muted)" }}
         >
-          <span aria-hidden>←</span> Back to mocks
+          <ArrowLeft size={14} /> Back to mocks
         </button>
         <MockDemo
           key={`${run.testName}-${run.qs.length}`}
@@ -426,10 +448,10 @@ export default function MockHub({
         <button
           type="button"
           onClick={() => setSetup(null)}
-          className="mb-3 inline-flex cursor-pointer items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1"
+          className="dash-btn dash-btn-ghost dash-btn-sm mb-3"
           style={{ color: "var(--muted)" }}
         >
-          <span aria-hidden>←</span> Back to mocks
+          <ArrowLeft size={14} /> Back to mocks
         </button>
         <MockInstructions
           title={setup.title}
@@ -452,40 +474,46 @@ export default function MockHub({
 
   if (pendingId) {
     return (
-      <div className="flex items-center justify-center gap-3 rounded-2xl p-10" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-        <div className="h-6 w-6 animate-spin rounded-full" style={{ border: "3px solid var(--border)", borderTopColor: "var(--accent)" }} />
-        <p className="text-sm font-bold" style={{ color: "var(--muted)" }}>Preparing your instructions…</p>
+      <div className="dash-card flex flex-col items-center justify-center gap-3 p-10 text-center">
+        <span className="dash-icon-tile"><Loader2 size={18} className="animate-spin" /></span>
+        <p className="text-[13px] font-bold" style={{ color: "var(--text)" }}>Preparing your instructions</p>
+        <p className="text-[11.5px]" style={{ color: "var(--muted)" }}>Loading the real questions for this paper.</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <section
-        className="relative overflow-hidden rounded-[26px] px-6 py-8 text-white sm:px-10"
-        style={{ background: "linear-gradient(120deg, #0f766e 0%, #15803d 45%, #1d4ed8 130%)", boxShadow: "0 40px 90px -35px rgba(13, 60, 60, 0.7)" }}
-      >
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(600px 220px at 85% 0%, rgba(255,255,255,0.16), transparent 65%)" }} />
-        <h1 className="dash-display relative text-3xl font-extrabold tracking-tight sm:text-4xl">{copy.heading}</h1>
-        <p className="relative mt-2 max-w-xl text-sm leading-6" style={{ color: "rgba(255,255,255,0.85)" }}>
-          {copy.blurb}
-        </p>
-        <div className="relative mt-5 flex flex-col gap-2.5 sm:flex-row">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tests…"
-            aria-label="Search tests"
-            className="min-w-0 flex-1 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2"
-            style={{ background: "rgba(255,255,255,0.95)" }}
-          />
+    <div className="space-y-4">
+      <section className="dash-card p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3.5">
+            <span className="dash-icon-tile" style={{ width: 44, height: 44 }}><Trophy size={20} strokeWidth={1.8} /></span>
+            <div className="min-w-0">
+              <div className="dash-eyebrow">{copy.meta}</div>
+              <h1 className="dash-title mt-1">{copy.heading}</h1>
+              <p className="dash-subtitle mt-1 max-w-xl">{copy.blurb}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem]">
+          <div className="relative min-w-0">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }} />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search tests by name"
+              aria-label="Search tests"
+              className="dash-input"
+              style={{ paddingLeft: 36 }}
+            />
+          </div>
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value as (typeof KINDS)[number])}
             aria-label="Filter tests"
-            className="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 outline-none"
-            style={{ background: "rgba(255,255,255,0.95)" }}
+            className="dash-input cursor-pointer"
           >
             {KINDS.map((k) => (
               <option key={k} value={k}>{k === "All" ? "All tests" : k}</option>
@@ -494,42 +522,78 @@ export default function MockHub({
         </div>
       </section>
 
-      <div className="mt-6 flex items-center justify-between gap-3 px-0.5">
-        <p className="text-[12px] font-bold" style={{ color: "var(--muted)" }}>
-          {visibleTests.length} {visibleTests.length === 1 ? copy.noun[0] : copy.noun[1]}
-          {kind !== "All" ? ` · ${kind}` : ""}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <p className="text-[11.5px] font-semibold" style={{ color: "var(--muted)" }} aria-live="polite">
+          {loading
+            ? "Loading published tests…"
+            : `${visibleTests.length} ${visibleTests.length === 1 ? copy.noun[0] : copy.noun[1]}`}
+          {!loading && kind !== "All" ? ` · ${kind}` : ""}
+          {!loading && query ? ` · “${query}”` : ""}
         </p>
-        <p className="hidden text-[11px] font-semibold sm:block" style={{ color: "var(--muted)" }}>
+        <p className="hidden text-[10.5px] font-medium sm:block" style={{ color: "var(--muted)" }}>
           Full-length · {copy.meta} · instant scorecard
         </p>
       </div>
 
-      <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {visibleTests.map((t) => {
-          const done = attempted[t.title] ?? 0;
-          return (
-            <MockCard
-              key={t.id}
-              title={t.title}
-              questions={Array.isArray(t.question_ids) ? t.question_ids.length : 0}
-              minutes={displayMinutesOf(t)}
-              marks={marksOf(t)}
-              difficulty={dominantDifficulty(t.question_ids, bankById)}
-              tag={t.tag}
-              free={t.free}
-              attempted={done}
-              onStart={() => openSetup(t)}
-            />
-          );
-        })}
-        {visibleTests.length === 0 && (
-          <div className="rounded-2xl p-6 text-center text-sm sm:col-span-2 xl:col-span-3" style={{ background: "var(--card)", border: "1px dashed var(--border)", color: "var(--muted)" }}>
-            {query || kind !== "All"
-              ? "No tests match this filter — clear the search or pick another filter."
-              : copy.empty}
+      {loadError ? (
+        <div className="dash-alert dash-alert-danger" role="alert">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[12.5px] font-bold">Could not load the test catalogue</p>
+            <p className="mt-0.5 text-[11px] leading-5 opacity-90">{loadError}</p>
           </div>
-        )}
-      </div>
+          <button type="button" onClick={() => void loadCatalogue()} className="dash-btn dash-btn-sm dash-btn-danger shrink-0">
+            <RefreshCw size={13} /> Retry
+          </button>
+        </div>
+      ) : loading ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="dash-skeleton h-[258px]" />)}
+        </div>
+      ) : visibleTests.length === 0 ? (
+        <div className="dash-empty">
+          <span className="dash-empty-icon">
+            {query || kind !== "All" ? <SearchX size={18} /> : <BookOpen size={18} />}
+          </span>
+          <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>
+            {query || kind !== "All" ? "No tests match this filter" : "The catalogue is empty"}
+          </p>
+          <p className="max-w-[25rem] text-[11.5px] leading-5">
+            {query || kind !== "All"
+              ? "Clear the search or choose another filter to see the published papers."
+              : copy.empty}
+          </p>
+          {query || kind !== "All" ? (
+            <button
+              type="button"
+              onClick={() => { setQuery(""); setKind("All"); }}
+              className="dash-btn dash-btn-secondary dash-btn-sm mt-1"
+            >
+              Clear filters
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {visibleTests.map((t) => {
+            const done = attempted[t.title] ?? 0;
+            return (
+              <MockCard
+                key={t.id}
+                title={t.title}
+                questions={Array.isArray(t.question_ids) ? t.question_ids.length : 0}
+                minutes={displayMinutesOf(t)}
+                marks={marksOf(t)}
+                difficulty={dominantDifficulty(t.question_ids, bankById)}
+                tag={t.tag}
+                free={t.free}
+                attempted={done}
+                onStart={() => openSetup(t)}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

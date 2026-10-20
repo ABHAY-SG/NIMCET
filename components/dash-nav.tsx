@@ -1,12 +1,23 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Bell,
+  BellOff,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Flame,
+  History,
+  LogOut,
+  Menu,
+  UserRound,
+} from "lucide-react";
 import { signOutAll } from "@/lib/supabase";
 import { THEMES, applyTheme, useTheme, type ThemeId } from "@/lib/theme";
 import { formatStreak } from "@/lib/streak";
 import { ThemeIcon } from "@/components/theme-fab";
-import AndroidAppIcon from "@/components/android-app-icon";
-import { APK_PATH } from "@/lib/android-app";
 import PasswordPrompt from "@/components/password-prompt";
 
 export type StreakSummary = {
@@ -22,16 +33,8 @@ function initialsOf(name: string, email: string): string {
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
 }
 
-function BellIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" />
-    </svg>
-  );
-}
-
 const iconBtn =
-  "relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform hover:-translate-y-px";
+  "relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] border transition-colors";
 
 export default function DashNav({
   email,
@@ -40,6 +43,8 @@ export default function DashNav({
   onLogout,
   streak,
   onMenuClick,
+  title,
+  subtitle,
 }: {
   email: string;
   displayName?: string;
@@ -47,6 +52,8 @@ export default function DashNav({
   onLogout: () => void;
   streak?: StreakSummary;
   onMenuClick?: () => void;
+  title?: string;
+  subtitle?: string;
 }) {
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell" | "theme">(null);
@@ -60,6 +67,15 @@ export default function DashNav({
     setPrevAvatar(avatarUrl);
     setImgOk(true);
   }
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenMenu(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openMenu]);
 
   const pickTheme = (t: ThemeId) => {
     applyTheme(t);
@@ -75,106 +91,118 @@ export default function DashNav({
   };
 
   const panelStyle: React.CSSProperties = {
-    background: "var(--bg)",
-    border: "1px solid var(--border)",
-    boxShadow: "0 18px 50px -12px rgba(0,0,0,0.35)",
+    background: "var(--dash-surface)",
+    border: "1px solid var(--dash-line)",
+    boxShadow: "0 24px 70px -24px rgba(2, 6, 23, 0.45)",
   };
+  const currentTheme = THEMES.find((t) => t.id === theme);
+  const firstName = (displayName || "").trim().split(/\s+/)[0] || email.split("@")[0];
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 backdrop-blur-2xl backdrop-saturate-150"
+      className="fixed inset-x-0 top-0 z-50 backdrop-blur-xl backdrop-saturate-150"
       style={{
-        background: "color-mix(in srgb, var(--nav-bg) 82%, transparent)",
-        borderBottom: "1px solid var(--border)",
-        boxShadow: "0 18px 48px -20px rgba(0,0,0,0.35), inset 0 1px 0 0 rgba(255,255,255,0.18)",
+        background: "color-mix(in srgb, var(--nav-bg) 92%, transparent)",
+        borderBottom: "1px solid var(--dash-line)",
       }}
     >
-      <div className="mx-auto flex h-16 w-full items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
-        <div className="flex shrink-0 items-center gap-2">
+      <div className="mx-auto flex h-16 w-full max-w-[1560px] items-center justify-between gap-3 px-3 sm:px-5 lg:px-7">
+        <div className="flex min-w-0 items-center gap-2.5">
           {onMenuClick && (
             <button
               type="button"
               onClick={onMenuClick}
-              aria-label="Open menu"
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-lg md:hidden"
-              style={{ border: "1px solid var(--border)", color: "var(--text)" }}
+              aria-label="Open navigation"
+              className="dash-btn dash-btn-ghost dash-btn-icon lg:hidden"
+              style={{ width: 38, minWidth: 38, minHeight: 38, border: "1px solid var(--dash-line)" }}
             >
-              ☰
+              <Menu size={18} />
             </button>
           )}
-          <a href="/dashboard" className="flex items-center gap-2.5" aria-label="NimCuet dashboard home">
-            <img src="/logo.png" alt="" aria-hidden className="site-logo block h-7 w-auto" />
+          <a href="/dashboard" className="hidden shrink-0 items-center gap-2 sm:flex" aria-label="NimCuet dashboard home">
+            <img src="/logo.png" alt="" aria-hidden className="site-logo block h-6 w-auto" />
           </a>
+          <span aria-hidden className="hidden h-5 w-px sm:block" style={{ background: "var(--dash-line)" }} />
+          <div className="min-w-0">
+            <div className="truncate text-[13.5px] font-bold leading-tight" style={{ color: "var(--text)" }}>
+              {title || "Dashboard"}
+            </div>
+            <div className="hidden truncate text-[10.5px] font-medium leading-tight sm:block" style={{ color: "var(--muted)" }}>
+              {subtitle || "NIMCET & CUET PG preparation"}
+            </div>
+          </div>
         </div>
+
         <div className="relative flex shrink-0 items-center gap-1.5">
-          {/* Hidden on the narrowest phones, where the top row is already full:
-              the dashboard menu carries the same link as a labelled entry there. */}
-          <span className="hidden sm:block">
-            <a
-              href={APK_PATH}
-              download
-              aria-label="Download the NimCuet Android app"
-              title="Get Android App"
-              className={iconBtn}
-              style={{ border: "1px solid color-mix(in srgb, var(--accent) 45%, var(--border))", color: "var(--accent)" }}
-            >
-              <AndroidAppIcon />
-            </a>
-          </span>
           {streak && (
             <button
               type="button"
               onClick={() => setOpenMenu((m) => (m === "streak" ? null : "streak"))}
-              aria-label={`Streak ${streak.current} days — view activity`}
+              aria-label={`Daily streak: ${streak.current} days. View activity.`}
+              aria-expanded={openMenu === "streak"}
               title="Daily streak"
-              className={iconBtn}
-              style={{ border: "1px solid var(--border)", color: "var(--text)" }}
+              className={`${iconBtn} hidden items-center gap-1.5 px-2.5 sm:flex`}
+              style={{ borderColor: "var(--dash-line)", color: "var(--text)", background: "transparent" }}
             >
-              <span aria-hidden>🔥</span>
-              <span className="mono text-xs font-extrabold">{streak.current}</span>
+              <Flame size={15} style={{ color: streak.current > 0 ? "var(--dash-warning)" : "var(--muted)" }} />
+              <span className="mono text-[11.5px] font-extrabold">{streak.current}</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => setOpenMenu((m) => (m === "theme" ? null : "theme"))}
+            aria-label={`Change theme. Current theme: ${currentTheme?.name ?? theme}.`}
+            aria-expanded={openMenu === "theme"}
+            title="Theme"
+            className={iconBtn}
+            style={{ borderColor: "var(--dash-line)", color: currentTheme?.icon ?? "var(--text)", background: "transparent" }}
+          >
+            <ThemeIcon id={theme} />
+          </button>
+
           <button
             type="button"
             onClick={() => setOpenMenu((m) => (m === "bell" ? null : "bell"))}
             aria-label="Notifications"
+            aria-expanded={openMenu === "bell"}
             title="Notifications"
             className={iconBtn}
-            style={{ border: "1px solid var(--border)", color: "var(--text)" }}
+            style={{ borderColor: "var(--dash-line)", color: "var(--text)", background: "transparent" }}
           >
-            <BellIcon />
+            <Bell size={16} strokeWidth={1.9} />
           </button>
-          <button
-            type="button"
-            onClick={() => setOpenMenu((m) => (m === "theme" ? null : "theme"))}
-            aria-label={`Change theme (current: ${theme})`}
-            title="Theme"
-            className={iconBtn}
-            style={{ border: "1px solid var(--border)", color: THEMES.find((t) => t.id === theme)?.icon }}
-          >
-            <ThemeIcon id={theme} />
-          </button>
+
+          <span aria-hidden className="mx-0.5 hidden h-6 w-px sm:block" style={{ background: "var(--dash-line)" }} />
+
           <button
             type="button"
             onClick={() => setOpenMenu((m) => (m === "profile" ? null : "profile"))}
-            aria-label="Profile menu"
+            aria-label="Account menu"
+            aria-expanded={openMenu === "profile"}
             title={displayName || email}
-            className="flex h-10 shrink-0 cursor-pointer items-center gap-2 transition-transform hover:-translate-y-px"
+            className="flex h-10 cursor-pointer items-center gap-2 rounded-[10px] pl-0.5 pr-1 transition-colors hover:bg-[var(--dash-surface-muted)]"
           >
-            <span className="block h-10 w-10 overflow-hidden rounded-full"
-              style={avatarUrl && imgOk ? undefined : { background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))" }}
+            <span
+              className="block h-8 w-8 overflow-hidden rounded-full border"
+              style={avatarUrl && imgOk ? { borderColor: "var(--dash-line)" } : { borderColor: "var(--dash-accent-line)" }}
             >
               {avatarUrl && imgOk ? (
-                <img src={`/api/avatar?src=${encodeURIComponent(avatarUrl)}`} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
+                <img
+                  src={`/api/avatar?src=${encodeURIComponent(avatarUrl)}`}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  onError={() => setImgOk(false)}
+                  className="block h-full w-full object-cover"
+                />
               ) : (
-                <span className="flex h-full w-full items-center justify-center text-sm font-extrabold" style={{ color: "var(--accent-fg)" }}>
-                  {initialsOf(displayName, email)}
-                </span>
+                <span className="dash-avatar-fallback h-full w-full text-[11px]">{initialsOf(displayName, email)}</span>
               )}
             </span>
-            <span className="hidden text-sm font-bold sm:block" title={displayName || email}>
-              {(displayName || "").trim().split(/\s+/)[0] || email.split("@")[0]}
+            <span className="hidden max-w-[9rem] truncate text-[12.5px] font-bold sm:block" style={{ color: "var(--text)" }}>
+              {firstName}
             </span>
+            <ChevronDown size={14} className="hidden sm:block" style={{ color: "var(--muted)" }} />
           </button>
 
           {openMenu && (
@@ -182,52 +210,49 @@ export default function DashNav({
           )}
 
           {openMenu === "streak" && streak && (
-            <div className="menu-in absolute right-0 top-12 z-50 w-72 rounded-2xl p-5" style={panelStyle}>
-              <div className="flex items-center justify-between">
-                <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Daily streak</div>
-                <span className="mono rounded-full px-2.5 py-1 text-[10px] font-extrabold" style={{ background: "var(--pill)", color: "var(--accent)" }}>
-                  BEST {streak.best}d
+            <div className="menu-in absolute right-0 top-12 z-50 w-[19rem] rounded-[var(--dash-radius)] p-4" style={panelStyle} role="dialog" aria-label="Daily streak">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="dash-eyebrow">Daily streak</div>
+                  <div className="mt-1 text-[15px] font-extrabold" style={{ color: "var(--text)" }}>{formatStreak(streak.current)}</div>
+                </div>
+                <span className="dash-chip dash-chip-warning">
+                  <Flame size={12} /> Best {streak.best}d
                 </span>
               </div>
-              <div className="mt-3 flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}>
-                <span aria-hidden className="text-4xl">🔥</span>
-                <div>
-                  <div className="text-xl font-extrabold leading-tight">{formatStreak(streak.current)}</div>
-                  <div className="mt-1 text-[11px] font-semibold" style={{ color: "color-mix(in srgb, var(--accent-fg) 85%, transparent)" }}>
-                    {streak.current > 0 ? "in a row — keep it burning" : "attempt a mock to ignite it"}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 flex min-w-0 justify-between gap-1">
+              <div className="mt-4 flex items-end justify-between gap-1.5">
                 {streak.week.map((d, i) => (
                   <div key={i} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
                     <span
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-extrabold"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold"
                       style={d.active
-                        ? { background: "linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)", boxShadow: "0 8px 20px -8px var(--accent)" }
-                        : { background: "var(--pill)", color: "var(--muted)", border: d.isToday ? "2px solid var(--accent)" : "1px solid transparent" }}
+                        ? { background: "var(--accent)", color: "var(--accent-fg)" }
+                        : { background: "var(--dash-surface-muted)", color: "var(--muted)", border: d.isToday ? "1.5px solid var(--accent)" : "1px solid var(--dash-line)" }}
                     >
-                      {d.active ? "✓" : d.label}
+                      {d.active ? <Check size={13} strokeWidth={2.6} /> : d.label}
                     </span>
                     <span className="text-[9px] font-bold" style={{ color: d.isToday ? "var(--accent)" : "var(--muted)" }}>{d.label}</span>
                   </div>
                 ))}
               </div>
-              <p className="mt-3 rounded-xl px-3 py-2 text-[11px] font-semibold leading-5" style={{ background: "var(--pill)", color: "var(--muted)" }}>
+              <p className="mt-3 rounded-[10px] px-3 py-2 text-[11px] leading-5" style={{ background: "var(--dash-surface-muted)", color: "var(--muted)" }}>
                 {streak.week.length > 0 && streak.week[streak.week.length - 1]?.active
-                  ? "Today's mock is done — see you tomorrow. 🔥"
-                  : "No mock yet today — one attempt keeps the streak alive."}
+                  ? "Today's mock is complete. Come back tomorrow to extend it."
+                  : "One mock today keeps your streak active."}
               </p>
             </div>
           )}
 
           {openMenu === "bell" && (
-            <div className="menu-in absolute right-0 top-12 z-50 w-72 rounded-2xl p-4" style={panelStyle}>
-              <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Notifications</div>
-              <div className="mt-3 rounded-xl p-4 text-center" style={{ border: "1px dashed var(--border)" }}>
-                <div className="text-2xl" aria-hidden>🔔</div>
-                <p className="mt-2 text-[13px] font-bold">No updates yet</p>
-                <p className="mt-1 text-xs leading-5" style={{ color: "var(--muted)" }}>
+            <div className="menu-in absolute right-0 top-12 z-50 w-[19rem] rounded-[var(--dash-radius)] p-4" style={panelStyle} role="dialog" aria-label="Notifications">
+              <div className="flex items-center justify-between">
+                <div className="dash-eyebrow">Notifications</div>
+                <span className="dash-chip">0 new</span>
+              </div>
+              <div className="dash-empty mt-3 !px-4 !py-6">
+                <span className="dash-empty-icon"><BellOff size={18} /></span>
+                <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>No updates yet</p>
+                <p className="max-w-[15rem] text-[11px] leading-5" style={{ color: "var(--muted)" }}>
                   There is no announcements feed connected, so nothing is listed here rather than made-up news.
                 </p>
               </div>
@@ -235,76 +260,61 @@ export default function DashNav({
           )}
 
           {openMenu === "theme" && (
-            <div className="menu-in absolute right-0 top-12 z-50 w-48 rounded-2xl p-1.5" style={panelStyle}>
-              <div className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>
-                Theme
-              </div>
+            <div className="menu-in absolute right-0 top-12 z-50 w-52 rounded-[var(--dash-radius)] p-1.5" style={panelStyle} role="dialog" aria-label="Theme">
+              <div className="px-3 pb-1.5 pt-2 dash-eyebrow">Appearance</div>
               {THEMES.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => pickTheme(t.id)}
-                  className="tmenu flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2 text-left text-sm font-medium"
-                  style={t.id === theme ? { background: "var(--pill)", color: "var(--text)" } : undefined}
+                  className="tmenu flex w-full items-center gap-2.5 rounded-[9px] px-3 py-2 text-left text-[12.5px] font-semibold"
+                  style={t.id === theme ? { background: "var(--dash-surface-muted)", color: "var(--text)" } : undefined}
                 >
-                  <span className="tdot inline-block h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: t.dot, border: "1px solid var(--border)" }} />
+                  <span className="tdot inline-block h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: t.dot, border: "1px solid var(--dash-line)" }} />
                   <span className="flex items-center gap-2" style={{ color: t.icon }}>
                     <ThemeIcon id={t.id} />
                   </span>
                   <span className="flex-1">{t.name}</span>
-                  {t.id === theme && <span>✓</span>}
+                  {t.id === theme && <Check size={13} style={{ color: "var(--accent)" }} />}
                 </button>
               ))}
             </div>
           )}
 
           {openMenu === "profile" && (
-            <div className="menu-in absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl" style={panelStyle}>
-              <div
-                className="flex items-center gap-3 px-4 pb-3.5 pt-4"
-                style={{ background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}
-              >
-                <span className="block h-11 w-11 shrink-0 overflow-hidden rounded-full" style={{ border: "2px solid color-mix(in srgb, var(--accent-fg) 60%, transparent)" }}>
+            <div className="menu-in absolute right-0 top-12 z-50 w-[17rem] overflow-hidden rounded-[var(--dash-radius)]" style={panelStyle} role="dialog" aria-label="Account menu">
+              <div className="flex items-center gap-3 border-b px-4 py-3.5" style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}>
+                <span className="block h-10 w-10 shrink-0 overflow-hidden rounded-full border" style={{ borderColor: "var(--dash-line)" }}>
                   {avatarUrl && imgOk ? (
                     <img src={`/api/avatar?src=${encodeURIComponent(avatarUrl)}`} alt="" referrerPolicy="no-referrer" onError={() => setImgOk(false)} className="block h-full w-full object-cover" />
                   ) : (
-                    <span className="flex h-full w-full items-center justify-center text-base font-extrabold" style={{ background: "color-mix(in srgb, var(--accent-fg) 20%, transparent)" }}>
-                      {initialsOf(displayName, email)}
-                    </span>
+                    <span className="dash-avatar-fallback h-full w-full text-[12px]">{initialsOf(displayName, email)}</span>
                   )}
                 </span>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-extrabold">{displayName || email.split("@")[0]}</div>
-                  <div className="truncate text-xs" style={{ color: "color-mix(in srgb, var(--accent-fg) 80%, transparent)" }} title={email}>{email}</div>
+                  <div className="truncate text-[13px] font-bold" style={{ color: "var(--text)" }}>{displayName || email.split("@")[0]}</div>
+                  <div className="truncate text-[11px]" style={{ color: "var(--muted)" }} title={email}>{email}</div>
                 </div>
               </div>
               <div className="p-1.5">
-                <a
-                  href="/dashboard/profile"
-                  onClick={() => setOpenMenu(null)}
-                  className="tmenu flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold"
-                >
-                  <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>👤</span>
-                  Profile
-                  <span aria-hidden className="ml-auto" style={{ color: "var(--muted)" }}>›</span>
+                <a href="/dashboard/profile" onClick={() => setOpenMenu(null)} className="tmenu flex w-full items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-left text-[12.5px] font-semibold">
+                  <span className="dash-icon-tile dash-icon-tile-neutral dash-icon-tile-sm"><UserRound size={15} /></span>
+                  Profile & settings
+                  <ChevronRight size={14} className="ml-auto" style={{ color: "var(--muted)" }} />
                 </a>
-                <a
-                  href="/dashboard#attempts"
-                  onClick={() => setOpenMenu(null)}
-                  className="tmenu flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold"
-                >
-                  <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)", color: "var(--accent)" }}>🕘</span>
+                <a href="/dashboard?view=history" onClick={() => setOpenMenu(null)} className="tmenu flex w-full items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-left text-[12.5px] font-semibold">
+                  <span className="dash-icon-tile dash-icon-tile-neutral dash-icon-tile-sm"><History size={15} /></span>
                   Test history
-                  <span aria-hidden className="ml-auto" style={{ color: "var(--muted)" }}>›</span>
+                  <ChevronRight size={14} className="ml-auto" style={{ color: "var(--muted)" }} />
                 </a>
-                <div className="mx-3 my-1 h-px" style={{ background: "var(--border)" }} />
+                <div className="mx-2.5 my-1 h-px" style={{ background: "var(--dash-line)" }} />
                 <button
                   type="button"
                   onClick={logout}
-                  className="tmenu flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold"
-                  style={{ color: "#dc2626" }}
+                  className="tmenu flex w-full cursor-pointer items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-left text-[12.5px] font-semibold"
+                  style={{ color: "var(--dash-danger)" }}
                 >
-                  <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl text-base" style={{ background: "rgba(220,38,38,0.12)" }}>↩</span>
+                  <span className="grid h-[30px] w-[30px] place-items-center rounded-[8px]" style={{ background: "var(--dash-danger-soft)" }}><LogOut size={15} /></span>
                   Log out
                 </button>
               </div>

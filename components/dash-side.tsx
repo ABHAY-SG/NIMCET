@@ -1,6 +1,23 @@
 "use client";
-import { useEffect } from "react";
-import AndroidAppIcon from "@/components/android-app-icon";
+
+import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
+import {
+  BookOpen,
+  ChevronsLeft,
+  ChevronsRight,
+  Download,
+  FlaskConical,
+  Flame,
+  History,
+  Home,
+  Mail,
+  MessageSquare,
+  PlayCircle,
+  Tag,
+  UserRound,
+  X,
+} from "lucide-react";
 import { APK_PATH } from "@/lib/android-app";
 
 export type DashView =
@@ -15,108 +32,57 @@ export type DashView =
   | "pricing"
   | "feedback";
 
-type Item = { label: string; icon: React.ReactNode; view?: DashView; href?: string; soon?: boolean };
-
-function I({ children }: { children: React.ReactNode }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      {children}
-    </svg>
-  );
-}
-
-const ICONS: Record<string, React.ReactNode> = {
-  home: (<I><path d="M3 10.5 12 3l9 7.5" /><path d="M5 10v11h14V10" /></I>),
-  play: (<I><path d="M8 5v14l11-7z" /></I>),
-  history: (<I><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></I>),
-  user: (<I><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></I>),
-  film: (<I><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M10 9l5 3-5 3z" /></I>),
-  map: (<I><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></I>),
-  book: (<I><path d="M4 19V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h13" /></I>),
-  mail: (<I><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></I>),
-  tag: (<I><path d="M3 12V4h8l9 9-8 8-9-9z" /><circle cx="8" cy="9" r="1.5" /></I>),
-  chat: (<I><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.5 0-3-.4-4.2-1L3 20l1.5-5.3A8.5 8.5 0 1 1 21 11.5z" /></I>),
-  flask: (<I><path d="M9 3h6" /><path d="M10 3v6.2l-5.3 9.4A1.8 1.8 0 0 0 6.3 21h11.4a1.8 1.8 0 0 0 1.6-2.4L14 9.2V3" /><path d="M7.5 15h9" /></I>),
-  android: (<I><path d="M12 20c-4.4 0-8-3.6-8-8h16c-4.4 0-8 3.6-8 8zM12 4c-4.4 0-8 3.6-8 8v.5l3 9.5 3-9.5v.5c0 4.4 3.6 8 8 8s8-3.6 8-8-.5-9.5-3-9.5-3-4.5-3-8z" /></I>),
+type Item = {
+  label: string;
+  description?: string;
+  icon: React.ReactNode;
+  view?: DashView;
+  href?: string;
 };
 
-const HOME_ITEM: Item = { label: "Home", icon: ICONS.home, view: "home" };
+function NavIcon({ children }: { children: React.ReactNode }) {
+  return <span className="dash-nav-icon">{children}</span>;
+}
+
+const HOME_ITEM: Item = {
+  label: "Overview",
+  description: "Your preparation at a glance",
+  icon: <NavIcon><Home size={17} strokeWidth={1.9} /></NavIcon>,
+  view: "home",
+};
 
 const GROUPS: Array<{ title: string; items: Item[] }> = [
   {
-    title: "NIMCET",
+    title: "Practice",
     items: [
-      { label: "NIMCET Mock", icon: ICONS.play, view: "mock" },
-      { label: "NIMCET PYQ", icon: ICONS.book, view: "nimcet-pyq" },
+      { label: "NIMCET mocks", icon: <NavIcon><PlayCircle size={17} strokeWidth={1.9} /></NavIcon>, view: "mock" },
+      { label: "NIMCET previous years", icon: <NavIcon><BookOpen size={17} strokeWidth={1.9} /></NavIcon>, view: "nimcet-pyq" },
+      { label: "CUET PG mocks", icon: <NavIcon><PlayCircle size={17} strokeWidth={1.9} /></NavIcon>, view: "cuet-mock" },
+      { label: "CUET PG previous years", icon: <NavIcon><BookOpen size={17} strokeWidth={1.9} /></NavIcon>, view: "cuet-pyq" },
     ],
   },
   {
-    title: "CUET",
+    title: "Workspace",
     items: [
-      { label: "CUET Mock", icon: ICONS.play, view: "cuet-mock" },
-      { label: "CUET PYQ", icon: ICONS.book, view: "cuet-pyq" },
+      { label: "Custom mock", icon: <NavIcon><FlaskConical size={17} strokeWidth={1.9} /></NavIcon>, view: "builder" },
+      { label: "Test history", icon: <NavIcon><History size={17} strokeWidth={1.9} /></NavIcon>, view: "history" },
     ],
   },
   {
-    title: "Test Builder",
+    title: "Account",
     items: [
-      { label: "Create Custom Mock", icon: ICONS.flask, view: "builder" },
+      { label: "Profile & settings", icon: <NavIcon><UserRound size={17} strokeWidth={1.9} /></NavIcon>, href: "/dashboard/profile" },
+      { label: "Plans", icon: <NavIcon><Tag size={17} strokeWidth={1.9} /></NavIcon>, view: "pricing" },
     ],
   },
   {
-    title: "Help",
+    title: "Support",
     items: [
-      { label: "Contact", icon: ICONS.mail, view: "contact" },
-      { label: "Pricing", icon: ICONS.tag, view: "pricing" },
-      { label: "Feedback", icon: ICONS.chat, view: "feedback" },
+      { label: "Contact", icon: <NavIcon><Mail size={17} strokeWidth={1.9} /></NavIcon>, view: "contact" },
+      { label: "Feedback", icon: <NavIcon><MessageSquare size={17} strokeWidth={1.9} /></NavIcon>, view: "feedback" },
     ],
   },
 ];
-
-// The coloured app-tile mark from the Android promo, so the sidebar keeps the
-// same visual language as the install card on the landing page.
-function AppTilesIcon({ size = 28 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      aria-hidden
-      focusable="false"
-    >
-      <rect x="4.5" y="2.5" width="23" height="27" rx="5.5" fill="#6b4a9e" />
-      <rect x="8" y="6" width="16" height="20" rx="2" fill="#f8f5ff" />
-      <rect x="9.5" y="8" width="13" height="3.2" rx="0.8" fill="#3b82f6" />
-      <rect x="9.5" y="12.4" width="3.2" height="3.2" rx="0.8" fill="#f59e0b" />
-      <rect x="14.4" y="12.4" width="3.2" height="3.2" rx="0.8" fill="#ef4444" />
-      <rect x="19.3" y="12.4" width="3.2" height="3.2" rx="0.8" fill="#22c55e" />
-      <rect x="9.5" y="16.8" width="3.2" height="3.2" rx="0.8" fill="#8b5cf6" />
-      <rect x="14.4" y="16.8" width="3.2" height="3.2" rx="0.8" fill="#06b6d4" />
-      <rect x="19.3" y="16.8" width="3.2" height="3.2" rx="0.8" fill="#eab308" />
-      <rect x="9.5" y="21.2" width="13" height="2.8" rx="0.8" fill="#a78bfa" />
-    </svg>
-  );
-}
-
-function CollapseIcon({ collapsed }: { collapsed: boolean }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      style={{ transform: collapsed ? "rotate(180deg)" : undefined, transition: "transform .3s ease" }}
-    >
-      <path d="M11 6l-6 6 6 6" />
-      <path d="M19 6l-6 6 6 6" />
-    </svg>
-  );
-}
 
 function Row({
   item,
@@ -131,48 +97,26 @@ function Row({
   onSelect: (v: DashView) => void;
   onClose: () => void;
 }) {
-  const cls = `group relative flex w-full items-center rounded-2xl text-left text-[13.5px] font-bold transition-all duration-200 ${
-    collapsed ? "justify-center px-0 py-1.5" : "gap-3 px-2.5 py-2"
-  }`;
-  const style = active
-    ? {
-        background: "linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))",
-        color: "var(--accent-fg)",
-        boxShadow: "0 14px 30px -18px var(--accent)",
-      }
-    : { color: "var(--text)" };
-  const inner = (
-    <>
-      <span
-        aria-hidden
-        className={`flex shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 ${
-          collapsed ? "h-10 w-10" : "h-8 w-8"
-        }`}
-        style={
-          active
-            ? { background: "color-mix(in srgb, var(--accent-fg) 20%, transparent)", color: "var(--accent-fg)" }
-            : { background: "var(--pill)", color: "var(--accent)" }
-        }
-      >
-        {item.icon}
-      </span>
-      {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
-      {!collapsed && item.soon && (
-        <span className="mono rounded-full px-2 py-0.5 text-[9px] font-extrabold" style={{ background: "var(--pill)", color: "var(--muted)" }}>
-          SOON
-        </span>
-      )}
-      {!collapsed && active && <span aria-hidden className="ml-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--accent-fg)" }} />}
-    </>
-  );
   const shared = {
-    className: `${cls} ${active ? "" : "hover:bg-[var(--pill)]"} ${item.soon ? "cursor-default opacity-70" : "cursor-pointer hover:-translate-y-px"}`,
-    style,
+    className: `dash-nav-item ${collapsed ? "justify-center !px-0" : ""}`,
+    "data-active": active ? "true" : "false",
     title: collapsed ? item.label : undefined,
     "aria-label": collapsed ? item.label : undefined,
   };
-  if (item.soon) {
-    return <span {...shared} aria-disabled>{inner}</span>;
+  const inner = (
+    <>
+      {item.icon}
+      {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
+      {!collapsed && active && <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--accent)" }} />}
+    </>
+  );
+
+  if (item.href) {
+    return (
+      <a href={item.href} {...shared} onClick={onClose}>
+        {inner}
+      </a>
+    );
   }
   if (item.view) {
     return (
@@ -188,93 +132,55 @@ function Row({
       </button>
     );
   }
-  return (
-    <a href={item.href} {...shared}>
-      {inner}
-    </a>
-  );
-}
-
-function AppPromo({ collapsed }: { collapsed: boolean }) {
-  if (collapsed) {
-    return (
-      <a
-        href={APK_PATH}
-        download
-        title="Get Android App"
-        aria-label="Download the NimCuet Android app"
-        className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform hover:-translate-y-0.5"
-        style={{ background: "var(--card)", borderColor: "var(--border)" }}
-      >
-        <AppTilesIcon size={24} />
-      </a>
-    );
-  }
-  return (
-    <a
-      href={APK_PATH}
-      download
-      aria-label="Download the NimCuet Android app"
-      className="group block rounded-[20px] p-3.5 text-center transition-transform hover:-translate-y-0.5"
-      style={{
-        background: "linear-gradient(155deg, #102b36 0%, #123f43 58%, #145452 100%)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        boxShadow: "0 20px 40px -28px rgba(8,63,59,0.9)",
-      }}
-    >
-      <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.1)" }}>
-        <AppTilesIcon size={25} />
-      </span>
-      <span className="mt-2.5 block text-[13px] font-extrabold text-white">Practice anywhere</span>
-      <span className="mt-1 block text-[10.5px] leading-4" style={{ color: "#c4ded9" }}>
-        Daily tests and alerts, in a focused mobile app.
-      </span>
-      <span
-        className="mt-3 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[11px] font-extrabold transition-transform group-hover:scale-[1.02]"
-        style={{ background: "#fbe7a1", color: "#0b3d38" }}
-      >
-        <AndroidAppIcon size={14} /> Get Android App
-      </span>
-    </a>
-  );
+  return <span {...shared}>{inner}</span>;
 }
 
 function SideBody({
   collapsed,
   view,
+  profileActive,
   onSelect,
   onClose,
   streak,
 }: {
   collapsed: boolean;
   view: DashView;
+  profileActive: boolean;
   onSelect: (v: DashView) => void;
   onClose: () => void;
   streak?: { current: number; best: number };
 }) {
   return (
     <>
-      <div className="noscroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain px-2.5 pb-2 pt-2">
-        <Row item={HOME_ITEM} active={view === "home"} collapsed={collapsed} onSelect={onSelect} onClose={onClose} />
-        <div className="mx-2 h-px" style={{ background: "var(--border)" }} />
-        {GROUPS.map((g) => (
-          <div key={g.title}>
+      <div className="noscroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-3 pb-3 pt-2">
+        <Row
+          item={HOME_ITEM}
+          active={!profileActive && view === "home"}
+          collapsed={collapsed}
+          onSelect={onSelect}
+          onClose={onClose}
+        />
+
+        {GROUPS.map((group) => (
+          <div key={group.title}>
             {collapsed ? (
-              <div className="mx-auto mb-1.5 h-px w-6" style={{ background: "var(--border)" }} />
+              <div className="mx-auto mb-2 h-px w-7" style={{ background: "var(--dash-line)" }} />
             ) : (
-              <div className="flex items-center gap-2 px-2 pb-1.5">
-                <span className="text-[10px] font-extrabold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
-                  {g.title}
-                </span>
-                <span className="h-px flex-1" style={{ background: "var(--border)" }} />
+              <div className="mb-1.5 flex items-center gap-2 px-2">
+                <span className="dash-eyebrow" style={{ fontSize: 9.5, letterSpacing: ".16em" }}>{group.title}</span>
+                <span className="h-px flex-1" style={{ background: "var(--dash-line)" }} />
               </div>
             )}
-            <div className="grid gap-1">
-              {g.items.map((it) => (
+            <div className="grid gap-0.5">
+              {group.items.map((item) => (
                 <Row
-                  key={it.label}
-                  item={it}
-                  active={it.view !== undefined && it.view === view}
+                  key={item.label}
+                  item={item}
+                  active={
+                    item.href === "/dashboard/profile"
+                      ? profileActive
+                      : !profileActive && item.view !== undefined && item.view === view
+                  }
                   collapsed={collapsed}
                   onSelect={onSelect}
                   onClose={onClose}
@@ -284,24 +190,45 @@ function SideBody({
           </div>
         ))}
       </div>
-      <div className={`shrink-0 ${collapsed ? "px-2 pb-3 pt-1" : "p-2.5 pt-1"}`}>
-        <AppPromo collapsed={collapsed} />
-        {collapsed && streak ? (
-          <div className="mt-2 text-[10px] font-semibold text-[var(--muted)]">
-            Streak: {streak.current} days
+
+      <div className={`shrink-0 border-t px-3 py-3 ${collapsed ? "space-y-2" : "space-y-2.5"}`} style={{ borderColor: "var(--dash-line)" }}>
+        {streak && (
+          <div
+            className={`rounded-[var(--dash-radius-sm)] border px-2.5 py-2 ${collapsed ? "flex justify-center" : "flex items-center gap-2.5"}`}
+            style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}
+            title={collapsed ? `${streak.current} day streak` : undefined}
+          >
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg" style={{ background: "var(--dash-warning-soft)", color: "var(--dash-warning)" }}>
+              <Flame size={15} strokeWidth={2} />
+            </span>
+            {!collapsed && (
+              <span className="min-w-0">
+                <span className="block truncate text-[11.5px] font-bold" style={{ color: "var(--text)" }}>
+                  {streak.current > 0 ? `${streak.current} day streak` : "Start a streak"}
+                </span>
+                <span className="block truncate text-[10px]" style={{ color: "var(--muted)" }}>
+                  {streak.best > 0 ? `Best ${streak.best} days` : "Attempt a mock today"}
+                </span>
+              </span>
+            )}
           </div>
-        ) : null}
+        )}
+
+        <a
+          href={APK_PATH}
+          download
+          className={`dash-nav-item ${collapsed ? "justify-center !px-0" : ""}`}
+          title={collapsed ? "Get the Android app" : undefined}
+          aria-label="Download the NimCuet Android app"
+          style={{ minHeight: 38 }}
+        >
+          <NavIcon><Download size={16} strokeWidth={1.9} /></NavIcon>
+          {!collapsed && <span className="flex-1 truncate">Get the app</span>}
+        </a>
       </div>
     </>
   );
 }
-
-const PANEL_STYLE: React.CSSProperties = {
-  background:
-    "linear-gradient(180deg, #0f172a 0%, #1e293b 38%, #0f172a 100%)",
-  border: "1px solid var(--border)",
-  boxShadow: "0 32px 70px -30px rgba(30, 41, 82, 0.38)",
-};
 
 export default function DashSide({
   mobileOpen,
@@ -320,51 +247,80 @@ export default function DashSide({
   onToggleCollapsed?: () => void;
   streak?: { current: number; best: number; week: { label: string; active: boolean; isToday: boolean }[] };
 }) {
-  // Escape closes the mobile drawer, matching the backdrop tap.
+  const pathname = usePathname();
+  const profileActive = pathname === "/dashboard/profile";
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Escape closes the mobile drawer and focus lands on the first control.
+  // The page behind is locked while the drawer is open.
   useEffect(() => {
     if (!mobileOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((node) => node.offsetParent !== null);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+    const previous = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    closeRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+      previousFocus?.focus();
+    };
   }, [mobileOpen, onClose]);
 
-  const brandMark = (
-    <span
-      aria-hidden
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold"
-      style={{
-        background: "linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))",
-        color: "var(--accent-fg)",
-        boxShadow: "0 10px 22px -12px var(--accent)",
-      }}
-    >
-      N
-    </span>
+  const brand = (compact: boolean) => (
+    <a href="/dashboard" onClick={onClose} className="flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-offset-4" aria-label="NimCuet dashboard">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border" style={{ background: "var(--dash-surface)", borderColor: "var(--dash-line)" }}>
+        <img src="/logo.png" alt="" aria-hidden className="block h-5 w-auto" />
+      </span>
+      {!compact && (
+        <span className="min-w-0">
+          <span className="block truncate text-[13.5px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>NimCuet</span>
+          <span className="block truncate text-[9.5px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".15em" }}>Exam workspace</span>
+        </span>
+      )}
+    </a>
   );
 
   return (
     <>
       <aside
-        className={`fixed bottom-4 left-4 top-20 z-40 hidden flex-col overflow-hidden rounded-[26px] transition-[width] duration-300 ease-out md:flex ${
-          collapsed ? "w-[5.5rem]" : "w-64"
+        className={`fixed bottom-4 left-4 top-20 z-40 hidden flex-col overflow-hidden rounded-[var(--dash-radius)] transition-[width] duration-300 ease-out lg:flex ${
+          collapsed ? "w-[4.75rem]" : "w-[16.5rem]"
         }`}
-        style={PANEL_STYLE}
-        data-collapsed={collapsed ? "true" : "false"}
+        style={{
+          background: "var(--dash-surface)",
+          border: "1px solid var(--dash-line)",
+          boxShadow: "var(--dash-shadow)",
+        }}
+        aria-label="Dashboard navigation"
       >
-        <div className={`flex shrink-0 items-center gap-2 px-3 pb-1 pt-3 ${collapsed ? "flex-col" : "justify-between"}`}>
-          <div className={`flex min-w-0 items-center gap-2.5 ${collapsed ? "" : "px-1"}`} title={collapsed ? "Study space" : undefined}>
-            {brandMark}
-            {!collapsed && (
-              <div className="min-w-0">
-                <div className="truncate text-[13px] font-extrabold" style={{ color: "var(--text)" }}>Study space</div>
-                <div className="truncate text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
-                  NIMCET · CUET
-                </div>
-              </div>
-            )}
-          </div>
+        <div className={`flex shrink-0 items-center border-b px-3 py-3 ${collapsed ? "flex-col gap-2" : "justify-between gap-2"}`} style={{ borderColor: "var(--dash-line)" }}>
+          {brand(collapsed)}
           {onToggleCollapsed && (
             <button
               type="button"
@@ -372,41 +328,61 @@ export default function DashSide({
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-expanded={!collapsed}
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-xl transition-colors hover:bg-[var(--pill)]"
-              style={{ border: "1px solid var(--border)", color: "var(--muted)" }}
+              className="dash-btn dash-btn-ghost dash-btn-icon"
+              style={{ width: 32, minWidth: 32, minHeight: 32, borderColor: "var(--dash-line)", border: "1px solid var(--dash-line)" }}
             >
-              <CollapseIcon collapsed={collapsed} />
+              {collapsed ? <ChevronsRight size={15} /> : <ChevronsLeft size={15} />}
             </button>
           )}
         </div>
-        <SideBody collapsed={collapsed} view={view} onSelect={onSelect} onClose={onClose} streak={streak} />
+        <SideBody
+          collapsed={collapsed}
+          view={view}
+          profileActive={profileActive}
+          onSelect={onSelect}
+          onClose={onClose}
+          streak={streak}
+        />
       </aside>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-[60] md:hidden">
-          <button type="button" aria-label="Close menu" onClick={onClose} className="absolute inset-0 cursor-default" style={{ background: "rgba(0,0,0,0.45)" }} />
-          <aside className="absolute bottom-0 left-0 top-0 flex w-72 max-w-[85vw] flex-col overflow-hidden" style={PANEL_STYLE}>
-            <div className="flex shrink-0 items-center justify-between gap-2 p-4 pb-2">
-              <div className="flex items-center gap-2.5">
-                {brandMark}
-                <div>
-                  <div className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Menu</div>
-                  <div className="text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.18em" }}>
-                    NIMCET · CUET
-                  </div>
-                </div>
-              </div>
+        <div className="fixed inset-0 z-[70] lg:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={onClose}
+            className="absolute inset-0 cursor-default"
+            style={{ background: "rgba(7, 11, 24, 0.52)", backdropFilter: "blur(3px)" }}
+          />
+          <aside
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Dashboard navigation"
+            className="absolute bottom-0 left-0 top-0 flex w-[18rem] max-w-[88vw] flex-col overflow-hidden"
+            style={{ background: "var(--dash-surface)", borderRight: "1px solid var(--dash-line)", boxShadow: "24px 0 70px -30px rgba(2,6,23,.55)" }}
+          >
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b px-4 pb-3 pt-4" style={{ borderColor: "var(--dash-line)" }}>
+              {brand(false)}
               <button
+                ref={closeRef}
                 type="button"
                 onClick={onClose}
                 aria-label="Close menu"
-                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-base"
-                style={{ border: "1px solid var(--border)", color: "var(--text)" }}
+                className="dash-btn dash-btn-ghost dash-btn-icon"
+                style={{ width: 36, minWidth: 36, minHeight: 36, border: "1px solid var(--dash-line)" }}
               >
-                ✕
+                <X size={17} />
               </button>
             </div>
-            <SideBody collapsed={false} view={view} onSelect={onSelect} onClose={onClose} streak={streak} />
+            <SideBody
+              collapsed={false}
+              view={view}
+              profileActive={profileActive}
+              onSelect={onSelect}
+              onClose={onClose}
+              streak={streak}
+            />
           </aside>
         </div>
       )}

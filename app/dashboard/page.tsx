@@ -1,6 +1,36 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  AlertCircle,
+  ArrowRight,
+  ArrowUpRight,
+  BarChart3,
+  BookOpen,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Clock3,
+  FileText,
+  Flame,
+  HelpCircle,
+  History,
+  Info,
+  ListChecks,
+  Mail,
+  Megaphone,
+  MessageSquare,
+  Minus,
+  Phone,
+  Play,
+  RefreshCw,
+  Sparkles,
+  Target,
+  Trophy,
+  XCircle,
+} from "lucide-react";
 import Reveal from "@/components/reveal";
 import CountUp from "@/components/count-up";
 import DashNav from "@/components/dash-nav";
@@ -52,33 +82,46 @@ function AttemptRow({ a, cloud = false, best = 0, rank = 0 }: { a: Attempt; clou
   const pct = best > 0 ? Math.min(100, Math.round(((Number(a.score) || 0) / best) * 100)) : 0;
   return (
     <div
-      className="flex items-center gap-3 rounded-2xl card-bg px-4 py-3.5"
-      style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
+      className="dash-card dash-card-hover flex items-center gap-3 px-3.5 py-3 sm:px-4"
+      style={{ boxShadow: "var(--dash-shadow-xs)" }}
     >
       {rank > 0 && rank <= 3 ? (
-        <span title={`Top ${rank} by score`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white" style={{ background: MEDALS[rank - 1] }}>
+        <span
+          title={`Top ${rank} by score`}
+          className="mono flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold text-white"
+          style={{ background: MEDALS[rank - 1] }}
+        >
           {MEDAL_LABEL[rank - 1]}
         </span>
       ) : (
-        <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base" style={{ background: "var(--pill)" }}>📝</span>
+        <span aria-hidden className="dash-icon-tile dash-icon-tile-neutral dash-icon-tile-sm h-9 w-9 rounded-full">
+          {cloud ? <FileText size={15} /> : <ClipboardList size={15} />}
+        </span>
       )}
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-extrabold" style={{ color: "var(--text)" }}>
-          {a.test}{" "}
-          {!cloud && (
-            <span className="mono rounded px-1.5 py-0.5 text-[10px]" style={{ background: "var(--pill)", color: "var(--muted)" }}>
-              THIS DEVICE
-            </span>
-          )}
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <span className="truncate text-[13px] font-bold" style={{ color: "var(--text)" }}>{a.test}</span>
+          {!cloud && <span className="dash-chip !px-1.5 !py-0.5 !text-[9px]">THIS DEVICE</span>}
+          {rank > 0 && rank <= 3 && <span className="dash-chip dash-chip-warning !px-1.5 !py-0.5 !text-[9px]">TOP {rank}</span>}
         </div>
-        <div className="mono mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
-          {new Date(a.created_at).toLocaleString("en-IN")} • {a.correct}✔ {a.wrong}✘ {a.skipped}○
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10.5px]" style={{ color: "var(--muted)" }}>
+          <span className="mono">{new Date(a.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span>
+          <span aria-hidden>·</span>
+          <span className="inline-flex items-center gap-1" style={{ color: "var(--dash-success)" }}><Check size={11} strokeWidth={2.5} />{a.correct}</span>
+          <span className="inline-flex items-center gap-1" style={{ color: "var(--dash-danger)" }}><XCircle size={11} />{a.wrong}</span>
+          <span className="inline-flex items-center gap-1"><Minus size={11} />{a.skipped}</span>
         </div>
-        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full" style={{ background: "var(--pill)" }}>
-          <div className="grow-bar h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))" }} />
-        </div>
+        {best > 0 && (
+          <div className="mt-2 flex items-center gap-2">
+            <div className="dash-progress flex-1"><span style={{ width: `${pct}%` }} /></div>
+            <span className="mono text-[9.5px] font-bold" style={{ color: "var(--muted)" }}>{pct}% of best</span>
+          </div>
+        )}
       </div>
-      <div className="mono shrink-0 text-xl font-extrabold" style={{ color: "var(--accent)" }}>{a.score}</div>
+      <div className="shrink-0 text-right">
+        <div className="mono text-[19px] font-extrabold leading-none" style={{ color: "var(--text)" }}>{a.score}</div>
+        <div className="mt-1 text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".1em" }}>score</div>
+      </div>
     </div>
   );
 }
@@ -87,34 +130,90 @@ function TrendChart({ data }: { data: Attempt[] }) {
   // Oldest → newest, last 10.
   const pts = data.slice(0, 10).reverse();
   if (pts.length === 0) return null;
-  const max = Math.max(...pts.map((a) => Number(a.score) || 0), 1);
-  const W = 560, H = 150, PAD = 8;
-  const bw = (W - PAD * 2) / pts.length;
+  const values = pts.map((a) => Number(a.score) || 0);
+  const max = Math.max(...values, 1);
+  const W = 580;
+  const H = 190;
+  const padX = 34;
+  const padTop = 18;
+  const padBottom = 28;
+  const plotH = H - padTop - padBottom;
+  const step = pts.length > 1 ? (W - padX * 2) / (pts.length - 1) : 0;
+  const coords = values.map((v, i) => ({
+    x: padX + i * step,
+    y: padTop + plotH - (v / max) * plotH,
+    v,
+  }));
+  const line = coords.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const area = `M ${padX},${padTop + plotH} L ${coords.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" L ")} L ${coords[coords.length - 1].x.toFixed(1)},${padTop + plotH} Z`;
+  const latest = values[values.length - 1];
+  const earlier = values[0];
+  const change = latest - earlier;
+
   return (
-    <div
-      className="mt-3 rounded-2xl card-bg px-5 py-4"
-      style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-    >
-      <div className="flex items-baseline justify-between">
-        <div className="dash-display text-sm font-extrabold tracking-tight" style={{ color: "var(--text)" }}>Score trend</div>
-        <div className="text-[11px]" style={{ color: "#64748b" }}>last {pts.length} mocks • oldest → newest</div>
+    <div className="dash-card overflow-hidden">
+      <div className="flex flex-wrap items-start justify-between gap-3 px-4 pb-2 pt-4 sm:px-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="dash-icon-tile dash-icon-tile-sm"><BarChart3 size={15} /></span>
+            <h2 className="dash-title-sm">Performance trend</h2>
+          </div>
+          <p className="mt-1 text-[11.5px]" style={{ color: "var(--muted)" }}>Last {pts.length} mock{pts.length === 1 ? "" : "s"} · oldest to newest</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="mono text-[18px] font-extrabold leading-none" style={{ color: "var(--text)" }}>{latest}</div>
+            <div className="mt-1 text-[9.5px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".1em" }}>latest</div>
+          </div>
+          <span
+            className="dash-chip"
+            style={change > 0
+              ? { color: "var(--dash-success)", background: "var(--dash-success-soft)", borderColor: "rgba(21,128,61,.18)" }
+              : change < 0
+                ? { color: "var(--dash-danger)", background: "var(--dash-danger-soft)", borderColor: "rgba(220,38,38,.18)" }
+                : undefined}
+          >
+            {change > 0 ? `+${change}` : change === 0 ? "level" : change} pts
+          </span>
+        </div>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="Score trend chart">
-        {[0.25, 0.5, 0.75].map((f) => (
-          <line key={f} x1={PAD} x2={W - PAD} y1={H * f} y2={H * f} stroke="#e2e8f0" strokeWidth="1" />
-        ))}
-        {pts.map((a, i) => {
-          const v = Number(a.score) || 0;
-          const h = Math.max(4, ((H - 30) * v) / max);
-          const x = PAD + i * bw + bw * 0.22;
-          return (
-            <g key={a.id ?? i}>
-              <rect x={x} y={H - 14 - h} width={Math.max(6, bw * 0.56)} height={h} rx="5" fill="var(--accent)" opacity={0.85} className="chart-bar" style={{ animationDelay: `${i * 60}ms` }} />
-              <text x={x + bw * 0.28} y={H - 18 - h} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text)">{v}</text>
+      <div className="px-2 pb-2 sm:px-3">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="h-auto w-full"
+          role="img"
+          aria-label={`Score trend: ${pts.map((a) => `${a.test} scored ${a.score}`).join(", ")}`}
+        >
+          <defs>
+            <linearGradient id="dash-trend-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {[0, 0.33, 0.66, 1].map((f) => {
+            const y = padTop + plotH * f;
+            return (
+              <g key={f}>
+                <line x1={padX} x2={W - padX} y1={y} y2={y} stroke="var(--dash-line)" strokeWidth="1" />
+                <text x={padX - 7} y={y + 3.5} textAnchor="end" fontSize="8.5" fill="var(--muted)">
+                  {Math.round(max * (1 - f))}
+                </text>
+              </g>
+            );
+          })}
+          <path d={area} fill="url(#dash-trend-fill)" />
+          <polyline points={line} fill="none" stroke="var(--accent)" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
+          {coords.map((p, i) => (
+            <g key={pts[i]?.id ?? i}>
+              <circle cx={p.x} cy={p.y} r="4.2" fill="var(--dash-surface)" stroke="var(--accent)" strokeWidth="2.2" />
+              {(i === 0 || i === coords.length - 1 || pts.length <= 5) && (
+                <text x={p.x} y={p.y - 10} textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--text)">{p.v}</text>
+              )}
+              <title>{`${pts[i]?.test ?? "Mock"}: ${p.v}`}</title>
             </g>
-          );
-        })}
-      </svg>
+          ))}
+        </svg>
+      </div>
     </div>
   );
 }
@@ -220,6 +319,31 @@ export default function DashboardPage() {
       return next;
     });
   };
+
+  const selectView = (next: DashView) => {
+    setView(next);
+    setSideOpen(false);
+    try {
+      const url = new URL(window.location.href);
+      if (next === "home") url.searchParams.delete("view");
+      else url.searchParams.set("view", next);
+      window.history.replaceState(null, "", url);
+    } catch {}
+  };
+
+  // Deep links from the header and profile sidebar: /dashboard?view=history.
+  // Reading location on mount keeps the page prerender-safe.
+  useEffect(() => {
+    try {
+      const requested = new URLSearchParams(window.location.search).get("view");
+      const allowed: DashView[] = [
+        "home", "mock", "nimcet-pyq", "cuet-mock", "cuet-pyq",
+        "builder", "history", "contact", "pricing", "feedback",
+      ];
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- browser-only URL state, unavailable while prerendering.
+      if (requested && allowed.includes(requested as DashView)) setView(requested as DashView);
+    } catch {}
+  }, []);
 
   // Published notices from the admin panel. Drafts never reach this endpoint.
   // Failure is silent: the section simply doesn't render.
@@ -389,16 +513,23 @@ export default function DashboardPage() {
   // Stat tiles. Numeric values animate up when the async stats land; the
   // streak keeps its full label, so it renders as plain text.
   const statTiles: Array<{
-    icon: string; label: string; num?: number | null; dec?: number;
-    suffix?: string; fallback: string; text?: string; sub: string;
+    icon: React.ReactNode; label: string; num?: number | null; dec?: number;
+    suffix?: string; fallback: string; text?: string; sub: string; tone: "accent" | "info" | "success" | "warning";
   }> = [
-    { icon: "📝", label: "Mocks", num: derived ? Number(derived.total) : null, fallback: loading ? "…" : "0", sub: statsLabel },
-    { icon: "🏆", label: "Best score", num: derived ? parseFloat(derived.best) : null, dec: derived && !Number.isInteger(parseFloat(derived.best)) ? 1 : 0, fallback: loading ? "…" : "—", sub: statsLabel },
-    { icon: "📊", label: "Avg score", num: derived ? parseFloat(derived.avg) : null, dec: derived && !Number.isInteger(parseFloat(derived.avg)) ? 1 : 0, fallback: loading ? "…" : "—", sub: statsLabel },
-    { icon: "🎯", label: "Accuracy", num: derived && derived.acc !== "—" ? parseFloat(derived.acc) : null, suffix: derived && derived.acc !== "—" ? "%" : "", fallback: loading ? "…" : "—", sub: "correct ÷ answered" },
-    { icon: "❓", label: "Questions", num: derived ? Number(derived.questions) : null, fallback: loading ? "…" : "0", sub: "attempted total" },
-    { icon: "🔥", label: "Day streak", num: null, fallback: loading ? "…" : "No streak", text: loading ? "…" : formatStreak(derived?.streak ?? 0), sub: derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily" },
+    { icon: <ClipboardList size={16} />, label: "Mocks taken", num: derived ? Number(derived.total) : null, fallback: loading ? "…" : "0", sub: statsLabel, tone: "accent" },
+    { icon: <Trophy size={16} />, label: "Best score", num: derived ? parseFloat(derived.best) : null, dec: derived && !Number.isInteger(parseFloat(derived.best)) ? 1 : 0, fallback: loading ? "…" : "—", sub: "all-time high", tone: "warning" },
+    { icon: <BarChart3 size={16} />, label: "Average score", num: derived ? parseFloat(derived.avg) : null, dec: derived && !Number.isInteger(parseFloat(derived.avg)) ? 1 : 0, fallback: loading ? "…" : "—", sub: "across all mocks", tone: "info" },
+    { icon: <Target size={16} />, label: "Accuracy", num: derived && derived.acc !== "—" ? parseFloat(derived.acc) : null, suffix: derived && derived.acc !== "—" ? "%" : "", fallback: loading ? "…" : "—", sub: "correct ÷ answered", tone: "success" },
+    { icon: <HelpCircle size={16} />, label: "Questions", num: derived ? Number(derived.questions) : null, fallback: loading ? "…" : "0", sub: "attempted in total", tone: "accent" },
+    { icon: <Flame size={16} />, label: "Day streak", num: null, fallback: loading ? "…" : "No streak", text: loading ? "…" : `${derived?.streak ?? 0} days`, sub: derived?.bestStreak ? `best ${derived.bestStreak} days` : "attempt daily", tone: "warning" },
   ];
+
+  const statTone = (tone: "accent" | "info" | "success" | "warning"): React.CSSProperties => {
+    if (tone === "info") return { background: "var(--dash-info-soft)", borderColor: "rgba(37,99,235,.16)", color: "var(--dash-info)" };
+    if (tone === "success") return { background: "var(--dash-success-soft)", borderColor: "rgba(21,128,61,.16)", color: "var(--dash-success)" };
+    if (tone === "warning") return { background: "var(--dash-warning-soft)", borderColor: "rgba(180,83,9,.16)", color: "var(--dash-warning)" };
+    return {};
+  };
 
   const clearLocal = () => {
     try {
@@ -430,6 +561,22 @@ export default function DashboardPage() {
     week: derived?.week ?? [],
   };
 
+  const viewMeta: Record<DashView, { title: string; subtitle: string }> = {
+    home: { title: "Overview", subtitle: "Your preparation at a glance" },
+    mock: { title: "Mock tests", subtitle: "Full-length practice with instant scoring" },
+    "nimcet-pyq": { title: "NIMCET past papers", subtitle: "Real papers, real timing" },
+    "cuet-mock": { title: "CUET PG practice", subtitle: "Full-length CUET PG MCA practice" },
+    "cuet-pyq": { title: "CUET PG past papers", subtitle: "Work through past papers" },
+    builder: { title: "Custom mock", subtitle: "Build a focused practice set" },
+    history: { title: "History", subtitle: "Every attempt in one place" },
+    contact: { title: "Support", subtitle: "Get help from the NimCuet team" },
+    pricing: { title: "Plans & pricing", subtitle: "Simple access to the full catalogue" },
+    feedback: { title: "Send feedback", subtitle: "Help improve the question bank" },
+  };
+  const currentMeta = viewMeta[view];
+  const greeting = "Welcome back";
+  const streakPct = derived?.bestStreak ? Math.min(1, (derived.streak ?? 0) / derived.bestStreak) : 0;
+
   return (
     <>
       {!loading && email && (
@@ -440,14 +587,16 @@ export default function DashboardPage() {
           onLogout={() => {}}
           streak={streakSummary}
           onMenuClick={() => setSideOpen(true)}
+          title={currentMeta.title}
+          subtitle={currentMeta.subtitle}
         />
       )}
-      <main className="mx-auto w-full px-4 pb-20 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-[1560px] px-3 pb-20 pt-20 sm:px-5 lg:px-7">
         <DashSide
           mobileOpen={sideOpen}
           onClose={() => setSideOpen(false)}
           view={view}
-          onSelect={(v) => setView(v)}
+          onSelect={selectView}
           collapsed={sideCollapsed}
           onToggleCollapsed={toggleSideCollapsed}
           streak={streakSummary}
@@ -455,545 +604,707 @@ export default function DashboardPage() {
         <div
           id="attempts"
           className={`min-w-0 scroll-mt-24 transition-[margin-left] duration-300 ease-out ${
-            sideCollapsed ? "md:ml-[8rem]" : "md:ml-[18.5rem]"
+            sideCollapsed ? "lg:ml-[5.75rem]" : "lg:ml-[17.5rem]"
           }`}
         >
-      {view === "home" && (
-      <>
-      <Reveal>
-        <section
-          className="bg-pan relative overflow-hidden rounded-[26px] px-6 py-8 text-white sm:px-10 sm:py-10"
-          style={{ background: "linear-gradient(120deg, #141b34 0%, #2b3a7a 55%, var(--accent) 130%)", boxShadow: "var(--shadow-3)" }}
-        >
-          <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(600px 220px at 85% 0%, rgba(255,255,255,0.16), transparent 65%), radial-gradient(500px 260px at 0% 100%, rgba(255,255,255,0.08), transparent 60%)" }} />
-          <div className="relative flex flex-wrap items-center justify-between gap-6">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full px-3 py-1 text-[11px] font-extrabold uppercase" style={{ letterSpacing: "0.18em", background: "rgba(255,255,255,0.14)", color: "#fff" }}>
-                  {todayLine}
-                </span>
-                {!loading && (derived?.streak ?? 0) > 0 && (
-                  <span className="rounded-full px-3 py-1 text-[11px] font-extrabold uppercase" style={{ letterSpacing: "0.18em", background: "#fff", color: "#1e2952" }}>
-                    🔥 {formatStreak(derived?.streak ?? 0)}
-                  </span>
-                )}
-              </div>
-              <h1 className="dash-display mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                {loading ? "Loading…" : displayName ? `Hello ${displayName.trim().split(/\s+/)[0]}` : "Hello"}
-              </h1>
-              <p className="mt-2 max-w-md text-sm leading-6" style={{ color: "rgba(255,255,255,0.82)" }}>
-                {!loading && derived
-                  ? derived.streak > 0
-                    ? `🔥 ${formatStreak(derived.streak)}. Your best so far is ${derived.best} — go beat it.`
-                    : "Your history is warming up — attempt a mock to start your streak."
-                  : "Your preparation home: stats, test series and history live here."}
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setView("mock")}
-                  className="cursor-pointer rounded-xl bg-white px-5 py-2.5 text-sm font-extrabold transition-transform hover:-translate-y-px"
-                  style={{ color: "#1e2952" }}
-                >
-                  Start practice mock →
-                </button>
-                <a
-                  href="#series"
-                  className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-px"
-                  style={{ border: "1.5px solid rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.1)" }}
-                >
-                  Browse test series
-                </a>
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-4 rounded-2xl px-5 py-4" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
-              <div className="relative h-[104px] w-[104px] shrink-0">
-                <svg width="104" height="104" viewBox="0 0 120 120" role="img" aria-label="Streak progress toward best">
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="11" />
-                  <circle
-                    cx="60" cy="60" r="52" fill="none" stroke="#fff" strokeWidth="11" strokeLinecap="round"
-                    strokeDasharray={RING_C}
-                    strokeDashoffset={RING_C * (1 - (derived?.bestStreak ? Math.min((derived?.streak ?? 0) / derived.bestStreak, 1) : 0))}
-                    transform="rotate(-90 60 60)" style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.8))", transition: "stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1)" }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span aria-hidden className="text-2xl leading-none">🔥</span>
-                  <span className="mono mt-0.5 text-sm font-extrabold text-white">{loading ? "…" : `${derived?.streak ?? 0}d`}</span>
-                </div>
-              </div>
-              <div className="min-w-0">
-                <div className="text-base font-extrabold leading-tight text-white">{loading ? "…" : formatStreak(derived?.streak ?? 0)}</div>
-                <div className="mt-0.5 text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>
-                  {loading ? "warming up" : derived?.bestStreak ? `best ${derived.bestStreak}d all-time` : "attempt daily"}
-                </div>
-                {!loading && streakSummary.week.length > 0 && (
-                  <div className="mt-2 flex gap-1.5" aria-hidden>
-                    {streakSummary.week.map((d, i) => (
-                      <span
-                        key={i}
-                        title={d.active ? "Mock attempted" : "Rest day"}
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={d.active
-                          ? { background: "#fff", boxShadow: "0 0 10px rgba(255,255,255,0.9)" }
-                          : { background: "rgba(255,255,255,0.25)", outline: d.isToday ? "1.5px solid #fff" : "none" }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      </Reveal>
-
-      {note && (
-        <p className="mt-4 rounded-xl card-bg px-4 py-3 text-[13px]" style={{ border: "1px solid var(--border)" }}>{note}</p>
-      )}
-
-      <Reveal>
-        <section
-          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl card-bg px-5 py-4"
-          style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-        >
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg font-extrabold" style={{ background: "var(--accent)", color: "var(--accent-fg)" }}>N</span>
-            <div>
-              <div className="text-sm font-extrabold" style={{ color: "var(--text)" }}>NIMCET 2027 <span className="ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>DATE TBA</span></div>
-              <div className="text-xs" style={{ color: "var(--muted)" }}>June 2027 cycle • official date awaited — countdown starts on announcement.</div>
-            </div>
-          </div>
-          <div className="flex gap-2 text-center">
-            {[["120", "Questions"], ["1000", "Marks"], ["120 min", "Duration"]].map(([v, l]) => (
-              <div key={l} className="rounded-xl px-3.5 py-2" style={{ background: "var(--pill)" }}>
-                <div className="mono text-sm font-extrabold" style={{ color: "var(--text)" }}>{v}</div>
-                <div className="text-[10px] font-semibold" style={{ color: "var(--muted)" }}>{l}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </Reveal>
-
-      {notices.length > 0 && (
-        <Reveal>
-          <section
-            className="mt-4 rounded-2xl card-bg px-5 py-4"
-            style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm" style={{ background: "var(--pill)" }}>📢</span>
-                <h2 className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Notices from admin</h2>
-              </div>
-              {notices.length > 2 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllNotices((v) => !v)}
-                  className="cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold"
-                  style={{ border: "1px solid var(--border)", color: "var(--muted)" }}
-                >
-                  {showAllNotices ? "Show less" : `Show all (${notices.length})`}
-                </button>
-              )}
-            </div>
-            <div className="mt-3 grid gap-3">
-              {(showAllNotices ? notices : notices.slice(0, 2)).map((n) => (
-                <div key={n.id} className="rounded-xl px-4 py-3" style={{ background: "var(--pill)" }}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-[13px] font-extrabold" style={{ color: "var(--text)" }}>{n.title}</span>
-                    <span className="text-[11px]" style={{ color: "var(--muted)" }}>
-                      {new Date(n.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                    </span>
-                  </div>
-                  <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-6" style={{ color: "var(--muted)" }}>{n.body}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </Reveal>
-      )}
-
-      <Reveal>
-        <div
-          className="mt-4 overflow-hidden rounded-2xl card-bg"
-          style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-        >
-          <div className="grid grid-cols-2 gap-px sm:grid-cols-3 lg:grid-cols-6" style={{ background: "var(--border)" }}>
-            {statTiles.map((s) => (
-              <div key={s.label} className="group card-bg px-4 py-4">
-                <div className="flex items-center gap-2">
-                  <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110" style={{ background: "var(--pill)" }}>{s.icon}</span>
-                  <span className="text-[12px] font-bold" style={{ color: "var(--text)" }}>{s.label}</span>
-                </div>
-                <div className="mono mt-1.5 text-xl font-extrabold" style={{ color: "var(--accent)" }}>
-                  {s.text !== undefined ? s.text : (
-                    <CountUp value={s.num ?? null} decimals={s.dec ?? 0} suffix={s.suffix ?? ""} fallback={s.fallback} />
-                  )}
-                </div>
-                <div className="mt-0.5 text-[10px] font-semibold" style={{ color: "var(--muted)" }}>{s.sub}</div>
-              </div>
-            ))}
-          </div>
-          {statsTruncated && (
-            <p className="px-4 py-2 text-[11px]" style={{ color: "var(--muted)" }}>
-              Totals cover your most recent 20,000 attempts.
-            </p>
-          )}
-        </div>
-      </Reveal>
-
-      {!loading && attempts.length > 0 && (
-        <Reveal>
-          <TrendChart data={attempts} />
-        </Reveal>
-      )}
-
-      {seriesReady && series.length > 0 && (
-        <Reveal>
-          <div id="series" className="mt-10 scroll-mt-24">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2 className="dash-display text-lg font-extrabold tracking-tight">Test series</h2>
-                <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Published by admin • practice opens the demo mock.</p>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {exams.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => setExamFilter(e)}
-                    className="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold transition-transform hover:-translate-y-px"
-                    style={examFilter === e
-                      ? { background: "var(--btn-bg)", color: "var(--btn-text)" }
-                      : { border: "1px solid var(--border)", color: "var(--muted)" }}
-                  >
-                    {e === "all" ? "All" : examLabel(e)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
-              {visibleSeries.map((t) => {
-                const done = attemptsForTitle(t.title);
-                const qcount = Array.isArray(t.question_ids) ? t.question_ids.length : 0;
-                return (
-                  <div
-                    key={t.id}
-                    className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl card-bg px-5 py-4 pl-7 transition-transform duration-300 hover:-translate-y-0.5"
-                    style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-                  >
-                    <span aria-hidden className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: "linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))" }} />
+          {view === "home" && (
+            <div className="space-y-4">
+              <Reveal>
+                <section className="dash-hero px-5 py-6 sm:px-7 sm:py-7 lg:px-8">
+                  <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>
-                          {examLabel(t.exam)}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10.5px] font-bold text-white/85">
+                          <CalendarDays size={12} />
+                          {todayLine || "Today"}
                         </span>
-                        {t.free && (
-                          <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "#16a34a", color: "#fff" }}>FREE</span>
-                        )}
-                        {done > 0 && (
-                          <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>
-                            ATTEMPTED ×{done}
+                        {!loading && (derived?.streak ?? 0) > 0 && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[10.5px] font-extrabold text-[#1b284d]">
+                            <Flame size={12} />
+                            {formatStreak(derived?.streak ?? 0)}
                           </span>
                         )}
                       </div>
-                      <div className="mt-1.5 truncate text-sm font-extrabold" style={{ color: "var(--text)" }}>{t.title}</div>
-                      <div className="mono mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
-                        {qcount}Q • {t.minutes} min{t.tag ? ` • ${t.tag}` : ""}
+                      <h1 className="dash-display mt-3 max-w-xl text-[clamp(1.75rem,1.35rem+1.6vw,2.65rem)] font-extrabold leading-[1.08] tracking-[-0.04em] text-white">
+                        {loading
+                          ? "Preparing your workspace"
+                          : `${greeting}${displayName ? `, ${displayName.trim().split(/\s+/)[0]}` : ""}`}
+                      </h1>
+                      <p className="mt-2.5 max-w-xl text-[13px] leading-6 text-white/70 sm:text-[13.5px]">
+                        {!loading && derived
+                          ? derived.streak > 0
+                            ? `${formatStreak(derived.streak)}. Your best score is ${derived.best} — build on it with a focused mock today.`
+                            : "Your preparation history starts with one attempt. Take a mock and your real progress will appear here."
+                          : "Mock tests, previous-year papers and honest performance tracking for NIMCET and CUET PG MCA."}
+                      </p>
+                      <div className="mt-5 flex flex-wrap items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => selectView("mock")}
+                          className="dash-btn bg-white text-[#111827] shadow-lg shadow-black/20 hover:bg-white/90"
+                        >
+                          <Play size={14} fill="currentColor" />
+                          Start a mock
+                          <ArrowRight size={14} />
+                        </button>
+                        <a
+                          href="#series"
+                          className="dash-btn border-white/25 bg-white/10 text-white hover:bg-white/15"
+                          style={{ borderColor: "rgba(255,255,255,.24)" }}
+                        >
+                          Browse test series
+                        </a>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setView("mock")}
-                      className="shrink-0 cursor-pointer rounded-xl px-4 py-2 text-[13px] font-extrabold transition-transform hover:-translate-y-px"
-                      style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}
-                    >
-                      Practice →
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </Reveal>
-      )}
 
-      <Reveal>
-        <h2 className="dash-display mt-10 text-lg font-extrabold tracking-tight">Recent attempts</h2>
-        {attempts.length === 0 && !loading ? (
-          <div
-            className="mt-3 rounded-2xl card-bg p-6 text-center text-sm"
-            style={{ border: "1px dashed var(--border)", color: "var(--muted)" }}
-          >
-            No attempts yet.{" "}
-            <button type="button" onClick={() => setView("mock")} className="cursor-pointer font-bold underline" style={{ color: "var(--accent)" }}>
-              Attempt the demo mock
-            </button>{" "}
-            — it saves here when you are logged in.
-          </div>
-        ) : (
-          <div className="mt-3 grid gap-2.5">
-            {attempts.map((a) => (
-              <AttemptRow key={a.id} a={a} cloud best={bestScore} rank={rankMap.get(a.id) ?? 0} />
-            ))}
-          </div>
-        )}
-      </Reveal>
-      {deviceOnly.length > 0 && (
-        <Reveal>
-          <div className="mt-10 flex items-center justify-between gap-2">
-            <h2 className="dash-display text-lg font-extrabold tracking-tight">On this device</h2>
-            <button
-              type="button"
-              onClick={clearLocal}
-              className="cursor-pointer rounded-xl px-3.5 py-1.5 text-xs font-bold"
-              style={{ border: "1px solid var(--border)", color: "var(--muted)" }}
-            >
-              Clear
-            </button>
-          </div>
-          <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Saved locally — log in to keep them across devices.</p>
-          <div className="mt-3 grid gap-2.5">
-            {deviceOnly.map((a) => (
-              <AttemptRow key={a.id} a={a} best={localBest} />
-            ))}
-          </div>
-        </Reveal>
-      )}
-      </>
-      )}
-      {view === "mock" && (
-        <MockHub attempted={attemptedCounts} exam="nimcet" />
-      )}
-      {view === "nimcet-pyq" && (
-        <MockHub attempted={attemptedCounts} exam="nimcet" collection="pyq" />
-      )}
-      {view === "cuet-mock" && (
-        <MockHub attempted={attemptedCounts} exam="cuet" />
-      )}
-      {view === "cuet-pyq" && (
-        <MockHub attempted={attemptedCounts} exam="cuet" collection="pyq" />
-      )}
-      {view === "builder" && (
-        <MockBuilder />
-      )}
-      {view === "history" && (
-        <>
-          <Reveal>
-            <h1 className="text-2xl font-extrabold tracking-tight">Test history</h1>
-            <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
-              Your latest 20 cloud attempts, newest first, plus device-local samples not already in the cloud.
-            </p>
-          </Reveal>
-          <Reveal>
-            <div className="mt-4 grid gap-2.5">
-              {attempts.length === 0 && !loading ? (
-                <div className="rounded-2xl p-6 text-center text-sm backdrop-blur-xl" style={{ border: "1px dashed var(--border)", color: "var(--muted)" }}>
-                  No cloud attempts yet — finish a mock and it lands here.
-                </div>
-              ) : (
-                attempts.map((a) => <AttemptRow key={a.id} a={a} cloud best={bestScore} rank={rankMap.get(a.id) ?? 0} />)
-              )}
-            </div>
-          </Reveal>
-          {deviceOnly.length > 0 && (
-            <Reveal>
-              <h2 className="mt-8 text-lg font-extrabold tracking-tight">On this device</h2>
-              <div className="mt-3 grid gap-2.5">
-                {deviceOnly.map((a) => (
-                  <AttemptRow key={a.id} a={a} />
-                ))}
-              </div>
-            </Reveal>
-          )}
-        </>
-      )}
-      {view === "contact" && (
-        <Reveal>
-          <h1 className="text-2xl font-extrabold tracking-tight">Contact</h1>
-          <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
-            Syllabus confusion, plan help, or a bug in a mock — one message away.
-          </p>
-          <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-            <a
-              href="mailto:abhayincodingworld@gmail.com"
-              className="rounded-2xl px-5 py-4 backdrop-blur-xl transition-transform hover:-translate-y-px"
-              style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
-            >
-              <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Email</div>
-              <div className="mt-1 break-all text-sm font-extrabold">abhayincodingworld@gmail.com</div>
-            </a>
-            <a
-              href="tel:+917425097293"
-              className="rounded-2xl px-5 py-4 backdrop-blur-xl transition-transform hover:-translate-y-px"
-              style={{ background: "color-mix(in srgb, var(--nav-bg) 65%, transparent)", border: "1px solid var(--border)" }}
-            >
-              <div className="text-[11px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>Phone</div>
-              <div className="mt-1 text-sm font-extrabold">+91-74250-97293</div>
-            </a>
-          </div>
-        </Reveal>
-      )}
-      {view === "pricing" && (
-        <Reveal>
-          <h1 className="text-2xl font-extrabold tracking-tight">Pricing</h1>
-          <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
-            Start free. Paid plans activate over UPI within a day on your registered email — full policy in{" "}
-            <a href="/terms" className="font-bold underline" style={{ color: "var(--accent)" }}>Terms</a>.
-          </p>
-          <div className="mt-4 grid gap-2.5 md:grid-cols-3">
-            <div className="rounded-2xl card-bg px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
-              <div className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Free</div>
-              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "var(--text)" }}>₹0 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>forever</span></div>
-              <ul className="mt-3 space-y-1.5 text-[13px]" style={{ color: "var(--muted)" }}>
-                <li>• Free 12Q sample mock</li>
-                <li>• Solutions + scorecard</li>
-                <li>• No card, no login needed</li>
-              </ul>
-              <button type="button" onClick={() => setView("mock")}
-                className="mt-4 w-full cursor-pointer rounded-xl py-2.5 text-sm font-bold"
-                style={{ border: "1px solid var(--border)" }}>
-                Start free →
-              </button>
-            </div>
-            <div className="rounded-2xl card-bg px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
-              <div className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Monthly</div>
-              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "var(--text)" }}>₹149 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>/month</span></div>
-              <ul className="mt-3 space-y-1.5 text-[13px]" style={{ color: "var(--muted)" }}>
-                <li>• Unlimited mocks</li>
-                <li>• Full section analytics</li>
-                <li>• All PYQ sets</li>
-                <li>• Cancel anytime</li>
-              </ul>
-              <a href="mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Monthly%20plan"
-                className="mt-4 block w-full cursor-pointer rounded-xl py-2.5 text-center text-sm font-bold"
-                style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
-                Choose Monthly →
-              </a>
-            </div>
-            <div className="rounded-2xl card-bg px-5 py-5" style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
-              <div className="text-sm font-extrabold" style={{ color: "var(--text)" }}>Annual</div>
-              <div className="mono mt-1 text-2xl font-extrabold" style={{ color: "var(--text)" }}>₹699 <span className="text-xs font-bold" style={{ color: "var(--muted)" }}>/year</span></div>
-              <ul className="mt-3 space-y-1.5 text-[13px]" style={{ color: "var(--muted)" }}>
-                <li>• 12 months full access</li>
-                <li>• Everything in Monthly</li>
-                <li>• Priority support</li>
-              </ul>
-              <a href="mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Annual%20plan"
-                className="mt-4 block w-full cursor-pointer rounded-xl py-2.5 text-center text-sm font-bold"
-                style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
-                Choose Annual →
-              </a>
-            </div>
-          </div>
-        </Reveal>
-      )}
-      {view === "feedback" && (
-        <Reveal>
-          <h1 className="text-2xl font-extrabold tracking-tight">Feedback</h1>
-          <p className="mt-1 max-w-lg text-[13px] leading-6" style={{ color: "var(--muted)" }}>
-            Found a wrong answer, a confusing explanation, or have a feature idea? Send it straight to the
-            admin inbox — every message is read, and question fixes ship into future mocks.
-          </p>
-          {fbDone ? (
-            <div
-              className="mt-4 max-w-lg rounded-2xl card-bg px-5 py-7 text-center"
-              style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-            >
-              <div aria-hidden className="text-3xl">✅</div>
-              <div className="mt-2 text-sm font-extrabold" style={{ color: "var(--text)" }}>Message sent to the admin inbox</div>
-              <p className="mt-1 text-[12.5px] leading-6" style={{ color: "var(--muted)" }}>
-                Thanks — it is already visible in the admin panel. You can send another message after a minute
-                (spam guard).
-              </p>
-              <button
-                type="button"
-                onClick={() => setFbDone(false)}
-                className="mt-4 cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-extrabold transition-transform hover:-translate-y-px"
-                style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}
-              >
-                Send another
-              </button>
-            </div>
-          ) : (
-            <div
-              className="mt-4 max-w-lg rounded-2xl card-bg px-5 py-5"
-              style={{ border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}
-            >
-              <div className="grid gap-3">
-                <label className="grid gap-1.5">
-                  <span className="text-[12px] font-bold" style={{ color: "var(--text)" }}>Topic</span>
-                  <select
-                    value={fb.category}
-                    onChange={(e) => setFb({ ...fb, category: e.target.value })}
-                    className="w-full cursor-pointer rounded-xl px-3 py-2.5 text-sm font-semibold"
-                    style={{ border: "1px solid var(--border)", background: "var(--card)", color: "var(--text)" }}
-                  >
-                    <option value="general">General question</option>
-                    <option value="test">Mock test issue</option>
-                    <option value="content">Wrong answer / explanation</option>
-                    <option value="bug">App bug</option>
-                    <option value="other">Something else</option>
-                  </select>
-                </label>
-                <label className="grid gap-1.5">
-                  <span className="text-[12px] font-bold" style={{ color: "var(--text)" }}>Subject</span>
-                  <input
-                    value={fb.subject}
-                    onChange={(e) => setFb({ ...fb, subject: e.target.value })}
-                    maxLength={140}
-                    placeholder="One line — e.g. Q12 of Free Mock 1 looks wrong"
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none"
-                    style={{ border: "1px solid var(--border)", background: "var(--card)", color: "var(--text)" }}
-                  />
-                </label>
-                <label className="grid gap-1.5">
-                  <span className="text-[12px] font-bold" style={{ color: "var(--text)" }}>Details</span>
-                  <textarea
-                    value={fb.message}
-                    onChange={(e) => setFb({ ...fb, message: e.target.value })}
-                    rows={5}
-                    maxLength={4000}
-                    placeholder="What happened? Include the test name and question number where possible."
-                    className="w-full resize-y rounded-xl px-3.5 py-2.5 text-sm leading-6 outline-none"
-                    style={{ border: "1px solid var(--border)", background: "var(--card)", color: "var(--text)" }}
-                  />
-                  <span className="text-right text-[11px]" style={{ color: "var(--muted)" }}>{fb.message.length}/4000</span>
-                </label>
-                {fbMsg && (
-                  <p className="rounded-xl px-3.5 py-2.5 text-[12.5px] font-semibold" style={{ background: "rgba(239,68,68,0.08)", color: "#dc2626" }}>
-                    {fbMsg}
-                  </p>
-                )}
-                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-4 rounded-[var(--dash-radius)] border border-white/15 bg-white/[0.07] p-4 backdrop-blur-sm sm:min-w-[16rem]">
+                      <div className="relative h-[96px] w-[96px] shrink-0">
+                        <svg width="96" height="96" viewBox="0 0 120 120" role="img" aria-label={`Current streak ${streakSummary.current} days, best ${streakSummary.best} days`}>
+                          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="9" />
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="52"
+                            fill="none"
+                            stroke="#fff"
+                            strokeWidth="9"
+                            strokeLinecap="round"
+                            strokeDasharray={RING_C}
+                            strokeDashoffset={RING_C * (1 - streakPct)}
+                            transform="rotate(-90 60 60)"
+                            style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <Flame size={15} className="text-white/75" />
+                          <span className="mono mt-0.5 text-[15px] font-extrabold text-white">{loading ? "—" : `${derived?.streak ?? 0}d`}</span>
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[9.5px] font-bold uppercase text-white/55" style={{ letterSpacing: ".15em" }}>Current streak</div>
+                        <div className="mt-1 truncate text-[15px] font-extrabold text-white">{loading ? "Loading…" : formatStreak(derived?.streak ?? 0)}</div>
+                        <div className="mt-0.5 text-[11px] font-medium text-white/60">
+                          {loading ? "Reading your history" : derived?.bestStreak ? `Best ${derived.bestStreak} days` : "Attempt daily to begin"}
+                        </div>
+                        {!loading && streakSummary.week.length > 0 && (
+                          <div className="mt-2 flex gap-1.5" aria-hidden>
+                            {streakSummary.week.map((d, i) => (
+                              <span
+                                key={i}
+                                title={d.active ? "Mock attempted" : "Rest day"}
+                                className="h-2 w-2 rounded-full"
+                                style={d.active
+                                  ? { background: "#fff" }
+                                  : { background: "rgba(255,255,255,0.22)", outline: d.isToday ? "1.5px solid rgba(255,255,255,.85)" : "none" }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </Reveal>
+
+              {note && (
+                <div className="dash-alert dash-alert-danger" role="alert">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <div className="min-w-0 flex-1">{note}</div>
                   <button
                     type="button"
-                    disabled={fbBusy}
-                    onClick={sendFeedback}
-                    className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-extrabold transition-transform hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))", color: "var(--accent-fg)" }}
+                    onClick={() => {
+                      setNote("");
+                      void loadCloudStats();
+                    }}
+                    className="dash-btn dash-btn-sm dash-btn-danger shrink-0"
                   >
-                    {fbBusy ? "Sending…" : "Send to admin"}
+                    <RefreshCw size={13} /> Retry
                   </button>
-                  <a
-                    href="mailto:abhayincodingworld@gmail.com?subject=NIMCET%20feedback"
-                    className="text-[12.5px] font-bold underline"
-                    style={{ color: "var(--muted)" }}
-                  >
-                    or email us directly
-                  </a>
                 </div>
-                <p className="text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
-                  Your message carries your account email automatically — no need to type it. Replies come to
-                  the email on your account.
-                </p>
+              )}
+
+              <Reveal>
+                <section className="dash-card overflow-hidden">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3.5 sm:px-5" style={{ borderColor: "var(--dash-line)" }}>
+                    <div>
+                      <h2 className="dash-title-sm">Performance snapshot</h2>
+                      <p className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
+                        Exact totals from {statsLabel === "saved to cloud" ? "your cloud history" : "this device"}.
+                      </p>
+                    </div>
+                    <span className="dash-chip">
+                      {loading ? <RefreshCw size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                      {loading ? "Loading" : statsLabel}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-px sm:grid-cols-3 xl:grid-cols-6" style={{ background: "var(--dash-line)" }}>
+                    {statTiles.map((s) => (
+                      <div key={s.label} className="dash-stat">
+                        <div className="flex items-center gap-2">
+                          <span className="dash-icon-tile dash-icon-tile-sm" style={statTone(s.tone)}>{s.icon}</span>
+                          <span className="dash-stat-label">{s.label}</span>
+                        </div>
+                        <div className="dash-stat-value mt-2.5">
+                          {loading ? (
+                            <span className="dash-skeleton inline-block h-6 w-16 align-middle" />
+                          ) : s.text !== undefined ? (
+                            s.text
+                          ) : (
+                            <CountUp value={s.num ?? null} decimals={s.dec ?? 0} suffix={s.suffix ?? ""} fallback={s.fallback} />
+                          )}
+                        </div>
+                        <div className="dash-stat-note mt-1">{s.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {statsTruncated && (
+                    <p className="border-t px-4 py-2.5 text-[10.5px]" style={{ borderColor: "var(--dash-line)", color: "var(--muted)" }}>
+                      Totals cover your most recent 20,000 attempts.
+                    </p>
+                  )}
+                </section>
+              </Reveal>
+
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
+                <div className="min-w-0 space-y-4">
+                  <Reveal>
+                    {loading ? (
+                      <div className="dash-card p-5">
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="dash-skeleton h-5 w-40" />
+                          <span className="dash-skeleton h-7 w-20" />
+                        </div>
+                        <div className="dash-skeleton mt-5 h-40 w-full" />
+                      </div>
+                    ) : attempts.length > 0 ? (
+                      <TrendChart data={attempts} />
+                    ) : (
+                      <section className="dash-card p-5">
+                        <div className="flex items-center gap-2">
+                          <span className="dash-icon-tile dash-icon-tile-sm"><BarChart3 size={15} /></span>
+                          <h2 className="dash-title-sm">Performance trend</h2>
+                        </div>
+                        <div className="dash-empty mt-3">
+                          <span className="dash-empty-icon"><BarChart3 size={18} /></span>
+                          <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>No trend yet</p>
+                          <p className="max-w-[22rem] text-[11.5px] leading-5">Complete a mock and your score line will start here. Nothing is estimated or invented.</p>
+                          <button type="button" onClick={() => selectView("mock")} className="dash-btn dash-btn-primary dash-btn-sm mt-1">
+                            <Play size={13} /> Take your first mock
+                          </button>
+                        </div>
+                      </section>
+                    )}
+                  </Reveal>
+
+                  <Reveal>
+                    <section id="series" className="scroll-mt-24">
+                      <div className="flex flex-wrap items-end justify-between gap-3">
+                        <div>
+                          <h2 className="dash-title-sm">Recommended tests</h2>
+                          <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--muted)" }}>Published by the NimCuet team.</p>
+                        </div>
+                        {series.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {exams.map((e) => (
+                              <button
+                                key={e}
+                                type="button"
+                                onClick={() => setExamFilter(e)}
+                                className="dash-chip transition-colors"
+                                style={examFilter === e
+                                  ? { background: "var(--dash-accent-soft)", borderColor: "var(--dash-accent-line)", color: "var(--accent)" }
+                                  : undefined}
+                                aria-pressed={examFilter === e}
+                              >
+                                {e === "all" ? "All exams" : examLabel(e)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {!seriesReady ? (
+                        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                          {[0, 1, 2, 3].map((i) => <div key={i} className="dash-skeleton h-[148px]" />)}
+                        </div>
+                      ) : series.length === 0 ? (
+                        <div className="dash-empty mt-3">
+                          <span className="dash-empty-icon"><BookOpen size={18} /></span>
+                          <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>No test series published yet</p>
+                          <p className="max-w-[24rem] text-[11.5px] leading-5">The catalogue is empty right now. Published mock tests and previous-year papers will appear here.</p>
+                        </div>
+                      ) : visibleSeries.length === 0 ? (
+                        <div className="dash-empty mt-3">
+                          <span className="dash-empty-icon"><BookOpen size={18} /></span>
+                          <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>No tests in this exam</p>
+                          <button type="button" onClick={() => setExamFilter("all")} className="dash-btn dash-btn-secondary dash-btn-sm mt-1">Show all exams</button>
+                        </div>
+                      ) : (
+                        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                          {visibleSeries.map((t) => {
+                            const done = attemptsForTitle(t.title);
+                            const qcount = Array.isArray(t.question_ids) ? t.question_ids.length : 0;
+                            return (
+                              <article key={t.id} className="dash-card dash-card-hover flex flex-col p-4">
+                                <div className="flex items-start justify-between gap-2">
+                                  <span className="dash-icon-tile dash-icon-tile-sm"><BookOpen size={15} /></span>
+                                  <div className="flex flex-wrap justify-end gap-1">
+                                    <span className="dash-chip dash-chip-accent !px-2 !py-0.5 !text-[9.5px]">{examLabel(t.exam)}</span>
+                                    {t.free && <span className="dash-chip dash-chip-success !px-2 !py-0.5 !text-[9.5px]">Free</span>}
+                                    {done > 0 && <span className="dash-chip !px-2 !py-0.5 !text-[9.5px]">Taken {done}×</span>}
+                                  </div>
+                                </div>
+                                <h3 className="mt-3 line-clamp-2 text-[13.5px] font-bold leading-5" style={{ color: "var(--text)" }} title={t.title}>{t.title}</h3>
+                                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px]" style={{ color: "var(--muted)" }}>
+                                  <span className="inline-flex items-center gap-1"><ListChecks size={12} /> {qcount} questions</span>
+                                  <span className="inline-flex items-center gap-1"><Clock3 size={12} /> {t.minutes} min</span>
+                                  {t.tag && <span className="truncate">{t.tag}</span>}
+                                </div>
+                                <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+                                  <span className="text-[10px] font-semibold" style={{ color: "var(--muted)" }}>{done > 0 ? "Ready to revisit" : "Not attempted yet"}</span>
+                                  <button type="button" onClick={() => selectView("mock")} className="dash-btn dash-btn-secondary dash-btn-sm">
+                                    Practice <ArrowUpRight size={13} />
+                                  </button>
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
+                  </Reveal>
+
+                  <Reveal>
+                    <section>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h2 className="dash-title-sm">Recent attempts</h2>
+                          <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--muted)" }}>Your latest cloud results, newest first.</p>
+                        </div>
+                        {attempts.length > 0 && (
+                          <button type="button" onClick={() => selectView("history")} className="dash-btn dash-btn-ghost dash-btn-sm">
+                            View all <ChevronRight size={13} />
+                          </button>
+                        )}
+                      </div>
+
+                      {loading ? (
+                        <div className="mt-3 grid gap-2.5">
+                          {[0, 1, 2].map((i) => <div key={i} className="dash-skeleton h-[84px]" />)}
+                        </div>
+                      ) : attempts.length === 0 ? (
+                        <div className="dash-empty mt-3">
+                          <span className="dash-empty-icon"><FileText size={18} /></span>
+                          <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>No cloud attempts yet</p>
+                          <p className="max-w-[24rem] text-[11.5px] leading-5">Finish a mock while signed in and it will be saved here across devices.</p>
+                          <button type="button" onClick={() => selectView("mock")} className="dash-btn dash-btn-primary dash-btn-sm mt-1">
+                            <Play size={13} /> Attempt a mock
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="mt-3 grid gap-2.5">
+                          {attempts.slice(0, 5).map((a) => (
+                            <AttemptRow key={a.id} a={a} cloud best={bestScore} rank={rankMap.get(a.id) ?? 0} />
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  </Reveal>
+
+                  {deviceOnly.length > 0 && (
+                    <Reveal>
+                      <section>
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <h2 className="dash-title-sm">On this device</h2>
+                            <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--muted)" }}>Saved locally — sign in to keep results across devices.</p>
+                          </div>
+                          <button type="button" onClick={clearLocal} className="dash-btn dash-btn-secondary dash-btn-sm">Clear</button>
+                        </div>
+                        <div className="mt-3 grid gap-2.5">
+                          {deviceOnly.slice(0, 4).map((a) => <AttemptRow key={a.id} a={a} best={localBest} />)}
+                        </div>
+                      </section>
+                    </Reveal>
+                  )}
+                </div>
+
+                <aside className="min-w-0 space-y-4">
+                  <Reveal>
+                    <section className="dash-card p-4">
+                      <div className="flex items-center gap-2">
+                        <span className="dash-icon-tile dash-icon-tile-sm"><CalendarDays size={15} /></span>
+                        <h2 className="dash-title-sm">Exam snapshot</h2>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[13px] font-bold" style={{ color: "var(--text)" }}>NIMCET 2027</span>
+                        <span className="dash-chip !px-2 !py-0.5 !text-[9px]">Date TBA</span>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-5" style={{ color: "var(--muted)" }}>
+                        June 2027 cycle. Official date awaited — the countdown starts when it is announced.
+                      </p>
+                      <div className="mt-3 grid grid-cols-3 gap-1.5">
+                        {[
+                          { value: "120", label: "Questions", icon: <ListChecks size={13} /> },
+                          { value: "1000", label: "Marks", icon: <Trophy size={13} /> },
+                          { value: "120m", label: "Duration", icon: <Clock3 size={13} /> },
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-[10px] border px-2 py-2 text-center" style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}>
+                            <span className="mx-auto flex items-center justify-center" style={{ color: "var(--muted)" }}>{item.icon}</span>
+                            <div className="mono mt-1 text-[12px] font-extrabold" style={{ color: "var(--text)" }}>{item.value}</div>
+                            <div className="text-[8.5px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".08em" }}>{item.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </Reveal>
+
+                  {notices.length > 0 && (
+                    <Reveal>
+                      <section className="dash-card p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="dash-icon-tile dash-icon-tile-sm" style={{ background: "var(--dash-warning-soft)", borderColor: "rgba(180,83,9,.16)", color: "var(--dash-warning)" }}><Megaphone size={15} /></span>
+                            <h2 className="dash-title-sm">Notices</h2>
+                          </div>
+                          {notices.length > 2 && (
+                            <button type="button" onClick={() => setShowAllNotices((v) => !v)} className="dash-btn dash-btn-ghost dash-btn-sm">
+                              {showAllNotices ? "Show less" : `All (${notices.length})`}
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-3 grid gap-2">
+                          {(showAllNotices ? notices : notices.slice(0, 2)).map((n) => (
+                            <div key={n.id} className="rounded-[10px] border px-3 py-2.5" style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}>
+                              <div className="flex flex-wrap items-baseline justify-between gap-1.5">
+                                <span className="text-[11.5px] font-bold" style={{ color: "var(--text)" }}>{n.title}</span>
+                                <span className="mono text-[9.5px]" style={{ color: "var(--muted)" }}>
+                                  {new Date(n.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                </span>
+                              </div>
+                              <p className="mt-1 whitespace-pre-wrap text-[10.5px] leading-5" style={{ color: "var(--muted)" }}>{n.body}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    </Reveal>
+                  )}
+
+                  <Reveal>
+                    <section className="dash-card p-4">
+                      <div className="flex items-center gap-2">
+                        <span className="dash-icon-tile dash-icon-tile-sm"><Sparkles size={15} /></span>
+                        <h2 className="dash-title-sm">Study tools</h2>
+                      </div>
+                      <div className="mt-3 grid gap-1.5">
+                        <button type="button" onClick={() => selectView("nimcet-pyq")} className="dash-btn dash-btn-secondary !justify-start">
+                          <BookOpen size={15} /> Previous-year papers <ChevronRight size={13} className="ml-auto" />
+                        </button>
+                        <button type="button" onClick={() => selectView("builder")} className="dash-btn dash-btn-secondary !justify-start">
+                          <SlidersIcon /> Build a custom mock <ChevronRight size={13} className="ml-auto" />
+                        </button>
+                        <button type="button" onClick={() => selectView("feedback")} className="dash-btn dash-btn-secondary !justify-start">
+                          <MessageSquare size={15} /> Send feedback <ChevronRight size={13} className="ml-auto" />
+                        </button>
+                      </div>
+                    </section>
+                  </Reveal>
+                </aside>
               </div>
             </div>
           )}
-        </Reveal>
-      )}
+
+          {view === "mock" && <MockHub attempted={attemptedCounts} exam="nimcet" />}
+          {view === "nimcet-pyq" && <MockHub attempted={attemptedCounts} exam="nimcet" collection="pyq" />}
+          {view === "cuet-mock" && <MockHub attempted={attemptedCounts} exam="cuet" />}
+          {view === "cuet-pyq" && <MockHub attempted={attemptedCounts} exam="cuet" collection="pyq" />}
+          {view === "builder" && <MockBuilder />}
+
+          {view === "history" && (
+            <div className="space-y-4">
+              <Reveal>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <div className="dash-eyebrow">Your record</div>
+                    <h1 className="dash-title mt-1">Test history</h1>
+                    <p className="dash-subtitle mt-1 max-w-2xl">
+                      Your latest 20 cloud attempts, newest first, plus device-local results not already saved to your account.
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => selectView("mock")} className="dash-btn dash-btn-primary">
+                    <Play size={14} /> New mock
+                  </button>
+                </div>
+              </Reveal>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                {[
+                  { label: "Cloud attempts", value: derived?.total ?? "—", icon: <History size={15} /> },
+                  { label: "Best score", value: derived?.best ?? "—", icon: <Trophy size={15} /> },
+                  { label: "Accuracy", value: derived?.acc ?? "—", icon: <Target size={15} /> },
+                ].map((s) => (
+                  <div key={s.label} className="dash-card p-3.5">
+                    <span className="dash-icon-tile dash-icon-tile-sm">{s.icon}</span>
+                    <div className="dash-stat-value mt-2 text-[19px]">{loading ? "…" : s.value}</div>
+                    <div className="dash-stat-label mt-0.5">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <section className="dash-card overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3.5 sm:px-5" style={{ borderColor: "var(--dash-line)" }}>
+                  <h2 className="dash-title-sm">Recent cloud attempts</h2>
+                  <span className="dash-chip"><CloudIcon /> Latest 20</span>
+                </div>
+                <div className="p-3 sm:p-4">
+                  {loading ? (
+                    <div className="grid gap-2.5">{[0, 1, 2, 3].map((i) => <div key={i} className="dash-skeleton h-[84px]" />)}</div>
+                  ) : attempts.length === 0 ? (
+                    <div className="dash-empty">
+                      <span className="dash-empty-icon"><History size={18} /></span>
+                      <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>No cloud attempts yet</p>
+                      <p className="max-w-[24rem] text-[11.5px] leading-5">Finish a mock while signed in and it will land here.</p>
+                      <button type="button" onClick={() => selectView("mock")} className="dash-btn dash-btn-primary dash-btn-sm mt-1"><Play size={13} /> Take a mock</button>
+                    </div>
+                  ) : (
+                    <div className="grid gap-2.5">
+                      {attempts.map((a) => <AttemptRow key={a.id} a={a} cloud best={bestScore} rank={rankMap.get(a.id) ?? 0} />)}
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {deviceOnly.length > 0 && (
+                <section>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h2 className="dash-title-sm">On this device</h2>
+                      <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--muted)" }}>Local only — not synced to your account.</p>
+                    </div>
+                    <button type="button" onClick={clearLocal} className="dash-btn dash-btn-secondary dash-btn-sm">Clear</button>
+                  </div>
+                  <div className="mt-3 grid gap-2.5">
+                    {deviceOnly.map((a) => <AttemptRow key={a.id} a={a} best={localBest} />)}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+
+          {view === "contact" && (
+            <div className="max-w-4xl space-y-4">
+              <Reveal>
+                <div>
+                  <div className="dash-eyebrow">Support</div>
+                  <h1 className="dash-title mt-1">Contact</h1>
+                  <p className="dash-subtitle mt-1 max-w-xl">
+                    Syllabus confusion, a plan question, or a bug in a mock — send a message and it goes directly to the team.
+                  </p>
+                </div>
+              </Reveal>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <a href="mailto:abhayincodingworld@gmail.com" className="dash-card dash-card-hover flex items-start gap-3.5 p-5">
+                  <span className="dash-icon-tile"><Mail size={17} /></span>
+                  <span className="min-w-0">
+                    <span className="dash-eyebrow">Email</span>
+                    <span className="mt-1 block break-all text-[13px] font-bold" style={{ color: "var(--text)" }}>abhayincodingworld@gmail.com</span>
+                    <span className="mt-1 block text-[11px] leading-5" style={{ color: "var(--muted)" }}>Best for detailed questions and account help.</span>
+                  </span>
+                </a>
+                <a href="tel:+917425097293" className="dash-card dash-card-hover flex items-start gap-3.5 p-5">
+                  <span className="dash-icon-tile"><Phone size={17} /></span>
+                  <span className="min-w-0">
+                    <span className="dash-eyebrow">Phone</span>
+                    <span className="mt-1 block text-[13px] font-bold" style={{ color: "var(--text)" }}>+91-74250-97293</span>
+                    <span className="mt-1 block text-[11px] leading-5" style={{ color: "var(--muted)" }}>Call for urgent test-day issues.</span>
+                  </span>
+                </a>
+              </div>
+              <section className="dash-card flex flex-wrap items-center justify-between gap-3 p-5">
+                <div className="flex items-start gap-3.5">
+                  <span className="dash-icon-tile"><MessageSquare size={17} /></span>
+                  <div>
+                    <h2 className="dash-title-sm">Report a question issue</h2>
+                    <p className="mt-1 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>Include the test name and question number so it can be fixed quickly.</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => selectView("feedback")} className="dash-btn dash-btn-primary">
+                  Open feedback form <ArrowRight size={14} />
+                </button>
+              </section>
+            </div>
+          )}
+
+          {view === "pricing" && (
+            <div className="space-y-4">
+              <Reveal>
+                <div>
+                  <div className="dash-eyebrow">Access</div>
+                  <h1 className="dash-title mt-1">Plans</h1>
+                  <p className="dash-subtitle mt-1 max-w-2xl">
+                    Start free. Paid plans activate over UPI within a day on your registered email — full policy in{" "}
+                    <a href="/terms" className="dash-link underline underline-offset-2">Terms</a>.
+                  </p>
+                </div>
+              </Reveal>
+              <div className="grid gap-3 md:grid-cols-3">
+                {[
+                  {
+                    name: "Free",
+                    price: "₹0",
+                    period: "forever",
+                    note: "Try the experience before paying.",
+                    features: ["Free 12-question sample mock", "Solutions and scorecard", "No card required"],
+                    action: { label: "Start free", onClick: () => selectView("mock") },
+                  },
+                  {
+                    name: "Monthly",
+                    price: "₹149",
+                    period: "/ month",
+                    note: "For a focused preparation month.",
+                    features: ["Unlimited mocks", "Full section analytics", "All previous-year sets", "Cancel anytime"],
+                    action: { label: "Choose Monthly", href: "mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Monthly%20plan" },
+                  },
+                  {
+                    name: "Annual",
+                    price: "₹699",
+                    period: "/ year",
+                    note: "For the full admission cycle.",
+                    features: ["12 months of full access", "Everything in Monthly", "Priority support"],
+                    action: { label: "Choose Annual", href: "mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Annual%20plan" },
+                  },
+                ].map((plan) => (
+                  <article key={plan.name} className="dash-card flex flex-col p-5">
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="dash-title-sm">{plan.name}</h2>
+                      {plan.name === "Free" && <span className="dash-chip">Entry</span>}
+                    </div>
+                    <div className="mt-3 flex items-baseline gap-1">
+                      <span className="mono text-[26px] font-extrabold leading-none" style={{ color: "var(--text)" }}>{plan.price}</span>
+                      <span className="text-[10.5px] font-semibold" style={{ color: "var(--muted)" }}>{plan.period}</span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-5" style={{ color: "var(--muted)" }}>{plan.note}</p>
+                    <ul className="mt-4 grid gap-2">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2 text-[11.5px] leading-5" style={{ color: "var(--text)" }}>
+                          <Check size={13} className="mt-0.5 shrink-0" style={{ color: "var(--dash-success)" }} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-auto pt-5">
+                      {"href" in plan.action ? (
+                        <a href={plan.action.href} className="dash-btn dash-btn-secondary w-full">{plan.action.label} <ArrowRight size={13} /></a>
+                      ) : (
+                        <button type="button" onClick={plan.action.onClick} className="dash-btn dash-btn-primary w-full">{plan.action.label} <ArrowRight size={13} /></button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <p className="flex items-start gap-2 text-[10.5px] leading-5" style={{ color: "var(--muted)" }}>
+                <Info size={13} className="mt-0.5 shrink-0" /> Plan changes are handled by the team over email; no payment details are stored in the dashboard.
+              </p>
+            </div>
+          )}
+
+          {view === "feedback" && (
+            <div className="max-w-2xl space-y-4">
+              <Reveal>
+                <div>
+                  <div className="dash-eyebrow">Product feedback</div>
+                  <h1 className="dash-title mt-1">Feedback</h1>
+                  <p className="dash-subtitle mt-1">
+                    Found a wrong answer, a confusing explanation, or have a feature idea? Send it straight to the admin inbox.
+                    Every message is read, and question fixes ship into future mocks.
+                  </p>
+                </div>
+              </Reveal>
+
+              {fbDone ? (
+                <section className="dash-card p-6 text-center sm:p-8">
+                  <span className="mx-auto grid h-12 w-12 place-items-center rounded-full" style={{ background: "var(--dash-success-soft)", color: "var(--dash-success)" }}>
+                    <CheckCircle2 size={23} />
+                  </span>
+                  <h2 className="dash-title-sm mt-3">Message sent to the admin inbox</h2>
+                  <p className="mx-auto mt-1.5 max-w-md text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
+                    It is already visible in the admin panel. You can send another message after a minute — this is a spam guard, not a limit on feedback.
+                  </p>
+                  <button type="button" onClick={() => setFbDone(false)} className="dash-btn dash-btn-primary mt-4">
+                    Send another <ArrowRight size={14} />
+                  </button>
+                </section>
+              ) : (
+                <section className="dash-card p-5 sm:p-6">
+                  <div className="grid gap-3.5">
+                    <label className="grid gap-1.5">
+                      <span className="dash-label">Topic</span>
+                      <select
+                        value={fb.category}
+                        onChange={(e) => setFb({ ...fb, category: e.target.value })}
+                        className="dash-input cursor-pointer"
+                      >
+                        <option value="general">General question</option>
+                        <option value="test">Mock test issue</option>
+                        <option value="content">Wrong answer / explanation</option>
+                        <option value="bug">App bug</option>
+                        <option value="other">Something else</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1.5">
+                      <span className="dash-label">Subject</span>
+                      <input
+                        value={fb.subject}
+                        onChange={(e) => setFb({ ...fb, subject: e.target.value })}
+                        maxLength={140}
+                        placeholder="One line — e.g. Q12 of Free Mock 1 looks wrong"
+                        className="dash-input"
+                      />
+                    </label>
+                    <label className="grid gap-1.5">
+                      <span className="dash-label">Details</span>
+                      <textarea
+                        value={fb.message}
+                        onChange={(e) => setFb({ ...fb, message: e.target.value })}
+                        rows={5}
+                        maxLength={4000}
+                        placeholder="What happened? Include the test name and question number where possible."
+                        className="dash-input"
+                      />
+                      <span className="text-right text-[10.5px]" style={{ color: "var(--muted)" }}>{fb.message.length}/4000</span>
+                    </label>
+                    {fbMsg && (
+                      <div className="dash-alert dash-alert-danger" role="alert">
+                        <AlertCircle size={15} className="mt-0.5 shrink-0" />
+                        <span>{fbMsg}</span>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button type="button" disabled={fbBusy} onClick={sendFeedback} className="dash-btn dash-btn-primary">
+                        {fbBusy ? <><RefreshCw size={14} className="animate-spin" /> Sending…</> : <>Send to admin <ArrowRight size={14} /></>}
+                      </button>
+                      <a href="mailto:abhayincodingworld@gmail.com?subject=NIMCET%20feedback" className="dash-link text-[12px]">
+                        or email us directly
+                      </a>
+                    </div>
+                    <p className="text-[10.5px] leading-5" style={{ color: "var(--muted)" }}>
+                      Your message carries your account email automatically — no need to type it. Replies come to the email on your account.
+                    </p>
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
         </div>
-    </main>
+      </main>
     </>
   );
+}
+
+function SlidersIcon() {
+  return <ListChecks size={15} />;
+}
+
+function CloudIcon() {
+  return <CheckCircle2 size={11} />;
 }
