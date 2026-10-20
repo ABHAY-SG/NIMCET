@@ -152,8 +152,16 @@ export async function finalizeSession(
     .select("id");
   if (claimErr) throw claimErr;
   if (!Array.isArray(claimed) || claimed.length === 0) {
-    // Another call already finalized this session.
-    return { result, recorded: session.attempt_id !== null };
+    // Another call already finalized this session. Re-read the row so a link
+    // written a moment ago by the winner is reported accurately.
+    const { data: after, error: afterErr } = await svc
+      .from("mock_sessions")
+      .select("attempt_id")
+      .eq("id", session.id)
+      .maybeSingle();
+    if (afterErr) throw afterErr;
+    const attemptId = (after as { attempt_id?: string | null } | null)?.attempt_id ?? null;
+    return { result, recorded: attemptId !== null };
   }
 
   const answered = result.correct + result.wrong;
@@ -177,10 +185,33 @@ export async function finalizeSession(
     throw aErr;
   }
 
-  await svc
-    .from("mock_sessions")
-    .update({ attempt_id: (attempt as { id: string }).id })
-    .eq("id", session.id);
+  const attemptId = (attempt as { id: string }).id;
+
+  // Link the attempt to the session. This is a second row operation, so retry
+  // transient failures. If it still cannot be linked, compensate: delete the
+  // just-created attempt and release the completion claim, otherwise the
+  // session would stay "completed" with no way to see its score and a retry
+  // would consider it already recorded. The original error is surfaced so the
+  // client can retry cleanly.
+  let linked = false;
+  let linkErr: unknown = null;
+  for (let i = 0; i < 3 && !linked; i++) {
+    const { data: updated, error } = await svc
+      .from("mock_sessions")
+      .update({ attempt_id: attemptId })
+      .eq("id", session.id)
+      .select("id");
+    linkErr = error;
+    linked = !error && Array.isArray(updated) && updated.length > 0;
+  }
+
+  if (!linked) {
+    await svc.from("attempts").delete().eq("id", attemptId);
+    await svc.from("mock_sessions")
+      .update({ completed: false, attempt_id: null })
+      .eq("id", session.id);
+    throw linkErr ?? new Error("Could not link the recorded attempt.");
+  }
 
   return { result, recorded: true };
 }

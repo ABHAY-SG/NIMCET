@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/admin-server";
 import { errorPayload, isUuid } from "@/lib/admin-queries";
 import { marksUsed } from "@/lib/exam-session";
-import { FULL_MOCK_TEMPLATE, isFullMockTemplate } from "@/lib/nimcet-full-mock";
+import { loadQuestionAccess, stringIds } from "@/lib/student-question-access";
 
 type AnswerIn = { id: string; answer: number | null };
 type BankRow = {
@@ -15,36 +15,85 @@ type BankRow = {
   explanation: unknown;
   section?: string | null;
 };
+type TestRow = {
+  id: string;
+  title: string;
+  question_ids: unknown;
+  template?: unknown;
+};
 
-// POST /api/student/submit — scores a finished mock SERVER-SIDE from the
-// answer key and records the attempt. The browser never receives correct
+// POST /api/student/submit — scores a finished PRACTICE mock SERVER-SIDE from
+// the answer key and records the attempt. The browser never receives correct
 // answers before submitting. Hardening (2026-10 audit):
 //   - duplicate question ids are scored ONCE (they used to stack marks and
 //     forge arbitrarily high scores);
-//   - when the submitted test resolves to a real published test, only that
-//     test's own questions are accepted (probing other questions via a fake
-//     submission is rejected);
-//   - submissions are throttled per account so the answer key cannot be
-//     farmed by rapid blank submissions;
-//   - retried submissions of the same finished run (a dropped response makes
-//     the client retry) do not create duplicate attempt rows;
+//   - a submission MUST resolve to a published test (by id or exact title)
+//     unless it explicitly declares itself a custom practice run;
+//   - every submitted question must belong to that test, or (for custom runs)
+//     to the published, non-template practice pool;
+//   - timed template exams are refused here entirely: they finalize through
+//     the server-owned mock_sessions workflow, which owns the clock;
+//   - questions reserved for a timed paper can never be read through the
+//     practice path, so their answer key cannot be farmed with a fake name;
+//   - submissions are throttled per account;
+//   - retried submissions of the same finished run do not create duplicate
+//     attempt rows;
 //   - raw database error text is never returned to the client.
+
 const SUBMIT_WINDOW_MS = 5 * 60_000;
 const SUBMIT_MAX_IN_WINDOW = 25;
 // Identical-attempt dedupe window: an attempt with the same test name and the
 // exact same counters recorded moments ago is the same submission retried.
 const DUPLICATE_WINDOW_MS = 120_000;
 
+async function readPublishedTest(
+  svc: Parameters<typeof loadQuestionAccess>[0],
+  kind: "id" | "title",
+  value: string
+): Promise<TestRow | null> {
+  // `template` only exists after migration 0007 — read it compatibly so older
+  // databases keep working, but fail closed on any other database error.
+  let res = await svc
+    .from("tests")
+    .select("id,title,question_ids,template")
+    .eq(kind, value)
+    .eq("published", true)
+    .maybeSingle<TestRow>();
+  if (res.error) {
+    res = await svc
+      .from("tests")
+      .select("id,title,question_ids")
+      .eq(kind, value)
+      .eq("published", true)
+      .maybeSingle<TestRow>();
+  }
+  if (res.error) throw res.error;
+  return res.data ?? null;
+}
+
 export async function POST(req: Request) {
   const ctx = await requireUser();
   if ("error" in ctx) return ctx.error;
   const { svc, user } = ctx;
   try {
-    const body = (await req.json()) as { test?: unknown; testId?: unknown; answers?: unknown };
+    const body = (await req.json()) as {
+      test?: unknown;
+      testId?: unknown;
+      custom?: unknown;
+      answers?: unknown;
+    };
     const test = typeof body.test === "string" ? body.test.trim().slice(0, 120) : "";
-    const testId = typeof body.testId === "string" && isUuid(body.testId) ? body.testId : "";
+    const rawTestId = typeof body.testId === "string" ? body.testId.trim() : "";
+    const custom = body.custom === true;
     const raw = Array.isArray(body.answers) ? (body.answers as AnswerIn[]) : [];
+
     if (!test) return NextResponse.json({ error: "Missing test name." }, { status: 400 });
+    if (rawTestId && !isUuid(rawTestId)) {
+      return NextResponse.json({ error: "Invalid test id." }, { status: 400 });
+    }
+    if (custom && rawTestId) {
+      return NextResponse.json({ error: "A custom practice run cannot carry a test id." }, { status: 400 });
+    }
     if (raw.length === 0 || raw.length > 300) {
       return NextResponse.json({ error: "Submit 1–300 answers." }, { status: 400 });
     }
@@ -79,56 +128,54 @@ export async function POST(req: Request) {
       );
     }
 
-    // Resolve the real test (id preferred, title as fallback) so a submission
-    // can only score against that test's own questions.
-    let allowed: Set<string> | null = null;
-    let resolvedTemplate = "";
-    try {
-      type TestRow = { id: string; question_ids: unknown; template?: unknown };
-      // `template` only exists after migration 0007 — read it compatibly so
-      // older databases keep the previous strict behavior.
-      const readTest = async (kind: "id" | "title", value: string): Promise<TestRow | null> => {
-        let res = await svc
-          .from("tests")
-          .select("id,question_ids,template")
-          .eq(kind, value)
-          .eq("published", true)
-          .maybeSingle<TestRow>();
-        if (res.error) {
-          res = await svc
-            .from("tests")
-            .select("id,question_ids")
-            .eq(kind, value)
-            .eq("published", true)
-            .maybeSingle<TestRow>();
-        }
-        return res.data ?? null;
-      };
-      const tq = (testId ? await readTest("id", testId) : null) ?? (await readTest("title", test));
-      if (tq && Array.isArray(tq.question_ids)) {
-        allowed = new Set((tq.question_ids as unknown[]).filter((x): x is string => typeof x === "string"));
-        resolvedTemplate = isFullMockTemplate(tq.template) ? FULL_MOCK_TEMPLATE : "";
+    // Resolve the authorization scope BEFORE reading any question row.
+    // Test-specific submissions must name a real published test. Custom
+    // practice runs are allowed only against the published, non-template pool.
+    let allowed: Set<string>;
+    let attemptName = test;
+
+    if (custom) {
+      const access = await loadQuestionAccess(svc);
+      allowed = access.practice;
+      if (allowed.size === 0) {
+        return NextResponse.json(
+          { error: "No practice questions are available yet." },
+          { status: 400 }
+        );
       }
-    } catch {
-      // Test lookup is best-effort (older databases may lack columns); the
-      // safer scoring path below still runs.
-      allowed = null;
-      resolvedTemplate = "";
+    } else {
+      const tq = rawTestId
+        ? await readPublishedTest(svc, "id", rawTestId)
+        : await readPublishedTest(svc, "title", test);
+      if (!tq) {
+        return NextResponse.json(
+          { error: "Unknown test. Reload the mock list and try again." },
+          { status: 400 }
+        );
+      }
+      // Any template exam is clock/session-owned. Direct submissions would
+      // bypass section timing, so they are refused even when the question ids
+      // look correct.
+      if (String(tq.template ?? "").trim() !== "") {
+        return NextResponse.json(
+          { error: "This is a timed template exam — it submits itself from the test screen." },
+          { status: 409 }
+        );
+      }
+      const testIds = stringIds(tq.question_ids);
+      if (testIds.length === 0) {
+        return NextResponse.json(
+          { error: "This test has no questions available." },
+          { status: 400 }
+        );
+      }
+      allowed = new Set(testIds);
+      attemptName = (tq.title || test).trim().slice(0, 120) || test;
     }
-    // Timed template exams are scored exclusively through the server-enforced
-    // session flow (mock_sessions) — a direct legacy submission would bypass
-    // the section clocks, so it is refused.
-    if (resolvedTemplate === FULL_MOCK_TEMPLATE) {
-      return NextResponse.json(
-        { error: "This is a timed template exam — it submits itself from the test screen." },
-        { status: 409 }
-      );
-    }
-    if (allowed) {
-      for (const id of unique.keys()) {
-        if (!allowed.has(id)) {
-          return NextResponse.json({ error: "Unknown question in submission." }, { status: 400 });
-        }
+
+    for (const id of unique.keys()) {
+      if (!allowed.has(id)) {
+        return NextResponse.json({ error: "Unknown question in submission." }, { status: 400 });
       }
     }
 
@@ -140,14 +187,13 @@ export async function POST(req: Request) {
     if (error) throw error;
     const byId = new Map<string, BankRow>();
     for (const q of (data ?? []) as BankRow[]) byId.set(q.id, q);
-    if (byId.size === 0) {
+    if (byId.size !== ids.length) {
       return NextResponse.json({ error: "Unknown question in submission." }, { status: 400 });
     }
 
-    // Validate that every submitted id exists and every pick fits its options.
+    // Validate every pick fits its options.
     for (const [id, pick] of unique) {
-      const q = byId.get(id);
-      if (!q) return NextResponse.json({ error: "Unknown question in submission." }, { status: 400 });
+      const q = byId.get(id)!;
       const opts = Array.isArray(q.options) ? (q.options as unknown[]) : [];
       if (pick !== null && pick >= opts.length) {
         return NextResponse.json({ error: "Invalid answer option." }, { status: 400 });
@@ -165,7 +211,10 @@ export async function POST(req: Request) {
     let skipped = 0;
     for (const [id, pick] of unique) {
       const q = byId.get(id)!;
-      const marks = marksUsed({ section: q.section ?? "", plus: Number(q.plus) || 0, minus: Number(q.minus) || 0 }, resolvedTemplate);
+      const marks = marksUsed(
+        { section: q.section ?? "", plus: Number(q.plus) || 0, minus: Number(q.minus) || 0 },
+        "" // only the full-mock template changes marking, and those are refused above
+      );
       const plus = marks.plus;
       const minus = marks.minus;
       const opts = Array.isArray(q.options) ? (q.options as string[]) : [];
@@ -198,7 +247,7 @@ export async function POST(req: Request) {
       .from("attempts")
       .select("id")
       .eq("user_id", user.id)
-      .eq("test", test)
+      .eq("test", attemptName)
       .eq("score", score)
       .eq("correct", correct)
       .eq("wrong", wrong)
@@ -210,7 +259,7 @@ export async function POST(req: Request) {
     if (!Array.isArray(dups) || dups.length === 0) {
       const { error: insErr } = await svc.from("attempts").insert({
         user_id: user.id,
-        test,
+        test: attemptName,
         score,
         correct,
         wrong,

@@ -22,8 +22,24 @@ import { isFullMockTemplate, templateParts } from "@/lib/nimcet-full-mock";
 //   - an unfinished session whose window has fully passed is scored and
 //     recorded right away (abandoned attempts never silently vanish), then a
 //     fresh session is opened so the student can genuinely retake the paper.
+//
+// CONCURRENCY: the database enforces at most one open session per
+// (user_id, test_id) with the partial unique index added by migration 0008.
+// Two simultaneous starts therefore cannot both win: the loser receives
+// 23505 and returns the winner's session. This route NEVER marks another
+// session completed — completion only happens through finalizeSession(),
+// which records the attempt and releases the claim atomically.
 
 const TEST_COLS = "id,title,exam,minutes,free,published,question_ids,template";
+const MAX_START_ROUNDS = 3;
+
+function errorCode(e: unknown): string {
+  if (e && typeof e === "object" && "code" in e) {
+    const code = (e as { code?: unknown }).code;
+    if (typeof code === "string") return code;
+  }
+  return "";
+}
 
 export async function POST(req: Request) {
   const ctx = await requireUser();
@@ -55,83 +71,94 @@ export async function POST(req: Request) {
     }
 
     const parts = templateParts();
-    const now = Date.now();
 
-    const { data: priorRows, error: pErr } = await svc
-      .from("mock_sessions")
-      .select(SESSION_COLS)
-      .eq("user_id", user.id)
-      .eq("test_id", test.id)
-      .eq("completed", false)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    if (pErr) throw pErr;
-
-    const prior = ((priorRows ?? [])[0] ?? null) as MockSessionRow | null;
-    let previous: { score: number; correct: number; wrong: number; skipped: number } | null = null;
-
-    if (prior) {
-      const startedMs = Date.parse(prior.started_at);
-      const elapsed = Number.isFinite(startedMs) ? now - startedMs : Number.POSITIVE_INFINITY;
-      if (elapsed >= 0 && elapsed < partsTotalMs(parts) + COMPLETE_GRACE_MS) {
-        const index = activeIndexAt(parts, Math.max(0, elapsed));
-        return NextResponse.json({
-          sessionId: prior.id,
-          resumed: true,
-          parts,
-          index,
-          remainingSec: Math.ceil(partRemainingMs(parts, Math.max(0, elapsed), index) / 1000),
-          serverNow: now,
-        });
-      }
-      // Window fully over — record whatever was saved before opening a new run.
-      const fin = await finalizeSession(svc, prior);
-      if (fin.recorded) {
-        previous = {
-          score: fin.result.score,
-          correct: fin.result.correct,
-          wrong: fin.result.wrong,
-          skipped: fin.result.skipped,
-        };
-      }
-    }
-
-    const { data: created, error: cErr } = await svc
-      .from("mock_sessions")
-      .insert({
-        user_id: user.id,
-        test_id: test.id,
-        test_title: test.title,
-        template: test.template,
-        question_ids: Array.isArray(test.question_ids) ? test.question_ids : [],
-        parts: blankParts(parts.length),
-        started_at: new Date(now).toISOString(),
-      })
-      .select("id")
-      .single();
-    if (cErr) throw cErr;
-
-    // Keep at most one open session per (user, test) — retire any strays left
-    // by crashed parallel starts. Best-effort; never fails the request.
-    try {
-      await svc
+    const openSession = async (): Promise<MockSessionRow | null> => {
+      const { data, error } = await svc
         .from("mock_sessions")
-        .update({ completed: true, updated_at: new Date().toISOString() })
+        .select(SESSION_COLS)
         .eq("user_id", user.id)
         .eq("test_id", test.id)
         .eq("completed", false)
-        .neq("id", (created as { id: string }).id);
-    } catch {}
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      return ((data ?? [])[0] ?? null) as MockSessionRow | null;
+    };
 
-    return NextResponse.json({
-      sessionId: (created as { id: string }).id,
-      resumed: false,
-      parts,
-      index: 0,
-      remainingSec: parts[0].minutes * 60,
-      serverNow: now,
-      previous,
-    });
+    let previous: { score: number; correct: number; wrong: number; skipped: number } | null = null;
+
+    for (let round = 0; round < MAX_START_ROUNDS; round++) {
+      const now = Date.now();
+      const prior = await openSession();
+
+      if (prior) {
+        const startedMs = Date.parse(prior.started_at);
+        const elapsed = Number.isFinite(startedMs) ? now - startedMs : Number.POSITIVE_INFINITY;
+        if (elapsed >= 0 && elapsed < partsTotalMs(parts) + COMPLETE_GRACE_MS) {
+          const index = activeIndexAt(parts, Math.max(0, elapsed));
+          return NextResponse.json({
+            sessionId: prior.id,
+            resumed: true,
+            parts,
+            index,
+            remainingSec: Math.ceil(partRemainingMs(parts, Math.max(0, elapsed), index) / 1000),
+            serverNow: now,
+          });
+        }
+        // Window fully over — record whatever was saved before opening a new
+        // run. finalizeSession() claims the row itself, so a concurrent
+        // finalizer cannot double-record it.
+        const fin = await finalizeSession(svc, prior);
+        if (fin.recorded) {
+          previous = {
+            score: fin.result.score,
+            correct: fin.result.correct,
+            wrong: fin.result.wrong,
+            skipped: fin.result.skipped,
+          };
+        }
+        // Another request may have opened a fresh session in the meantime.
+        continue;
+      }
+
+      const { data: created, error: cErr } = await svc
+        .from("mock_sessions")
+        .insert({
+          user_id: user.id,
+          test_id: test.id,
+          test_title: test.title,
+          template: test.template,
+          question_ids: Array.isArray(test.question_ids) ? test.question_ids : [],
+          parts: blankParts(parts.length),
+          started_at: new Date(now).toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (!cErr) {
+        return NextResponse.json({
+          sessionId: (created as { id: string }).id,
+          resumed: false,
+          parts,
+          index: 0,
+          remainingSec: parts[0].minutes * 60,
+          serverNow: now,
+          previous,
+        });
+      }
+
+      // 23505 = the partial unique index rejected a second open session.
+      // Someone else won the race; return their session on the next round.
+      if (errorCode(cErr) !== "23505") throw cErr;
+    }
+
+    // Three consecutive races is pathological (or migration 0008 is missing
+    // and duplicates are already present). Fail explicitly instead of
+    // silently invalidating anyone's attempt.
+    return NextResponse.json(
+      { error: "Could not open the test right now — please retry in a moment." },
+      { status: 409 }
+    );
   } catch (e) {
     const p = errorPayload(e, "Could not start the test.");
     return NextResponse.json({ error: p.error }, { status: p.status });

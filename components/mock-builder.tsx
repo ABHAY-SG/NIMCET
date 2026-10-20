@@ -115,6 +115,7 @@ export default function MockBuilder() {
       credentials: "same-origin",
       body: JSON.stringify({
         test: attemptName,
+        custom: true,
         answers: qs.map((q, i) => ({ id: q.qid ?? "", answer: picks[i] ?? null })),
       }),
     });
