@@ -95,7 +95,6 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const pathname = usePathname();
 
   // Section anchors only exist on the landing page; other pages highlight
@@ -105,28 +104,39 @@ export default function Navbar() {
   const isActive = (id: string) => (pathname === "/" ? active === id : pageId === id);
 
   useEffect(() => {
-    // Session-aware action: the public navbar carries EXACTLY ONE entry point
-    // for a signed-in visitor, chosen by role — "Admin panel" for staff, else
-    // "Dashboard". The student dashboard and the admin console stay separate
-    // areas and are never cross-linked from here, so a public page can't read
-    // as a hub with two competing destinations. Anonymous visitors keep the
-    // Log in / Get Started pair below and never see either label.
-    // Read-only check — touches no auth flow.
-    (async () => {
+    // Session-aware action: the public navbar carries exactly ONE entry point
+    // for a signed-in visitor — "Dashboard". The admin console is deliberately
+    // NOT linked from the marketing site: it has its own sign-in (/admin/login)
+    // and stays server-gated, so a public page never advertises a staff door.
+    // (It used to say "Admin panel" for allowlisted sessions, which read to a
+    // signed-in student as though the console were open to anyone.) Anonymous
+    // visitors keep the Log in / Get Started pair below.
+    //
+    // The navbar sits in the root layout, so it is NOT remounted by a client-side
+    // login or a link click. Reading the session once on mount left a stale
+    // "Dashboard" behind after signing out (or a stale staff label after switching
+    // accounts) in the same tab, until a full reload. Re-sync on every auth change
+    // and when the tab regains focus. Read-only check — touches no auth flow.
+    const sb = getAuthClient();
+    let live = true;
+    const syncAuth = async () => {
       try {
-        const sb = getAuthClient();
         const { data: { user } } = await sb.auth.getUser();
-        if (!user) return;
-        setLoggedIn(true);
-        try {
-          const r = await fetch("/api/admin/session", { credentials: "same-origin", cache: "no-store" });
-          if (r.ok) {
-            const info = (await r.json()) as { admin?: boolean };
-            if (info.admin) setIsAdmin(true);
-          }
-        } catch {}
+        if (live) setLoggedIn(!!user);
       } catch {}
-    })();
+    };
+    syncAuth();
+    // Deferred: supabase-js forbids calling its auth methods synchronously from
+    // inside its own state-change callback.
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        window.setTimeout(() => { void syncAuth(); }, 0);
+      }
+    });
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void syncAuth();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -143,6 +153,9 @@ export default function Navbar() {
     onSpy();
     window.addEventListener("scroll", onSpy, { passive: true });
     return () => {
+      live = false;
+      subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("scroll", onSpy);
     };
@@ -259,11 +272,11 @@ export default function Navbar() {
 
           {loggedIn ? (
             <a
-              href={isAdmin ? "/admin" : "/dashboard"}
+              href="/dashboard"
               className="cta-glow flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold sm:px-5"
               style={{ background: "var(--text)", color: "var(--bg)" }}
             >
-              {isAdmin ? "Admin panel" : "Dashboard"}
+              Dashboard
               <span className="carr text-[15px]">→</span>
             </a>
           ) : (
@@ -304,11 +317,11 @@ export default function Navbar() {
           ))}
           {loggedIn ? (
             <a
-              href={isAdmin ? "/admin" : "/dashboard"}
+              href="/dashboard"
               onClick={() => setOpen(false)}
               className={plainCls}
             >
-              {isAdmin ? "Admin panel" : "Dashboard"} →
+              Dashboard →
             </a>
           ) : (
             <a href="/login-choice" onClick={() => setOpen(false)} className={plainCls}>Log in</a>
