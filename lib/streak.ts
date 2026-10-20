@@ -6,6 +6,65 @@ export function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * Day key in the CLIENT's timezone, encoded as UTC midnight so it sorts and
+ * parses identically on the server. `tzOffsetMinutes` is the value from
+ * Date#getTimezoneOffset() (e.g. IST = -330).
+ */
+export function dayKeyFromIso(iso: string, tzOffsetMinutes = 0): string | null {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return null;
+  const offset = Number.isFinite(tzOffsetMinutes) ? tzOffsetMinutes : 0;
+  return new Date(t - offset * 60_000).toISOString().slice(0, 10);
+}
+
+export function calcStreakFromDays(days: Set<string>, todayKey: string): number {
+  let streak = 0;
+  const cursor = new Date(`${todayKey}T00:00:00.000Z`);
+  if (!days.has(todayKey)) cursor.setUTCDate(cursor.getUTCDate() - 1);
+  for (;;) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (!days.has(key)) break;
+    streak++;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return streak;
+}
+
+export function calcBestStreakFromDays(days: Set<string>): number {
+  if (days.size === 0) return 0;
+  const sorted = Array.from(days).sort();
+  let best = 1;
+  let run = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = Date.parse(`${sorted[i - 1]}T00:00:00.000Z`);
+    const cur = Date.parse(`${sorted[i]}T00:00:00.000Z`);
+    if (Math.round((cur - prev) / 86400000) === 1) {
+      run++;
+      if (run > best) best = run;
+    } else {
+      run = 1;
+    }
+  }
+  return best;
+}
+
+export function lastWeekActivityFromDays(
+  days: Set<string>,
+  todayKey: string
+): Array<{ label: string; active: boolean; isToday: boolean }> {
+  const out: Array<{ label: string; active: boolean; isToday: boolean }> = [];
+  const dow = ["S", "M", "T", "W", "T", "F", "S"];
+  const today = new Date(`${todayKey}T00:00:00.000Z`);
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    out.push({ label: dow[d.getUTCDay()], active: days.has(key), isToday: i === 0 });
+  }
+  return out;
+}
+
 function activeDays(all: AttemptLike[]): Set<string> {
   const days = new Set<string>();
   for (const a of all) {

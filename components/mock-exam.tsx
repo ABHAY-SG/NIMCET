@@ -13,6 +13,12 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { PALETTE } from "./mock-instructions";
 import { MathText } from "./math-text";
+import {
+  clearExamMarks,
+  marksForQuestions,
+  readExamMarks,
+  writeExamMarks,
+} from "@/lib/exam-marks";
 
 type Part = { label: string; minutes: number; count: number };
 type Q = { id: string; section: string; stem: string; options: string[]; plus: number; minus: number };
@@ -219,6 +225,7 @@ export default function MockExam({
     if (typeof j.serverNow === "number") offsetRef.current = j.serverNow - Date.now();
     if (j.result) {
       endedRef.current = true;
+      clearExamMarks(sid);
       setResult(j.result);
       setRecorded(Boolean(j.recorded));
       setSaveState("saved");
@@ -276,7 +283,7 @@ export default function MockExam({
       setQuestions(qs);
       setPartIndex(i);
       setAnswers(ans);
-      setMarked({});
+      setMarked(marksForQuestions(sid, qs.map((x) => x.id)));
       setPos(0);
       setRemaining(leftSec);
       setSaveState("idle");
@@ -429,12 +436,16 @@ export default function MockExam({
   };
   const toggleMark = () => {
     if (!q) return;
-    setMarked((prev) => {
-      const next = { ...prev };
-      if (next[q.id]) delete next[q.id];
-      else next[q.id] = true;
-      return next;
-    });
+    const next = { ...marked };
+    if (next[q.id]) delete next[q.id];
+    else next[q.id] = true;
+    setMarked(next);
+    // Merge with marks from other parts instead of overwriting them.
+    const sid = sessionRef.current;
+    const stored = readExamMarks(sid);
+    if (next[q.id]) stored[q.id] = true;
+    else delete stored[q.id];
+    writeExamMarks(sid, stored);
   };
   const exitExam = () => {
     if (!window.confirm("Leave the exam? The server clock keeps running — come back before the section ends to continue where you left off.")) return;

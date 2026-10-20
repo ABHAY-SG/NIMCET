@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Reveal from "@/components/reveal";
 import CountUp from "@/components/count-up";
@@ -8,7 +8,12 @@ import DashSide, { type DashView } from "@/components/dash-side";
 import MockHub from "@/components/mock-hub";
 import MockBuilder from "@/components/mock-builder";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
-import { calcBestStreak, calcStreak, formatStreak, lastWeekActivity } from "@/lib/streak";
+import { formatStreak } from "@/lib/streak";
+import {
+  attemptFingerprint,
+  calculateStats,
+  type AttemptStats,
+} from "@/lib/attempt-stats";
 
 type Attempt = {
   id: string;
@@ -39,12 +44,6 @@ function examLabel(exam: string): string {
   if (e === "nimcet") return "NIMCET";
   if (e === "cuet-pg-mca" || e === "cuet") return "CUET PG";
   return exam.toUpperCase();
-}
-
-// Older attempts stored "Title (NQ)" while tests are keyed by title alone;
-// compare on the base title so history from both formats lines up.
-function baseTestName(name: string): string {
-  return name.replace(/\s*\(\d+\s*Q\)\s*$/i, "").trim();
 }
 
 const MEDAL_LABEL = ["#1", "#2", "#3"];
@@ -132,6 +131,8 @@ export default function DashboardPage() {
   const [examFilter, setExamFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
+  const [serverStats, setServerStats] = useState<AttemptStats | null>(null);
+  const [statsTruncated, setStatsTruncated] = useState(false);
   const [todayLine, setTodayLine] = useState("");
   const [sideOpen, setSideOpen] = useState(false);
   const [sideCollapsed, setSideCollapsed] = useState(false);
@@ -142,6 +143,38 @@ export default function DashboardPage() {
   const [fbBusy, setFbBusy] = useState(false);
   const [fbMsg, setFbMsg] = useState("");
   const [fbDone, setFbDone] = useState(false);
+
+  // Server-side aggregate stats. Exact totals/best/avg/streak over the whole
+  // history — never a slice of the 20 rows rendered below. The timezone
+  // offset keeps day streaks in the student's local calendar.
+  const loadCloudStats = useCallback(async (silent = false) => {
+    try {
+      const tz = new Date().getTimezoneOffset();
+      const r = await fetch(`/api/student/stats?tzOffset=${tz}`, {
+        credentials: "same-origin",
+      });
+      const j = (await r.json().catch(() => ({}))) as {
+        attempts?: Attempt[];
+        stats?: AttemptStats | null;
+        truncated?: boolean;
+        missingTable?: boolean;
+        error?: string;
+      };
+      if (!r.ok) {
+        if (!silent) setNote(j.error || `Could not load your statistics (${r.status}).`);
+        return;
+      }
+      if (j.missingTable) {
+        if (!silent) setNote("Attempts table not found yet — run the SQL from setup to enable history.");
+        return;
+      }
+      setAttempts(Array.isArray(j.attempts) ? j.attempts : []);
+      setServerStats(j.stats ?? null);
+      setStatsTruncated(!!j.truncated);
+    } catch {
+      if (!silent) setNote("Could not reach the statistics service — check your connection and retry.");
+    }
+  }, []);
 
   // Dashboard scrolls without a visible scrollbar track.
   useEffect(() => {
@@ -250,13 +283,7 @@ export default function DashboardPage() {
         const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";
         setDisplayName(full.trim() || (user.email ?? "").split("@")[0]);
         setAvatarUrl(resolveAvatarUrl(user.user_metadata));
-        const { data, error } = await sb
-          .from("attempts")
-          .select("id,test,score,correct,wrong,skipped,created_at")
-          .order("created_at", { ascending: false })
-          .limit(20);
-        if (error) setNote("Attempts table not found yet — run the SQL from setup to enable history.");
-        else setAttempts(data ?? []);
+        await loadCloudStats();
         // Published test series for the catalog. Failure hides the section —
         // never a fake list.
         try {
@@ -274,10 +301,20 @@ export default function DashboardPage() {
         setLoading(false);
       }
     })();
-  }, [router]);
+  }, [router, loadCloudStats]);
 
-  // Stats + streak are derived from attempt dates. The memo short-circuits
-  // while loading (and during prerender), so no date logic runs at build time.
+  // Exact server aggregates when the cloud has attempts; otherwise the
+  // device-local sample history (same formula). Never a 20-row slice.
+  const localStats = useMemo(
+    () =>
+      localAttempts.length > 0
+        ? calculateStats(localAttempts, new Date().getTimezoneOffset())
+        : null,
+    [localAttempts]
+  );
+  const displayStats =
+    serverStats && serverStats.total > 0 ? serverStats : localStats;
+
   const derived = useMemo<{
     total: string;
     best: string;
@@ -288,29 +325,20 @@ export default function DashboardPage() {
     bestStreak: number;
     week: Array<{ label: string; active: boolean; isToday: boolean }>;
   } | null>(() => {
-    if (loading) return null;
-    const src = attempts.length > 0 ? attempts : localAttempts;
-    if (src.length === 0) return null;
-    const scores = src.map((a) => Number(a.score) || 0);
-    const best = Math.max(...scores);
-    const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
-    const correct = src.reduce((s, a) => s + (Number(a.correct) || 0), 0);
-    const wrong = src.reduce((s, a) => s + (Number(a.wrong) || 0), 0);
-    const skipped = src.reduce((s, a) => s + (Number(a.skipped) || 0), 0);
-    const answered = correct + wrong;
+    if (loading || !displayStats) return null;
     return {
-      total: String(src.length),
-      best: String(Math.round(best * 10) / 10),
-      avg: String(Math.round(avg * 10) / 10),
-      acc: answered === 0 ? "—" : `${Math.round((correct / answered) * 100)}%`,
-      questions: String(correct + wrong + skipped),
-      streak: calcStreak(src),
-      bestStreak: calcBestStreak(src),
-      week: lastWeekActivity(src),
+      total: String(displayStats.total),
+      best: String(displayStats.best),
+      avg: String(displayStats.avg),
+      acc: displayStats.accuracy === null ? "—" : `${displayStats.accuracy}%`,
+      questions: String(displayStats.questions),
+      streak: displayStats.streak,
+      bestStreak: displayStats.bestStreak,
+      week: displayStats.week,
     };
-  }, [attempts, localAttempts, loading]);
+  }, [displayStats, loading]);
 
-  const statsLabel = attempts.length > 0 ? "saved to cloud" : "on this device";
+  const statsLabel = serverStats && serverStats.total > 0 ? "saved to cloud" : "on this device";
 
   const exams = useMemo(() => {
     const set = new Set(series.map((t) => t.exam).filter(Boolean));
@@ -319,26 +347,37 @@ export default function DashboardPage() {
 
   const visibleSeries = examFilter === "all" ? series : series.filter((t) => t.exam === examFilter);
 
-  const attemptsForTitle = (title: string) => attempts.filter((a) => baseTestName(a.test) === title).length;
+  const attemptsForTitle = (title: string) => displayStats?.byTest[title]?.count ?? 0;
 
-  // Attempt counts per test title (for catalog badges) — render-safe.
+  // Per-test counts/best come from the full history aggregate, not just the
+  // 20 rows rendered below.
   const attemptedCounts = useMemo(() => {
     const m: Record<string, number> = {};
-    for (const a of attempts) {
-      const k = baseTestName(a.test);
-      m[k] = (m[k] ?? 0) + 1;
+    for (const [title, value] of Object.entries(displayStats?.byTest ?? {})) {
+      m[title] = value.count;
     }
     return m;
-  }, [attempts]);
+  }, [displayStats]);
 
-  // Best score + top-3 ranks by score (render-safe arithmetic only).
+  // Device-local rows are shown only when they are not already represented by
+  // a cloud row (fingerprint = title + counters + 5-minute bucket).
+  const deviceOnly = useMemo(() => {
+    const cloud = new Set(attempts.map(attemptFingerprint));
+    return localAttempts.filter((a) => !cloud.has(attemptFingerprint(a)));
+  }, [attempts, localAttempts]);
+
+  // Best score (full history) + top-3 ranks among the rendered recent rows.
   const bestScore = useMemo(
-    () => attempts.reduce((m, a) => Math.max(m, Number(a.score) || 0), 0),
-    [attempts]
+    () =>
+      displayStats?.best ??
+      attempts.reduce((m, a) => Math.max(m, Number(a.score) || 0), 0),
+    [displayStats, attempts]
   );
   const localBest = useMemo(
-    () => localAttempts.reduce((m, a) => Math.max(m, Number(a.score) || 0), 0),
-    [localAttempts]
+    () =>
+      localStats?.best ??
+      localAttempts.reduce((m, a) => Math.max(m, Number(a.score) || 0), 0),
+    [localStats, localAttempts]
   );
   const rankMap = useMemo(() => {
     const sorted = [...attempts].sort((x, y) => (Number(y.score) || 0) - (Number(x.score) || 0));
@@ -377,19 +416,14 @@ export default function DashboardPage() {
         const sb = getAuthClient();
         const { data: { user } } = await sb.auth.getUser();
         if (!user) return;
-        const { data, error } = await sb
-          .from("attempts")
-          .select("id,test,score,correct,wrong,skipped,created_at")
-          .order("created_at", { ascending: false })
-          .limit(20);
-        if (!error) setAttempts(data ?? []);
+        await loadCloudStats(true);
         try {
           const raw = localStorage.getItem("nimcuet-attempts");
           if (raw) setLocalAttempts(JSON.parse(raw));
         } catch {}
       } catch {}
     })();
-  }, [view]);
+  }, [view, loadCloudStats]);
   const streakSummary = {
     current: derived?.streak ?? 0,
     best: derived?.bestStreak ?? 0,
@@ -600,6 +634,11 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+          {statsTruncated && (
+            <p className="px-4 py-2 text-[11px]" style={{ color: "var(--muted)" }}>
+              Totals cover your most recent 20,000 attempts.
+            </p>
+          )}
         </div>
       </Reveal>
 
@@ -700,7 +739,7 @@ export default function DashboardPage() {
           </div>
         )}
       </Reveal>
-      {localAttempts.length > 0 && (
+      {deviceOnly.length > 0 && (
         <Reveal>
           <div className="mt-10 flex items-center justify-between gap-2">
             <h2 className="dash-display text-lg font-extrabold tracking-tight">On this device</h2>
@@ -715,7 +754,7 @@ export default function DashboardPage() {
           </div>
           <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Saved locally — log in to keep them across devices.</p>
           <div className="mt-3 grid gap-2.5">
-            {localAttempts.map((a) => (
+            {deviceOnly.map((a) => (
               <AttemptRow key={a.id} a={a} best={localBest} />
             ))}
           </div>
@@ -743,7 +782,7 @@ export default function DashboardPage() {
           <Reveal>
             <h1 className="text-2xl font-extrabold tracking-tight">Test history</h1>
             <p className="mt-1 text-[13px]" style={{ color: "var(--muted)" }}>
-              Every attempt, newest first — cloud history plus this device.
+              Your latest 20 cloud attempts, newest first, plus device-local samples not already in the cloud.
             </p>
           </Reveal>
           <Reveal>
@@ -757,11 +796,11 @@ export default function DashboardPage() {
               )}
             </div>
           </Reveal>
-          {localAttempts.length > 0 && (
+          {deviceOnly.length > 0 && (
             <Reveal>
               <h2 className="mt-8 text-lg font-extrabold tracking-tight">On this device</h2>
               <div className="mt-3 grid gap-2.5">
-                {localAttempts.map((a) => (
+                {deviceOnly.map((a) => (
                   <AttemptRow key={a.id} a={a} />
                 ))}
               </div>
