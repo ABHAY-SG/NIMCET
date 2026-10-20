@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import {
+  OAUTH_INTENT_COOKIE,
+  oauthRecoveryPath,
+  readOAuthIntentCookie,
+} from "@/lib/oauth-return";
 
 // Proxy (the Next.js 16 rename of middleware) — a SESSION gate for /admin and
 // /dashboard, deliberately NOT an authorization gate for staff. It only
@@ -44,6 +49,28 @@ export async function proxy(req: NextRequest) {
 
   const admin = isAdminPath(path);
   if (path === "/admin/login") return NextResponse.next();
+
+  const studentGate = path === "/dashboard" || path.startsWith("/dashboard/");
+  if (!admin && !studentGate) {
+    // Supabase normally returns OAuth codes to /auth/callback. If this project
+    // is ever configured to fall back to the Site URL, the code lands on a
+    // public page and @supabase/ssr consumes it client-side — the navbar
+    // changes but nobody navigates. Recover it before the page renders.
+    const intent = readOAuthIntentCookie(req.headers.get("cookie"));
+    const recovery = oauthRecoveryPath(path, req.nextUrl.searchParams, intent);
+    if (recovery) {
+      const res = NextResponse.redirect(new URL(recovery, req.url));
+      res.cookies.set({
+        name: OAUTH_INTENT_COOKIE,
+        value: "",
+        path: "/",
+        maxAge: 0,
+        sameSite: "lax",
+      });
+      return res;
+    }
+    return NextResponse.next();
+  }
 
   const loginUrl = () => {
     const u = req.nextUrl.clone();
@@ -119,6 +146,10 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
+    "/login",
+    "/signup",
+    "/login-choice",
     "/admin",
     "/admin/:path*",
     "/dashboard",

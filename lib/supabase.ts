@@ -1,6 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { LEGACY_RUN_KEY, RUN_KEY } from "./exam-parts";
+import { OAUTH_PENDING_KEY } from "./oauth-return";
 
 type Client = SupabaseClient;
 
@@ -67,5 +68,6 @@ export async function signOutAll(): Promise<void> {
     // account on a shared device can never resume the previous student's run.
     window.sessionStorage.removeItem(RUN_KEY);
     window.sessionStorage.removeItem(LEGACY_RUN_KEY);
+    window.sessionStorage.removeItem(OAUTH_PENDING_KEY);
   } catch {}
 }

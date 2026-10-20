@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { getSupabase, signOutAll } from "@/lib/supabase";
 import { safeNextPath } from "@/lib/admin";
 import {
+  OAUTH_PENDING_KEY,
+  clearOAuthIntentCookie,
+  oauthIntentCookie,
+} from "@/lib/oauth-return";
+import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_PLACEHOLDER,
@@ -282,14 +287,24 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
     // into the OAuth result.
     try { await getSupabase().auth.signOut({ scope: "local" }); } catch {}
     // Remember where to return after the provider round-trip (e.g. /admin).
-    // Timestamped so an abandoned attempt can't hijack a later login.
+    // Timestamped so an abandoned attempt can't hijack a later login. The
+    // cookie is the server's copy: if Supabase loses the query string and
+    // lands on the Site URL, the proxy and callback still know this is OAuth.
+    const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
+    const at = Date.now();
     try {
-      const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
-      if (next) window.localStorage.setItem("nimcuet-post-login-redirect", `${Date.now()}:${next}`);
+      if (next) window.localStorage.setItem("nimcuet-post-login-redirect", `${at}:${next}`);
       else window.localStorage.removeItem("nimcuet-post-login-redirect");
+      window.sessionStorage.setItem(OAUTH_PENDING_KEY, String(at));
+      document.cookie = oauthIntentCookie(
+        { mode, provider, next, at },
+        { secure: window.location.protocol === "https:" },
+      );
     } catch {}
     try {
       const sb = getSupabase();
+      const params = new URLSearchParams({ mode, provider });
+      if (next) params.set("next", next);
       const { error } = await sb.auth.signInWithOAuth({
         provider,
         // Google: `select_account consent` forces the account chooser on
@@ -299,12 +314,18 @@ export default function AuthForm({ initialMode }: { initialMode: "in" | "up" }) 
         // (per GitHub's OAuth docs), so a previously authorized account is
         // never silently reused.
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?mode=${mode}&provider=${provider}`,
+          redirectTo: `${window.location.origin}/auth/callback?${params.toString()}`,
           queryParams: { prompt: provider === "google" ? "select_account consent" : "select_account" },
         },
       });
       if (error) throw error;
     } catch (err: unknown) {
+      // The browser did not leave for the provider; do not let a stale intent
+      // redirect a later visit.
+      try {
+        window.sessionStorage.removeItem(OAUTH_PENDING_KEY);
+        document.cookie = clearOAuthIntentCookie({ secure: window.location.protocol === "https:" });
+      } catch {}
       setMsg(err instanceof Error ? err.message : `${provider} login is not enabled yet — turn it on in Supabase → Authentication → Providers.`);
     }
   };

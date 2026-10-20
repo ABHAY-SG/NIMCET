@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { safeNextPath } from "@/lib/admin";
+import {
+  OAUTH_INTENT_COOKIE,
+  loginErrorPath,
+  postLoginPath,
+  readOAuthIntentCookie,
+  validOAuthProvider,
+} from "@/lib/oauth-return";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof getSupabaseServer>>;
 
@@ -20,13 +28,31 @@ function isExpiredOrUsedUp(message: string): boolean {
   return /expir|invalid|consumed|not found|already used/i.test(message);
 }
 
-function validProvider(value: string | null): "github" | "google" | null {
-  return value === "github" || value === "google" ? value : null;
-}
-
 export async function GET(req: Request) {
   const { searchParams, origin } = new URL(req.url);
-  const fail = (reason: string) => NextResponse.redirect(new URL(`/login?error=${reason}`, origin));
+  // Supabase can return the OAuth code here with the query string intact, or
+  // it can fall back to the Site URL. The proxy recovers the latter; this
+  // cookie covers direct callback returns where a deployment lost the
+  // mode/provider/next query tags.
+  const intent = readOAuthIntentCookie(req.headers.get("cookie"));
+  const queryNext = safeNextPath(searchParams.get("next"));
+  const requestedNext = queryNext ?? intent?.next ?? null;
+  const successNext = postLoginPath(requestedNext);
+  const provider = validOAuthProvider(searchParams.get("provider")) ?? intent?.provider ?? null;
+  const redirect = (path: string) => {
+    const res = NextResponse.redirect(new URL(path, origin));
+    // The intent has served its purpose; never let it affect a later login.
+    res.cookies.set({
+      name: OAUTH_INTENT_COOKIE,
+      value: "",
+      path: "/",
+      maxAge: 0,
+      sameSite: "lax",
+    });
+    return res;
+  };
+  const fail = (reason: string) =>
+    redirect(loginErrorPath(reason, { provider, next: requestedNext }));
 
   // Additive: the mobile app asks for ?mobile=1 so the success page can hand
   // control back to it (nimcuet:// deep link). Never present on website
@@ -96,23 +122,25 @@ export async function GET(req: Request) {
         // success page, preserving ?challenge= so that page can also
         // mark/broadcast the confirmation for the waiting tab.
         const next = verifiedPath(challenge);
-        return NextResponse.redirect(new URL(next, origin));
+        return redirect(next);
       }
 
       if (type === "recovery") {
-        return NextResponse.redirect(new URL("/reset-password", origin));
+        return redirect("/reset-password");
       }
-      return NextResponse.redirect(new URL(verifiedPath(null), origin));
+      return redirect(verifiedPath(null));
     }
 
     // Provider refusal (e.g. Cancel on GitHub's/Google's screen): no code is
     // issued and no session exists. Send them back to the page they started
     // from — signup stays signup — without signing anything in.
     if (!searchParams.get("code") && /access_denied|user_denied|cancel/i.test(searchParams.get("error") ?? "")) {
-      const backMode = searchParams.get("mode") === "up" ? "up" : "in";
-      const backProv = validProvider(searchParams.get("provider"));
+      const backMode = (searchParams.get("mode") ?? intent?.mode) === "up" ? "up" : "in";
       const backTo = backMode === "up" ? "/signup" : "/login";
-      return NextResponse.redirect(new URL(`${backTo}?error=cancelled${backProv ? `&provider=${backProv}` : ""}`, origin));
+      const q = new URLSearchParams({ error: "cancelled" });
+      if (provider) q.set("provider", provider);
+      if (requestedNext && requestedNext !== "/dashboard") q.set("next", requestedNext);
+      return redirect(`${backTo}?${q.toString()}`);
     }
 
     // OAuth (Google/GitHub) returns a PKCE code. Email confirmation links
@@ -124,12 +152,15 @@ export async function GET(req: Request) {
       const challenge = searchParams.get("challenge");
       const isEmailFlow = !!challenge;
       const isRecoveryFlow = searchParams.get("flow") === "recovery";
-      const hasMode = searchParams.has("mode");
-      // OAuth-only provider tag (email links never carry it): used solely to
-      // word error messages correctly. Never trusted for auth decisions.
-      const prov = hasMode ? validProvider(searchParams.get("provider")) : null;
+      // `oauth=1` is set by the proxy when it recovers a code that landed on
+      // the Site URL. The intent cookie covers direct callback returns that
+      // lost their query tags.
+      const isOAuthFlow =
+        searchParams.has("mode") ||
+        searchParams.get("oauth") === "1" ||
+        !!intent;
       const ofail = (reason: string) =>
-        NextResponse.redirect(new URL(`/login?error=${reason}${prov ? `&provider=${prov}` : ""}`, origin));
+        redirect(loginErrorPath(reason, { provider, next: requestedNext }));
       const { error } = await sb.auth.exchangeCodeForSession(code);
       if (error) {
         console.error(`[auth] code exchange failed flow=${isEmailFlow ? "email" : isRecoveryFlow ? "recovery" : "oauth"}`);
@@ -154,7 +185,7 @@ export async function GET(req: Request) {
             }
           } catch {}
           const next = verifiedPath(challenge);
-          return NextResponse.redirect(new URL(next, origin));
+          return redirect(next);
         }
         return fail("exchange");
       }
@@ -180,20 +211,20 @@ export async function GET(req: Request) {
           }
         } catch {}
         const next = verifiedPath(challenge);
-        return NextResponse.redirect(new URL(next, origin));
+        return redirect(next);
       }
 
       // Password-recovery links carry ?flow=recovery. A working exchange
       // means a live session for that user: send them to set a new password
       // without any registry checks.
       if (isRecoveryFlow) {
-        return NextResponse.redirect(new URL("/reset-password", origin));
+        return redirect("/reset-password");
       }
 
       // Legacy email links (sent before ?challenge= existed) carry neither
       // ?challenge= nor ?mode=. A successful exchange means the email is
       // confirmed and a session was minted — treat as email confirmation.
-      if (!hasMode) {
+      if (!isOAuthFlow) {
         try {
           const { data: { user: legacyUser } } = await sb.auth.getUser();
           if (legacyUser?.email_confirmed_at) {
@@ -203,12 +234,12 @@ export async function GET(req: Request) {
                 email: legacyUser.email ?? null,
               });
             } catch {}
-            return NextResponse.redirect(new URL(verifiedPath(null), origin));
+            return redirect(verifiedPath(null));
           }
         } catch {}
       }
 
-      const mode = searchParams.get("mode") === "up" ? "up" : "in";
+      const mode = (searchParams.get("mode") ?? intent?.mode) === "up" ? "up" : "in";
       if (mode === "up") {
         const { data: { user: upUser }, error: upUserError } = await sb.auth.getUser();
         if (upUserError || !upUser) {
@@ -237,7 +268,7 @@ export async function GET(req: Request) {
         // New OAuth account with a live session: straight into the app.
         // (The /auth/verified interstitial is only for email confirmation,
         // where another tab may be waiting.)
-        return NextResponse.redirect(new URL("/dashboard", origin));
+        return redirect(successNext);
       }
 
       const { data: { user }, error: userError } = await sb.auth.getUser();
@@ -265,7 +296,7 @@ export async function GET(req: Request) {
 
       // Existing OAuth account logging in with a live session: straight
       // into the app, no email-interstitial pit stop.
-      return NextResponse.redirect(new URL("/dashboard", origin));
+      return redirect(successNext);
     }
 
     return fail("no-code");

@@ -3,6 +3,7 @@ import { Alex_Brush, Fraunces, Inter, JetBrains_Mono, Sora, Space_Grotesk } from
 import "./globals.css";
 import Chrome, { NavGate } from "@/components/chrome";
 import ScrollProgress from "@/components/scroll-progress";
+import OAuthCompletion from "@/components/oauth-completion";
 import { DEFAULT_THEME, THEMES, themeInitScript } from "@/lib/theme-config";
 
 // Self-hosted premium type stack (no runtime font CDN — Google fonts are
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body id="top" className="flex min-h-screen flex-col antialiased">
         <ScrollProgress />
         <NavGate />
+        <OAuthCompletion />
         <div className="flex-1">{children}</div>
         <Chrome />
       </body>
