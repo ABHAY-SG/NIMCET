@@ -143,8 +143,7 @@ export default function MockBuilder() {
         <button
           type="button"
           onClick={leaveRun}
-          className="mb-3 inline-flex cursor-pointer items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1"
-          style={{ color: "var(--muted)" }}
+          className="dash-btn dash-btn-ghost dash-btn-sm mb-3"
         >
           <span aria-hidden>←</span> Back to builder
         </button>
@@ -167,8 +166,7 @@ export default function MockBuilder() {
         <button
           type="button"
           onClick={() => setSetup(null)}
-          className="mb-3 inline-flex cursor-pointer items-center gap-2 text-sm font-bold transition-transform hover:-translate-x-1"
-          style={{ color: "var(--muted)" }}
+          className="dash-btn dash-btn-ghost dash-btn-sm mb-3"
         >
           <span aria-hidden>←</span> Back to builder
         </button>
@@ -191,50 +189,42 @@ export default function MockBuilder() {
   }
 
   return (
-    <section className="rounded-2xl px-5 py-5" style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -20px rgba(30, 41, 82, 0.35)" }}>
-      <h2 className="dash-display text-lg font-extrabold tracking-tight" style={{ color: "var(--text)" }}>Create a custom mock</h2>
-      <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+    <section className="dash-card p-5 sm:p-6">
+      <h2 className="dash-title-sm">Create a custom mock</h2>
+      <p className="dash-subtitle mt-1 max-w-2xl">
         Pick an exam, difficulty and size — questions come straight from the bank{bank.length > 0 ? ` (${bank.length} loaded)` : ""}.
       </p>
       {!ready ? (
-        <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>Loading question bank…</p>
+        <p className="mt-3 text-[12.5px]" style={{ color: "var(--muted)" }}>Loading question bank…</p>
       ) : (
-        <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "var(--text)" }}>Exam</span>
-            <select value={exam} onChange={(e) => setExam(e.target.value)}
-              className="w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2"
-              style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}>
+            <span className="dash-label mb-1.5 block">Exam</span>
+            <select value={exam} onChange={(e) => setExam(e.target.value)} className="dash-input cursor-pointer">
               {exams.map((e) => (
                 <option key={e} value={e}>{examLabel(e)}</option>
               ))}
             </select>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "var(--text)" }}>Difficulty</span>
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as (typeof DIFFS)[number])}
-              className="w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2"
-              style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}>
+            <span className="dash-label mb-1.5 block">Difficulty</span>
+            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as (typeof DIFFS)[number])} className="dash-input cursor-pointer">
               {DIFFS.map((d) => (
                 <option key={d} value={d}>{d === "All" ? "All levels" : d}</option>
               ))}
             </select>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "var(--text)" }}>Questions</span>
-            <select value={count} onChange={(e) => setCount(Number(e.target.value))}
-              className="w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2"
-              style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}>
+            <span className="dash-label mb-1.5 block">Questions</span>
+            <select value={count} onChange={(e) => setCount(Number(e.target.value))} className="dash-input cursor-pointer">
               {COUNTS.map((c) => (
                 <option key={c} value={c}>{c} questions</option>
               ))}
             </select>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-bold" style={{ color: "var(--text)" }}>Minutes</span>
-            <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}
-              className="w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-semibold outline-none focus:ring-2"
-              style={{ background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }}>
+            <span className="dash-label mb-1.5 block">Minutes</span>
+            <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="dash-input cursor-pointer">
               {DURATIONS.map((d) => (
                 <option key={d} value={d}>{d} min</option>
               ))}
@@ -245,8 +235,8 @@ export default function MockBuilder() {
               type="button"
               onClick={startCustom}
               disabled={pool.length === 0}
-              className="w-full cursor-pointer rounded-xl py-2.5 text-sm font-extrabold text-white transition-transform hover:-translate-y-px disabled:opacity-50"
-              style={{ background: "linear-gradient(100deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)))" }}
+              className="dash-btn dash-btn-primary w-full"
+              style={{ minHeight: 42 }}
             >
               {pool.length === 0 ? "No questions" : `Start (${Math.min(count, pool.length)}Q)`}
             </button>
@@ -254,7 +244,7 @@ export default function MockBuilder() {
         </div>
       )}
       {ready && pool.length === 0 && (
-        <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+        <p className="mt-2 text-[11.5px]" style={{ color: "var(--muted)" }}>
           Nothing in the bank for this filter yet — try another exam or difficulty.
         </p>
       )}

@@ -109,25 +109,40 @@ export default function DashNav({
       <div className="mx-auto flex h-16 w-full max-w-[1560px] items-center justify-between gap-3 px-3 sm:px-5 lg:px-7">
         <div className="flex min-w-0 items-center gap-2.5">
           {onMenuClick && (
-            <button
-              type="button"
-              onClick={onMenuClick}
-              aria-label="Open navigation"
-              className="dash-btn dash-btn-ghost dash-btn-icon lg:hidden"
-              style={{ width: 38, minWidth: 38, minHeight: 38, border: "1px solid var(--dash-line)" }}
-            >
-              <Menu size={18} />
-            </button>
+            <span className="flex shrink-0 lg:hidden">
+              <button
+                type="button"
+                onClick={(e) => {
+                  // Focus the trigger so the drawer can return focus here on close.
+                  e.currentTarget.focus();
+                  onMenuClick();
+                }}
+                aria-label="Open navigation"
+                className="dash-btn dash-btn-ghost dash-btn-icon"
+                style={{ width: 38, minWidth: 38, minHeight: 38, border: "1px solid var(--dash-line)" }}
+              >
+                <Menu size={18} />
+              </button>
+            </span>
           )}
-          <a href="/dashboard" className="hidden shrink-0 items-center gap-2 sm:flex" aria-label="NimCuet dashboard home">
-            <img src="/logo.png" alt="" aria-hidden className="site-logo block h-6 w-auto" />
+          <a href="/dashboard" className="hidden shrink-0 items-center sm:flex" aria-label="NimCuet dashboard home">
+            <span className="flex min-w-0 flex-col items-start gap-1">
+              <img src="/logo.png" alt="" aria-hidden className="site-logo block h-6 w-auto" />
+              <span
+                aria-hidden
+                className="hidden whitespace-nowrap text-[9.5px] font-semibold leading-none md:block"
+                style={{ color: "var(--muted)", letterSpacing: ".075em" }}
+              >
+                Prepare Smart. Perform Better.
+              </span>
+            </span>
           </a>
           <span aria-hidden className="hidden h-5 w-px sm:block" style={{ background: "var(--dash-line)" }} />
           <div className="min-w-0">
-            <div className="truncate text-[13.5px] font-bold leading-tight" style={{ color: "var(--text)" }}>
+            <div className="truncate text-[13px] font-semibold leading-[1.25] tracking-[-0.01em]" style={{ color: "var(--text)" }}>
               {title || "Dashboard"}
             </div>
-            <div className="hidden truncate text-[10.5px] font-medium leading-tight sm:block" style={{ color: "var(--muted)" }}>
+            <div className="hidden truncate text-[10.5px] font-medium leading-[1.35] sm:block" style={{ color: "var(--muted)" }}>
               {subtitle || "NIMCET & CUET PG preparation"}
             </div>
           </div>

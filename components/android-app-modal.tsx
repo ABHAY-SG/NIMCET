@@ -1,7 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useId } from "react";
+import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
+import { Check, Download, Smartphone, X } from "lucide-react";
+import AndroidAppIcon from "@/components/android-app-icon";
 import { APK_PATH } from "@/lib/android-app";
+
+const BENEFITS = [
+  "Practise mock tests on your Android device.",
+  "Access your preparation experience on the go.",
+  "Enjoy a convenient mobile-friendly study experience.",
+];
 
 export default function AndroidAppModal({
   open,
@@ -10,181 +19,210 @@ export default function AndroidAppModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const dialogId = useId();
-
-  // Track this modal instance to prevent cross-talk between modals
-  const modalStackRef = useRef<(symbol | null)[]>([]);
-  const tokenRef = useRef<symbol | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
-    tokenRef.current = Symbol("android-app-modal");
-    modalStackRef.current.push(tokenRef.current);
-  });
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
-  // Close behavior: Escape key, backdrop click, and onClose prop
   useEffect(() => {
-    if (!open) {
-      // Cleanup when closing
-      if (tokenRef.current) {
-        const idx = modalStackRef.current.indexOf(tokenRef.current);
-        if (idx >= 0) modalStackRef.current.splice(idx, 1);
-      }
-      document.body.style.overflow = "";
-      return;
-    }
+    if (!open) return;
 
-    // Open: set up focus trap and body overflow
-    const onKey = (e: KeyboardEvent) => {
-      const latestToken = modalStackRef.current[modalStackRef.current.length - 1];
-      if (latestToken !== tokenRef.current) return;
-      if (e.key === "Escape") {
-        onClose();
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    const focusTimer = window.setTimeout(() => panelRef.current?.focus(), 0);
+
+    const onKey = (event: KeyboardEvent) => {
+      // The dialog owns Escape and Tab while it is open. Stopping propagation
+      // keeps window-level handlers (e.g. the mobile drawer) from also acting
+      // on the same key press.
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        onCloseRef.current();
         return;
       }
-      if (e.key !== "Tab") return;
-      const root = ref.current;
-      if (!root) return;
-      const focusables = root.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
+      if (event.key !== "Tab") return;
+      event.stopPropagation();
+
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusables = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((node) => node.getAttribute("aria-hidden") !== "true");
       if (focusables.length === 0) return;
+
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      const current = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && (current === first || !root.contains(current))) {
-        e.preventDefault();
+      const current = document.activeElement;
+
+      if (current === panel || !panel.contains(current)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+        return;
+      }
+      if (event.shiftKey && current === first) {
+        event.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && (current === last || !root.contains(current))) {
-        e.preventDefault();
+      } else if (!event.shiftKey && current === last) {
+        event.preventDefault();
         first.focus();
       }
     };
 
-    window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
-
-    // Auto-focus first focusable element after paint
-    const t = window.setTimeout(() => {
-      const root = ref.current;
-      if (!root) return;
-      const auto =
-        root.querySelector<HTMLElement>("[data-autofocus]") ??
-        root.querySelector<HTMLElement>(
-          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled])'
-        ) ??
-        root.querySelector<HTMLElement>('button:not([disabled]), a[href]');
-      auto?.focus();
-    }, 0);
+    document.addEventListener("keydown", onKey);
 
     return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-      const stack = modalStackRef.current;
-      if (tokenRef.current) {
-        const i = stack.lastIndexOf(tokenRef.current);
-        if (i >= 0) stack.splice(i, 1);
-      }
-      window.clearTimeout(t);
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
-    <div className="download-modal-backdrop fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto p-4 sm:p-6">
+  return createPortal(
+    <div
+      data-app-modal
+      className="download-modal-backdrop fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto p-4 sm:p-6"
+    >
       <button
         type="button"
-        aria-label="Close dialog"
-        onClick={onClose}
+        aria-label="Close Android app dialog"
+        onClick={() => onCloseRef.current()}
         className="download-modal-scrim fixed inset-0 cursor-default"
       />
       <div
-        ref={ref}
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={dialogId}
-        className="download-modal-card relative mx-auto flex max-h-[min(90dvh,760px)] w-full max-w-[440px] flex-col overflow-hidden rounded-[28px] border border-[var(--border)]"
-        style={{ background: "var(--card)" }}
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        tabIndex={-1}
+        className="download-modal-card relative mx-auto flex max-h-[min(92dvh,720px)] w-full max-w-[470px] flex-col overflow-hidden rounded-[20px] border outline-none"
+        style={{ background: "var(--dash-surface)", borderColor: "var(--dash-line)" }}
       >
-        <div className="relative shrink-0 overflow-hidden border-b px-5 py-5 sm:px-7 sm:py-6" style={{ borderColor: "var(--border)" }}>
-          <span aria-hidden className="download-modal-wash pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full" />
-          <div className="relative flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: "var(--accent)" }}>YOUR NEXT MOCK STARTS HERE</p>
-              <h3 id={dialogId} className="display text-[1.65rem] font-semibold tracking-tight sm:text-[1.9rem]">
-                Get NimCuet for Android
-              </h3>
+        <div
+          className="relative shrink-0 border-b px-5 py-5 sm:px-6"
+          style={{
+            borderColor: "var(--dash-line)",
+            background: "color-mix(in srgb, var(--accent) 4%, var(--dash-surface))",
+          }}
+        >
+          <div className="flex items-start gap-3.5">
+            <span
+              aria-hidden
+              className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-[13px] border border-white/10"
+              style={{
+                background: "#0b1226",
+                boxShadow: "0 12px 24px -16px rgba(2,6,23,.8), inset 0 1px 0 rgba(255,255,255,.09)",
+              }}
+            >
+              <img src="/logo-gold.png" alt="" className="block h-[18px] w-auto" />
+              <span
+                className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full border"
+                style={{
+                  background: "var(--dash-surface)",
+                  borderColor: "var(--dash-line)",
+                  color: "var(--accent)",
+                }}
+              >
+                <AndroidAppIcon size={10} />
+              </span>
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="dash-eyebrow">NimCuet for Android</p>
+              <h2
+                id={titleId}
+                className="dash-display mt-1 text-[1.35rem] font-bold leading-[1.18] sm:text-[1.5rem]"
+                style={{ color: "var(--text)" }}
+              >
+                Take NimCuet With You
+              </h2>
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => onCloseRef.current()}
               aria-label="Close dialog"
-              className="download-modal-close -mr-2 -mt-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
+              className="dash-btn dash-btn-ghost dash-btn-icon -mr-1 -mt-1"
+              style={{ width: 36, minWidth: 36, minHeight: 36 }}
             >
-              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <line x1={18} y1={6} x2={6} y2={18} />
-                <line x1={6} y1={6} x2={18} y2={18} />
-              </svg>
+              <X size={17} />
             </button>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:px-7 sm:py-6">
-          <p className="mb-5 text-sm leading-relaxed sm:text-[15px]" style={{ color: "var(--muted)", fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif" }}>
-            Carry your preparation with you. Get the full mock-test experience with the same real exam patterns, timing and instant scorecards — right on your Android phone.
-          </p>
-          <div className="mb-5 flex flex-wrap gap-2">
-            {["NIMCET + CUET PG", "Instant scorecards", "Free APK"].map((item) => (
-              <span key={item} className="rounded-full px-3 py-1.5 text-xs font-semibold" style={{ background: "var(--pill)", color: "var(--accent)", fontFamily: "var(--font-heading), var(--font-sans), sans-serif" }}>{item}</span>
-            ))}
-          </div>
-
-          <ul className="space-y-3 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
-            <li className="flex items-start gap-3">
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 2v4l10 8L12 26" />
-                <path d="M12 2v4l-10 8L12 26" />
-              </svg>
-              <span>Full-length timed mocks</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <path d="m8 14 4 4 4-4" />
-              </svg>
-              <span>Instant scorecards</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-                <line x1={10} y1={8} x2={10} y2={12} />
-                <line x1={14} y1={8} x2={14} y2={12} />
-              </svg>
-              <span>Same papers, same pattern</span>
-            </li>
-          </ul>
-        </div>
-
-        <div className="flex shrink-0 flex-col-reverse gap-3 border-t p-5 sm:flex-row sm:items-center sm:justify-end sm:px-7" style={{ borderColor: "var(--border)" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full px-5 py-3 text-sm font-semibold transition-colors hover:bg-[var(--pill)]"
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+          <p
+            id={descriptionId}
+            className="text-[13px] leading-[1.75]"
             style={{ color: "var(--muted)" }}
           >
-            Maybe later
-          </button>
+            Prepare smarter, practise anywhere, and keep your exam preparation within reach.
+          </p>
+
+          <ul className="mt-4 grid gap-2.5">
+            {BENEFITS.map((benefit) => (
+              <li
+                key={benefit}
+                className="flex items-start gap-2.5 text-[12.5px] leading-[1.55]"
+                style={{ color: "var(--text)" }}
+              >
+                <span
+                  aria-hidden
+                  className="mt-0.5 grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full"
+                  style={{ background: "var(--dash-accent-soft)", color: "var(--accent)" }}
+                >
+                  <Check size={12} strokeWidth={2.6} />
+                </span>
+                <span>{benefit}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div
+            className="mt-4 flex items-start gap-2 rounded-[10px] border px-3 py-2.5 text-[10.5px] leading-[1.5]"
+            style={{
+              borderColor: "var(--dash-line)",
+              background: "var(--dash-surface-muted)",
+              color: "var(--muted)",
+            }}
+          >
+            <Smartphone size={13} className="mt-px shrink-0" style={{ color: "var(--accent)" }} />
+            <span>Official Android APK. Your browser may ask you to allow installs before it opens.</span>
+          </div>
+        </div>
+
+        <div
+          className="flex shrink-0 flex-col gap-2 border-t px-5 py-4 sm:flex-row-reverse sm:items-center sm:justify-start sm:px-6"
+          style={{ borderColor: "var(--dash-line)" }}
+        >
           <a
             href={APK_PATH}
             download
-            className="cta-glow inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold shadow-lg"
-            style={{ background: "var(--btn-bg)", color: "var(--btn-text)", fontFamily: "var(--font-heading), var(--font-sans), sans-serif" }}
+            className="dash-btn dash-btn-primary w-full sm:w-auto"
           >
-            Download Android App <span aria-hidden>↓</span>
+            <Download size={15} />
+            Download Android App
           </a>
+          <button
+            type="button"
+            onClick={() => onCloseRef.current()}
+            className="dash-btn dash-btn-secondary w-full sm:w-auto"
+          >
+            Maybe Later
+          </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

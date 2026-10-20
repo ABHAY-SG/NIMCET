@@ -591,7 +591,7 @@ export default function DashboardPage() {
           subtitle={currentMeta.subtitle}
         />
       )}
-      <main className="mx-auto w-full max-w-[1560px] px-3 pb-20 pt-20 sm:px-5 lg:px-7">
+      <main className="dash-main mx-auto w-full max-w-[1560px] px-3 pb-20 pt-20 sm:px-5 lg:px-7">
         <DashSide
           mobileOpen={sideOpen}
           onClose={() => setSideOpen(false)}
@@ -625,7 +625,7 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
-                      <h1 className="dash-display mt-3 max-w-xl text-[clamp(1.75rem,1.35rem+1.6vw,2.65rem)] font-extrabold leading-[1.08] tracking-[-0.04em] text-white">
+                      <h1 className="dash-display mt-3 max-w-xl text-[clamp(1.7rem,1.3rem+1.5vw,2.5rem)] font-bold leading-[1.1] tracking-[-0.035em] text-white">
                         {loading
                           ? "Preparing your workspace"
                           : `${greeting}${displayName ? `, ${displayName.trim().split(/\s+/)[0]}` : ""}`}

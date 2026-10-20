@@ -129,32 +129,25 @@ export default function PasswordPrompt() {
 
   if (!open) return null;
 
-  const inputStyle: React.CSSProperties = {
-    background: "var(--pill)",
-    border: "1px solid var(--border)",
-    color: "var(--text)",
-  };
-
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="pw-prompt-title">
+    <div className="download-modal-backdrop fixed inset-0 z-[90] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="pw-prompt-title">
       <button
         type="button"
         aria-label="Close"
         onClick={done ? undefined : dismiss}
-        className="absolute inset-0 cursor-default"
-        style={{ background: "linear-gradient(180deg, rgba(10,14,28,0.5), rgba(10,14,28,0.72))", backdropFilter: "blur(9px)", WebkitBackdropFilter: "blur(9px)" }}
+        className="download-modal-scrim fixed inset-0 cursor-default"
       />
       <div
-        className="relative w-full max-w-md rounded-3xl p-6 sm:p-7"
-        style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text)", boxShadow: "0 40px 90px -35px rgba(10,14,28,0.65)" }}
+        className="download-modal-card dash-main relative w-full max-w-md rounded-[20px] border p-5 sm:p-6"
+        style={{ background: "var(--dash-surface)", borderColor: "var(--dash-line)", color: "var(--text)" }}
       >
         {done ? (
           <div className="py-6 text-center">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl" style={{ background: "var(--pill)", color: "var(--accent)" }}>
               ✓
             </div>
-            <h2 id="pw-prompt-title" className="mt-4 text-lg font-extrabold tracking-tight">Password set</h2>
-            <p className="mt-1.5 text-sm" style={{ color: "var(--muted)" }}>
+            <h2 id="pw-prompt-title" className="dash-title-sm mt-4">Password set</h2>
+            <p className="mt-1.5 text-[12.5px] leading-5" style={{ color: "var(--muted)" }}>
               Email + password sign-in now works. {provider} sign-in keeps working too.
             </p>
           </div>
@@ -165,8 +158,8 @@ export default function PasswordPrompt() {
                 🔒
               </span>
               <div className="min-w-0">
-                <h2 id="pw-prompt-title" className="text-lg font-extrabold tracking-tight">Add a password</h2>
-                <p className="mt-1 text-[13px] leading-5" style={{ color: "var(--muted)" }}>
+                <h2 id="pw-prompt-title" className="dash-title-sm">Add a password</h2>
+                <p className="mt-1 text-[12.5px] leading-5" style={{ color: "var(--muted)" }}>
                   You signed in with {provider}. Set a password so you can also sign in with your email
                   {email ? <> (<span className="font-semibold">{email}</span>)</> : null} — {provider} sign-in keeps working.
                 </p>
@@ -174,7 +167,7 @@ export default function PasswordPrompt() {
             </div>
             <div className="mt-5 grid gap-2.5">
               <div>
-                <label htmlFor="pw-set-1" className="mb-1.5 block text-[13px] font-bold">New password</label>
+                <label htmlFor="pw-set-1" className="dash-label mb-1.5 block">New password</label>
                 <input
                   id="pw-set-1"
                   type="password"
@@ -183,12 +176,11 @@ export default function PasswordPrompt() {
                   autoComplete="new-password"
                   onChange={(e) => setNewPw(e.target.value)}
                   placeholder="Min. 8 characters + a number"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
-                  style={inputStyle}
+                  className="dash-input"
                 />
               </div>
               <div>
-                <label htmlFor="pw-set-2" className="mb-1.5 block text-[13px] font-bold">Confirm password</label>
+                <label htmlFor="pw-set-2" className="dash-label mb-1.5 block">Confirm password</label>
                 <input
                   id="pw-set-2"
                   type="password"
@@ -196,13 +188,13 @@ export default function PasswordPrompt() {
                   autoComplete="new-password"
                   onChange={(e) => setConfirmPw(e.target.value)}
                   placeholder="Retype your password"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2"
-                  style={{ ...inputStyle, border: confirmPw && newPw !== confirmPw ? "1px solid #dc2626" : "1px solid var(--border)" }}
+                  className="dash-input"
+                  style={confirmPw && newPw !== confirmPw ? { borderColor: "var(--dash-danger)" } : undefined}
                 />
               </div>
             </div>
             {msg && (
-              <p role="status" aria-live="polite" className="mt-3 rounded-xl px-4 py-2.5 text-[13px] font-medium" style={{ background: "var(--pill)" }}>
+              <p role="status" aria-live="polite" className="dash-alert mt-3 text-[11.5px]">
                 {msg}
               </p>
             )}
@@ -211,16 +203,14 @@ export default function PasswordPrompt() {
                 type="button"
                 onClick={save}
                 disabled={busy}
-                className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-50"
-                style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}
+                className="dash-btn dash-btn-primary"
               >
                 {busy ? "Saving…" : "Set password"}
               </button>
               <button
                 type="button"
                 onClick={dismiss}
-                className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold"
-                style={{ border: "1px solid var(--border)", color: "var(--muted)" }}
+                className="dash-btn dash-btn-secondary"
               >
                 Maybe later
               </button>

@@ -40,8 +40,8 @@ function Stat({
         {icon}
       </span>
       <span className="min-w-0">
-        <span className="mono block truncate text-[12.5px] font-extrabold leading-tight" style={{ color: "var(--text)" }}>{value}</span>
-        <span className="block truncate text-[9.5px] font-semibold" style={{ color: "var(--muted)" }}>{label}</span>
+        <span className="mono block truncate text-[12.5px] font-bold leading-tight" style={{ color: "var(--text)" }}>{value}</span>
+        <span className="block truncate text-[9.5px] font-medium" style={{ color: "var(--muted)" }}>{label}</span>
       </span>
     </div>
   );
@@ -84,7 +84,7 @@ export default function MockCard({
         </span>
 
         <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 text-[14.5px] font-bold leading-[1.35] tracking-[-0.015em]" style={{ color: "var(--text)" }} title={title}>
+          <h3 className="line-clamp-2 text-[14px] font-semibold leading-[1.4] tracking-[-0.012em]" style={{ color: "var(--text)" }} title={title}>
             {title}
           </h3>
           <div className="mt-1.5 flex flex-wrap items-center gap-1">

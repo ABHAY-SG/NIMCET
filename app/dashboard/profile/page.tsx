@@ -399,7 +399,7 @@ export default function ProfilePage() {
           subtitle="Identity, security and account overview"
         />
       )}
-      <main className="mx-auto w-full max-w-[1560px] px-3 pb-20 pt-20 sm:px-5 lg:px-7">
+      <main className="dash-main mx-auto w-full max-w-[1560px] px-3 pb-20 pt-20 sm:px-5 lg:px-7">
         <DashSide
           mobileOpen={sideOpen}
           onClose={() => setSideOpen(false)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
@@ -18,7 +18,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { APK_PATH } from "@/lib/android-app";
+import AndroidAppModal from "@/components/android-app-modal";
 
 export type DashView =
   | "home"
@@ -141,6 +141,7 @@ function SideBody({
   profileActive,
   onSelect,
   onClose,
+  onOpenApp,
   streak,
 }: {
   collapsed: boolean;
@@ -148,6 +149,7 @@ function SideBody({
   profileActive: boolean;
   onSelect: (v: DashView) => void;
   onClose: () => void;
+  onOpenApp: () => void;
   streak?: { current: number; best: number };
 }) {
   return (
@@ -214,17 +216,23 @@ function SideBody({
           </div>
         )}
 
-        <a
-          href={APK_PATH}
-          download
-          className={`dash-nav-item ${collapsed ? "justify-center !px-0" : ""}`}
+        <button
+          type="button"
+          onClick={(e) => {
+            // Keep the trigger focused so the dialog can hand focus back to it
+            // (Safari does not focus buttons on click).
+            e.currentTarget.focus();
+            onOpenApp();
+          }}
+          className={`dash-nav-item cursor-pointer ${collapsed ? "justify-center !px-0" : ""}`}
           title={collapsed ? "Get the Android app" : undefined}
-          aria-label="Download the NimCuet Android app"
+          aria-label="Get the NimCuet Android app"
+          aria-haspopup="dialog"
           style={{ minHeight: 38 }}
         >
           <NavIcon><Download size={16} strokeWidth={1.9} /></NavIcon>
           {!collapsed && <span className="flex-1 truncate">Get the app</span>}
-        </a>
+        </button>
       </div>
     </>
   );
@@ -251,12 +259,15 @@ export default function DashSide({
   const profileActive = pathname === "/dashboard/profile";
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [appOpen, setAppOpen] = useState(false);
 
   // Escape closes the mobile drawer and focus lands on the first control.
   // The page behind is locked while the drawer is open.
   useEffect(() => {
     if (!mobileOpen) return;
     const onKey = (e: KeyboardEvent) => {
+      // The Android app dialog sits above the drawer and owns Escape/Tab while open.
+      if (document.querySelector("[data-app-modal]")) return;
       if (e.key === "Escape") {
         onClose();
         return;
@@ -293,14 +304,29 @@ export default function DashSide({
   }, [mobileOpen, onClose]);
 
   const brand = (compact: boolean) => (
-    <a href="/dashboard" onClick={onClose} className="flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-offset-4" aria-label="NimCuet dashboard">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border" style={{ background: "var(--dash-surface)", borderColor: "var(--dash-line)" }}>
-        <img src="/logo.png" alt="" aria-hidden className="block h-5 w-auto" />
-      </span>
-      {!compact && (
-        <span className="min-w-0">
-          <span className="block truncate text-[13.5px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>NimCuet</span>
-          <span className="block truncate text-[9.5px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".15em" }}>Exam workspace</span>
+    <a
+      href="/dashboard"
+      onClick={onClose}
+      className={`flex min-w-0 items-center rounded-lg focus-visible:outline-offset-4 ${compact ? "justify-center" : ""}`}
+      aria-label="NimCuet exam workspace"
+      title={compact ? "NimCuet exam workspace" : undefined}
+    >
+      {compact ? (
+        <img src="/logo.png" alt="" aria-hidden className="site-logo block h-auto w-12" />
+      ) : (
+        <span className="flex min-w-0 flex-col gap-1.5">
+          <img
+            src="/logo.png"
+            alt=""
+            aria-hidden
+            className="site-logo block h-7 w-auto max-w-[10.5rem] object-contain object-left"
+          />
+          <span
+            className="block pl-px text-[9px] font-semibold leading-none"
+            style={{ color: "var(--muted)", letterSpacing: ".19em" }}
+          >
+            EXAM WORKSPACE
+          </span>
         </span>
       )}
     </a>
@@ -341,6 +367,7 @@ export default function DashSide({
           profileActive={profileActive}
           onSelect={onSelect}
           onClose={onClose}
+          onOpenApp={() => setAppOpen(true)}
           streak={streak}
         />
       </aside>
@@ -381,11 +408,13 @@ export default function DashSide({
               profileActive={profileActive}
               onSelect={onSelect}
               onClose={onClose}
+              onOpenApp={() => setAppOpen(true)}
               streak={streak}
             />
           </aside>
         </div>
       )}
+      <AndroidAppModal open={appOpen} onClose={() => setAppOpen(false)} />
     </>
   );
 }

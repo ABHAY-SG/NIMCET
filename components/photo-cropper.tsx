@@ -110,9 +110,12 @@ export default function PhotoCropper({
     <div className="fixed inset-0 z-[80] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" aria-label="Close crop editor" onClick={onCancel} className="absolute inset-0 cursor-default"
         style={{ background: "linear-gradient(180deg, rgba(10,14,28,0.55), rgba(10,14,28,0.75))", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }} />
-      <div className="relative w-full max-w-sm rounded-3xl p-6 text-center" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-        <h2 className="text-lg font-extrabold tracking-tight">{title}</h2>
-        <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Drag to reposition • zoom to fit the {shape}</p>
+      <div
+        className="download-modal-card dash-main relative w-full max-w-sm rounded-[20px] border p-5 text-center sm:p-6"
+        style={{ background: "var(--dash-surface)", borderColor: "var(--dash-line)" }}
+      >
+        <h2 className="dash-title-sm">{title}</h2>
+        <p className="mt-1 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>Drag to reposition • zoom to fit the {shape}</p>
         <div
           className="relative mx-auto mt-4 touch-none select-none overflow-hidden rounded-2xl"
           style={{ width: boxW, height: boxH, maxWidth: "100%", background: "var(--pill)", border: "1px solid var(--border)", cursor: "grab" }}
@@ -139,26 +142,22 @@ export default function PhotoCropper({
         </div>
         <div className="mx-auto mt-4 flex max-w-[280px] items-center gap-2">
           <button type="button" aria-label="Zoom out" onClick={() => setZoom((z) => Math.max(MIN_ZOOM, +(z - 0.25).toFixed(2)))}
-            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-base font-extrabold"
-            style={{ border: "1px solid var(--border)" }}>−</button>
+            className="dash-btn dash-btn-secondary dash-btn-icon shrink-0"
+            style={{ width: 36, minWidth: 36, minHeight: 36 }}>−</button>
           <input
             type="range" min={MIN_ZOOM} max={MAX_ZOOM} step={0.05} value={zoom} aria-label="Zoom"
             onChange={(e) => setZoom(Number(e.target.value))}
             className="w-full accent-current"
           />
           <button type="button" aria-label="Zoom in" onClick={() => setZoom((z) => Math.min(MAX_ZOOM, +(z + 0.25).toFixed(2)))}
-            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-base font-extrabold"
-            style={{ border: "1px solid var(--border)" }}>+</button>
+            className="dash-btn dash-btn-secondary dash-btn-icon shrink-0"
+            style={{ width: 36, minWidth: 36, minHeight: 36 }}>+</button>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <button type="button" onClick={onCancel}
-            className="cursor-pointer rounded-xl py-2.5 text-sm font-bold"
-            style={{ border: "1px solid var(--border)" }}>
+          <button type="button" onClick={onCancel} className="dash-btn dash-btn-secondary w-full">
             Cancel
           </button>
-          <button type="button" onClick={confirm} disabled={busy || size.w === 0}
-            className="cursor-pointer rounded-xl py-2.5 text-sm font-bold disabled:opacity-50"
-            style={{ background: "var(--btn-bg)", color: "var(--btn-text)" }}>
+          <button type="button" onClick={confirm} disabled={busy || size.w === 0} className="dash-btn dash-btn-primary w-full">
             {busy ? "Saving…" : "Confirm"}
           </button>
         </div>
