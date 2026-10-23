@@ -10,6 +10,8 @@ export type BankRow = {
   difficulty: string;
   stem: string;
   options: string[];
+  /** Optional figure bundled with the question (empty when text-only). */
+  image_url?: string;
   plus: number;
   minus: number;
 };
@@ -23,6 +25,7 @@ export type MockQuestionRow = {
   tag: string;
   stem: string;
   opts: string[];
+  image?: string;
   plus: number;
   minus: number;
   section: string;
@@ -34,6 +37,7 @@ export function toMock(q: BankRow): MockQuestionRow {
     tag: `${q.section.toUpperCase()} • +${q.plus} / ${q.minus}`,
     stem: q.stem,
     opts: q.options,
+    image: q.image_url?.trim() || undefined,
     plus: q.plus,
     minus: q.minus,
     section: q.section,

@@ -17,7 +17,7 @@ import { MathText } from "@/components/math-text";
 export type MockQuestion = {
   tag: string; stem: string; opts: string[]; ans?: number;
   plus: number; minus: number; exp?: string;
-  qid?: string; section?: string;
+  qid?: string; section?: string; image?: string;
 };
 
 export type SubmitResult = {
@@ -25,7 +25,7 @@ export type SubmitResult = {
   correct: number;
   wrong: number;
   skipped: number;
-  details: Array<{ stem: string; opts: string[]; picked: number | null; correct: number; exp: string; ok?: boolean }>;
+  details: Array<{ stem: string; opts: string[]; picked: number | null; correct: number; exp: string; image?: string; ok?: boolean }>;
 };
 
 type Q = MockQuestion;
@@ -308,6 +308,7 @@ export default function MockDemo({
           picked: answers[i] ?? null,
           correct: q.ans ?? -1,
           exp: q.exp ?? "",
+          image: q.image,
           ok: answers[i] != null && answers[i] === (q.ans ?? -1),
         })),
       });
@@ -424,6 +425,7 @@ export default function MockDemo({
           picked: answers[i] ?? null,
           correct: q.ans ?? -1,
           exp: q.exp ?? "",
+          image: q.image,
           ok: answers[i] != null && answers[i] === (q.ans ?? -1),
         })),
       };
@@ -500,6 +502,15 @@ export default function MockDemo({
               return (
                 <div key={i} className="rounded-xl p-3.5 text-sm" style={{ border: "1px solid var(--border)" }}>
                   <p className="font-bold">Q{i + 1}. <MathText>{d.stem}</MathText></p>
+                  {d.image && (
+                    <img
+                      src={d.image}
+                      alt={`Figure for question ${i + 1}`}
+                      loading="lazy"
+                      className="mt-2 max-h-72 w-auto max-w-full rounded-lg object-contain"
+                      style={{ border: "1px solid var(--border)" }}
+                    />
+                  )}
                   <p className="mt-1" style={{ color: ok ? "#16a34a" : d.picked == null ? "var(--muted)" : "#dc2626" }}>
                     {d.picked == null ? `Skipped — answer: ${d.opts[d.correct] ?? d.correct}` : ok ? `Your answer: ${d.opts[d.picked]} ✓` : `Your answer: ${d.opts[d.picked]} ✘ (correct: ${d.opts[d.correct] ?? d.correct})`}
                   </p>
@@ -633,6 +644,15 @@ export default function MockDemo({
         <div className="min-w-0">
           <p className="mono text-[10px] font-bold uppercase" style={{ color: "var(--accent)", letterSpacing: "0.14em" }}>{q.tag}</p>
           <p className="mt-2 text-[15px] font-bold leading-7" style={{ color: "var(--text)" }}><MathText>{q.stem}</MathText></p>
+          {q.image && (
+            <img
+              src={q.image}
+              alt="Question figure"
+              loading="lazy"
+              className="mt-3 max-h-80 w-auto max-w-full rounded-xl object-contain"
+              style={{ border: "1px solid var(--border)" }}
+            />
+          )}
           <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
             {q.opts.map((o, i) => {
               const sel = answers[idx] === i;

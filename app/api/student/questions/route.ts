@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/admin-server";
 import { errorPayload } from "@/lib/admin-queries";
 import {
+  isMissingImageColumn,
   loadQuestionAccess,
   loadSessionQuestionIds,
 } from "@/lib/student-question-access";
 
 // Columns safe for students: no answer key, no explanations, no PII.
-const SAFE = "id,exam,section,topic,difficulty,stem,options,plus,minus,created_at";
+const SAFE = "id,exam,section,topic,difficulty,stem,options,image_url,plus,minus,created_at";
+// Pre-0009 databases have no image_url column; keep question reads working
+// there until the additive migration/seed is run.
+const SAFE_LEGACY = "id,exam,section,topic,difficulty,stem,options,plus,minus,created_at";
 const DIFFS = ["Easy", "Medium", "Hard"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ID_CHUNK = 150;
@@ -52,7 +56,14 @@ export async function GET(req: Request) {
       if (ids.some((id) => !allowed.has(id))) {
         return NextResponse.json({ error: "Question not available." }, { status: 403 });
       }
-      const { data, error } = await svc.from("questions").select(SAFE).in("id", ids);
+      const full = await svc.from("questions").select(SAFE).in("id", ids);
+      let data = full.data as unknown as Array<Record<string, unknown>> | null;
+      let error = full.error;
+      if (error && isMissingImageColumn(error)) {
+        const legacy = await svc.from("questions").select(SAFE_LEGACY).in("id", ids);
+        data = legacy.data as unknown as Array<Record<string, unknown>> | null;
+        error = legacy.error;
+      }
       if (error) throw error;
       return NextResponse.json({ rows: data ?? [] });
     }
@@ -67,17 +78,27 @@ export async function GET(req: Request) {
     // Chunked `.in(...)` keeps the PostgREST URL bounded even when a large
     // catalogue has thousands of published practice questions.
     for (const chunk of chunks([...access.practice], ID_CHUNK)) {
-      let q = svc
-        .from("questions")
-        .select(SAFE)
-        .in("id", chunk)
-        .order("created_at", { ascending: false })
-        .limit(limit);
-      if (exam) q = q.eq("exam", exam);
-      if (DIFFS.includes(difficulty)) q = q.eq("difficulty", difficulty);
-      const { data, error } = await q;
+      const runQuery = (columns: string) => {
+        let q = svc
+          .from("questions")
+          .select(columns)
+          .in("id", chunk)
+          .order("created_at", { ascending: false })
+          .limit(limit);
+        if (exam) q = q.eq("exam", exam);
+        if (DIFFS.includes(difficulty)) q = q.eq("difficulty", difficulty);
+        return q;
+      };
+      const full = await runQuery(SAFE);
+      let data = full.data as unknown as Array<Record<string, unknown>> | null;
+      let error = full.error;
+      if (error && isMissingImageColumn(error)) {
+        const legacy = await runQuery(SAFE_LEGACY);
+        data = legacy.data as unknown as Array<Record<string, unknown>> | null;
+        error = legacy.error;
+      }
       if (error) throw error;
-      for (const row of (data ?? []) as Array<Record<string, unknown>>) rows.push(row);
+      for (const row of data ?? []) rows.push(row);
     }
 
     // Newest first across chunks, then the caller's limit (no unbounded read).

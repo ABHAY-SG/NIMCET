@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/admin-server";
 import { errorPayload, isUuid } from "@/lib/admin-queries";
 import { marksUsed } from "@/lib/exam-session";
-import { loadQuestionAccess, isMissingTemplateColumn, stringIds } from "@/lib/student-question-access";
+import {
+  isMissingImageColumn,
+  isMissingTemplateColumn,
+  loadQuestionAccess,
+  stringIds,
+} from "@/lib/student-question-access";
 
 type AnswerIn = { id: string; answer: number | null };
 type BankRow = {
@@ -13,6 +18,7 @@ type BankRow = {
   stem: string;
   options: unknown;
   explanation: unknown;
+  image_url?: string | null;
   section?: string | null;
 };
 type TestRow = {
@@ -184,13 +190,24 @@ export async function POST(req: Request) {
     }
 
     const ids = [...unique.keys()];
-    const { data, error } = await svc
-      .from("questions")
-      .select("id,answer,plus,minus,stem,options,explanation,section")
-      .in("id", ids);
+    const selectQuestions = (columns: string) =>
+      svc.from("questions").select(columns).in("id", ids);
+    const full = await selectQuestions(
+      "id,answer,plus,minus,stem,options,explanation,image_url,section"
+    );
+    let data = full.data as unknown as BankRow[] | null;
+    let error = full.error;
+    if (error && isMissingImageColumn(error)) {
+      // Pre-0009 database: score normally, just without the optional figure.
+      const legacy = await selectQuestions(
+        "id,answer,plus,minus,stem,options,explanation,section"
+      );
+      data = legacy.data as unknown as BankRow[] | null;
+      error = legacy.error;
+    }
     if (error) throw error;
     const byId = new Map<string, BankRow>();
-    for (const q of (data ?? []) as BankRow[]) byId.set(q.id, q);
+    for (const q of data ?? []) byId.set(q.id, q);
     if (byId.size !== ids.length) {
       return NextResponse.json({ error: "Unknown question in submission." }, { status: 400 });
     }
@@ -206,7 +223,7 @@ export async function POST(req: Request) {
 
     type Detail = {
       stem: string; opts: string[]; picked: number | null;
-      correct: number; exp: string; ok?: boolean;
+      correct: number; exp: string; image?: string; ok?: boolean;
     };
     const detailById = new Map<string, Detail>();
     let score = 0;
@@ -223,19 +240,20 @@ export async function POST(req: Request) {
       const minus = marks.minus;
       const opts = Array.isArray(q.options) ? (q.options as string[]) : [];
       const exp = typeof q.explanation === "string" ? q.explanation : "";
+      const image = typeof q.image_url === "string" && q.image_url.trim() ? q.image_url.trim() : undefined;
       if (pick === null) {
         skipped++;
-        detailById.set(id, { stem: q.stem, opts, picked: null, correct: q.answer, exp });
+        detailById.set(id, { stem: q.stem, opts, picked: null, correct: q.answer, exp, image });
         continue;
       }
       if (pick === q.answer) {
         correct++;
         score += plus;
-        detailById.set(id, { stem: q.stem, opts, picked: pick, correct: q.answer, exp, ok: true });
+        detailById.set(id, { stem: q.stem, opts, picked: pick, correct: q.answer, exp, image, ok: true });
       } else {
         wrong++;
         score += minus;
-        detailById.set(id, { stem: q.stem, opts, picked: pick, correct: q.answer, exp, ok: false });
+        detailById.set(id, { stem: q.stem, opts, picked: pick, correct: q.answer, exp, image, ok: false });
       }
     }
 

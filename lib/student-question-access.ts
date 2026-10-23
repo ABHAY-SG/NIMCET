@@ -70,6 +70,18 @@ export function isMissingTemplateColumn(e: unknown): boolean {
 }
 
 /**
+ * True only when the optional questions.image_url column (migration 0009) is
+ * absent. Callers can then fall back to the pre-0009 SELECT list instead of
+ * failing every question read on a database that has not run the migration yet.
+ */
+export function isMissingImageColumn(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const message = (e as { message?: unknown }).message;
+  if (typeof message !== "string" || !/image_url/i.test(message)) return false;
+  return /does not exist|could not find|undefined column/i.test(message);
+}
+
+/**
  * Loads the tests table once, tolerating databases that predate the template
  * column (migration 0007). Any other database error is re-thrown so callers
  * fail closed instead of silently granting access.
