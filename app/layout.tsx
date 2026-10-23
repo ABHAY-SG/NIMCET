@@ -1,26 +1,63 @@
 import type { Metadata } from "next";
-import { Alex_Brush, Fraunces, Inter, JetBrains_Mono, Sora, Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import Chrome, { NavGate } from "@/components/chrome";
 import ScrollProgress from "@/components/scroll-progress";
 import OAuthCompletion from "@/components/oauth-completion";
 import { DEFAULT_THEME, THEMES, themeInitScript } from "@/lib/theme-config";
 
-// Self-hosted premium type stack (no runtime font CDN — Google fonts are
-// fetched at build time and served from our own domain, so text paints with
-// the real typeface on first load instead of a system fallback):
+// Self-hosted premium type stack (no runtime font CDN and no build-time
+// network fetch — the latin woff2 files in app/fonts are served from our own
+// domain, so text paints with the real typeface on first load):
 //   Inter          → UI + body copy
 //   Sora           → display headings on dashboard surfaces
 //   Space Grotesk  → marketing headings (h1–h3)
 //   Fraunces       → editorial serif accents, wordmark
 //   JetBrains Mono → numerals, scores, tables, code
 //   Alex Brush     → the single handwritten logo flourish
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-const sora = Sora({ subsets: ["latin"], variable: "--font-display", display: "swap" });
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-heading", display: "swap" });
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
-const fraunces = Fraunces({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-serif", display: "swap" });
-const alexBrush = Alex_Brush({ subsets: ["latin"], weight: "400", variable: "--font-script", display: "swap" });
+const inter = localFont({
+  src: "./fonts/inter-latin-variable.woff2",
+  weight: "100 900",
+  style: "normal",
+  variable: "--font-sans",
+  display: "swap",
+});
+const sora = localFont({
+  src: "./fonts/sora-latin-variable.woff2",
+  weight: "100 800",
+  style: "normal",
+  variable: "--font-display",
+  display: "swap",
+});
+const spaceGrotesk = localFont({
+  src: "./fonts/space-grotesk-latin-variable.woff2",
+  weight: "300 700",
+  style: "normal",
+  variable: "--font-heading",
+  display: "swap",
+});
+const jetbrainsMono = localFont({
+  src: "./fonts/jetbrains-mono-latin-variable.woff2",
+  weight: "100 800",
+  style: "normal",
+  variable: "--font-mono",
+  display: "swap",
+});
+const fraunces = localFont({
+  src: [
+    { path: "./fonts/fraunces-latin-variable.woff2", weight: "100 900", style: "normal" },
+    { path: "./fonts/fraunces-latin-italic-variable.woff2", weight: "100 900", style: "italic" },
+  ],
+  variable: "--font-serif",
+  display: "swap",
+});
+const alexBrush = localFont({
+  src: "./fonts/alex-brush-latin-400.woff2",
+  weight: "400",
+  style: "normal",
+  variable: "--font-script",
+  display: "swap",
+});
 
 const fontVars = `${inter.variable} ${sora.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${fraunces.variable} ${alexBrush.variable}`;
 
