@@ -14,6 +14,7 @@ does not apply schema changes at runtime.
 | `0006_test_sections.sql` | Additive `tests.sections`. |
 | `0007_full_mock.sql` | `tests.template`, `mock_sessions`, full-mock backfill, one-open-session index. |
 | `0008_security_remediation.sql` | Existing-database defensive pass: backfills the ledger, adds/verifies the one-open-session unique index, re-asserts hardening. |
+| `0009_question_images.sql` | Additive `questions.image_url` for figure-based questions. |
 
 ## Existing production database
 
@@ -95,6 +96,18 @@ Run `0001` → `0008` in order. The ledger is created by `0001`; later files
 record their own versions. `0001` carries a guard that aborts if a later
 version is already recorded, or if the hard-lock state (no `authenticated`
 insert on `attempts`) is detected.
+
+## Content imports
+
+- `seed/nimcet-2026-paper.sql` — one-paste import for the **NIMCET 2026 PAPER**
+  previous-year paper. It bundles `0009`, inserts 120 questions (matched by
+  exact stem), and creates/updates the test with the exact title
+  `NIMCET 2026 PAPER`. Re-running is idempotent and never deletes questions,
+  changes `NIMCET MOCK - 01`, or touches student attempts.
+- The normalised rows live in `seed/nimcet-2026-paper/questions.json`. Rebuild
+  the SQL with `node scripts/import-nimcet-2026-paper.mjs` after editing the
+  export; the script re-validates counts, marks, answer keys, image assets and
+  KaTeX spans before writing anything.
 
 ## Rollback
 
