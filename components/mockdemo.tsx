@@ -507,7 +507,7 @@ export default function MockDemo({
                       src={d.image}
                       alt={`Figure for question ${i + 1}`}
                       loading="lazy"
-                      className="mt-2 max-h-72 w-auto max-w-full rounded-lg object-contain"
+                      className="mt-2 max-h-[440px] w-auto max-w-full rounded-lg object-contain"
                       style={{ border: "1px solid var(--border)" }}
                     />
                   )}
@@ -649,7 +649,7 @@ export default function MockDemo({
               src={q.image}
               alt="Question figure"
               loading="lazy"
-              className="mt-3 max-h-80 w-auto max-w-full rounded-xl object-contain"
+              className="mt-3 max-h-[560px] w-auto max-w-full rounded-xl object-contain"
               style={{ border: "1px solid var(--border)" }}
             />
           )}
