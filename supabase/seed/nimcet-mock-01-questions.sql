@@ -1,5 +1,5 @@
 -- ============================================================================
--- NIMCET MOCK - 01 · generated from nimcet-mock-01-questions.csv by scripts/import-mock-csv.mjs
+-- " · generated from nimcet-mock-01-questions.csv by scripts/import-mock-csv.mjs
 -- DO NOT EDIT BY HAND — fix the CSV and regenerate instead.
 --
 -- HOW TO RUN (one paste):
@@ -91,21 +91,21 @@ And \(\rm BA=\begin{bmatrix}1 & \ \ \ 0 \\ 0 & -1 \end{bmatrix}\times\begin{bmat
 \(\frac{{dy}}{{dx}} + \frac{{2{x^2} - 1}}{{x(1 - {x^2})}}y = \frac{{a{x^3}}}{{x(1 - {x^2})}}\)
 Comparing with \(\frac{{dy}}{{dx}} + Py = Q\), we get \(P = \frac{{2{x^2} - 1}}{{x(1 - {x^2})}}\)', 12, -3),
   (8, 'nimcet', 'maths', 'Indefinite Integrals', 'Medium', 'Evaluate: \(\smallint \frac{{dx}}{{x\left\{ {6 \cdot {{\left( {\log x} \right)}^2} + 7\log x + 2} \right\}}}\)', jsonb_build_array('\(\log \left| {\frac{{2\log x - 1}}{{3\log x + 2}}} \right| + C\)', '\(\log \left| {\frac{{2\log x + 1}}{{3\log x - 2}}} \right| + C\)', '\(\log \left| {\frac{{2\log x + 1}}{{3\log x + 2}}} \right| + C\)', '\(\log \left| {\frac{{2\log x - 1}}{{3\log x - 2}}} \right| + C\)'), 2, 'Here we have to find the value of \(\smallint \frac{{dx}}{{x\left\{ {6 \cdot {{\left( {\log x} \right)}^2} + 7\log x + 2} \right\}}}\)
-Let log x = t and dx/x = dt
+Let \(\log x = t\) and \(\dfrac{{dx}}{x} = dt\)
 \(⇒ \smallint \frac{{dx}}{{x\left\{ {6 \cdot {{\left( {\log x} \right)}^2} + 7\log x + 2} \right\}}} = \;\smallint \frac{{dt}}{{\left( {6{t^2} + 7t + 2} \right)}}\)
 \(⇒ \smallint \frac{{dt}}{{\left( {6{t^2} + 7t + 2} \right)}} = \;\smallint \frac{{dt}}{{\left( {2t + 1} \right)\left( {3t + 2} \right)}}\)
 \(⇒ \frac{1}{{\left( {2t + 1} \right)\left( {3t + 2} \right)}} = \frac{A}{{2t + 1}} + \frac{B}{{3t + 2}}\)
-⇒ 1 = A (3t + 2) + B (2t + 1) --------(1)
-By putting t = - 1/2 on both the sides of (1) we get A = 2
-By putting t = - 2/3 on both the sides of (1) we get B = - 3
+⇒ \(1 = A\left( {3t + 2} \right) + B\left( {2t + 1} \right)\) --------(1)
+By putting \(t = - \dfrac{1}{2}\) on both the sides of (1) we get \(A = 2\)
+By putting \(t = - \dfrac{2}{3}\) on both the sides of (1) we get \(B = - 3\)
 \(\Rightarrow \frac{1}{{\left( {2t + 1} \right)\left( {3t + 2} \right)}} = \frac{2}{{2t + 1}} - \frac{3}{{3t + 2}}\)
 \(\;\Rightarrow \smallint \frac{{dt}}{{\left( {2t + 1} \right)\left( {3t + 2} \right)}} = \;\smallint \frac{{2}}{{2t + 1}}dt - \;\smallint \frac{{3dt}}{{3t + 2}}\)
 As we know that \(\smallint \frac{{dx}}{x} = \log \left| x \right|\; + C\) where C is a constant
 \(\Rightarrow \;\smallint \frac{{dt}}{{\left( {2t + 1} \right)\left( {3t + 2} \right)}} = \log \left| {2t + 1} \right| - \log \left| {3t + 2} \right| + C\)
 \(= \log \left| {\frac{{2t + 1}}{{3t + 2}}} \right| + C\)
-By substituting log x = t in the above equation we get
+By substituting \(\log x = t\) in the above equation we get
 \(\Rightarrow \smallint \frac{{dx}}{{x\left\{ {6 \cdot {{\left( {\log x} \right)}^2} + 7\log x + 2} \right\}}} = \;\log \left| {\frac{{2\log x + 1}}{{3\log x + 2}}} \right| + C\)', 12, -3),
-  (9, 'nimcet', 'maths', 'Line', 'Easy', 'XY-plane divides the line joining the points A(2, 3, -5) and B(-1, -2, -3) in the ratio', jsonb_build_array('2 ∶ 1 internally', '3 ∶ 2 externally', '5 ∶ 3 internally', '5 ∶ 3 externally'), 3, 'Let XY plane divides the line joining the points A(2, 3, -5) and B(-1, -2, -3) in the ratio k : 1
+  (9, 'nimcet', 'maths', 'Line', 'Easy', 'XY-plane divides the line joining the points A(2, 3, -5) and B(-1, -2, -3) in the ratio', jsonb_build_array('\(2:1\) internally', '\(3:2\) externally', '\(5:3\) internally', '\(5:3\) externally'), 3, 'Let XY plane divides the line joining the points A(2, 3, -5) and B(-1, -2, -3) in the ratio k : 1
 Using the section formula, the coordinate of the point of intersection is given by
 \(\rm \left(\frac{-k+2}{k+1},\frac{-2k+3}{k+1},\frac{-3k-5}{k+1} \right )\)
 As we know, on the XY plane z-coordinate is zero.
@@ -114,12 +114,12 @@ Therefore, \(\rm \frac{-3k-5}{k+1} = 0\)
 ⇒ -3k = 5
 \(\rm \Rightarrow \frac{k}{1} = \frac{-5}{3}\)
 Therefore, the ratio is 5 : 3 externally', 12, -3),
-  (10, 'nimcet', 'maths', 'Matrices', 'Easy', 'A = \(\begin{bmatrix} 1& -1 &0 \\ 3& 2 & -1 \end{bmatrix}\) and B = \(\begin{bmatrix} 1 \\ 3\\ 5 \end{bmatrix}\), find (AB)T', jsonb_build_array('\(\begin{bmatrix} -2 \\ 4 \end{bmatrix}\)', '\(\begin{bmatrix} -2 & 4 \end{bmatrix}\)', '\(\begin{bmatrix} 2 \\ -4 \end{bmatrix}\)', '\(\begin{bmatrix} -2 &- 4 \end{bmatrix}\)'), 1, 'Given A = \(\begin{bmatrix} 1& -1 &0 \\ 3& 2 & -1 \end{bmatrix}\) and B = \(\begin{bmatrix} 1 \\ 3\\ 5 \end{bmatrix}\)
+  (10, 'nimcet', 'maths', 'Matrices', 'Easy', 'A = \(\begin{bmatrix} 1& -1 &0 \\ 3& 2 & -1 \end{bmatrix}\) and B = \(\begin{bmatrix} 1 \\ 3\\ 5 \end{bmatrix}\), find \((AB)^T\)', jsonb_build_array('\(\begin{bmatrix} -2 \\ 4 \end{bmatrix}\)', '\(\begin{bmatrix} -2 & 4 \end{bmatrix}\)', '\(\begin{bmatrix} 2 \\ -4 \end{bmatrix}\)', '\(\begin{bmatrix} -2 &- 4 \end{bmatrix}\)'), 1, 'Given A = \(\begin{bmatrix} 1& -1 &0 \\ 3& 2 & -1 \end{bmatrix}\) and B = \(\begin{bmatrix} 1 \\ 3\\ 5 \end{bmatrix}\)
 AB = \(\begin{bmatrix} 1& -1 &0 \\ 3& 2 & -1 \end{bmatrix}\) × \(\begin{bmatrix} 1 \\ 3\\ 5 \end{bmatrix}\)
 AB = \(\begin{bmatrix} 1-3+0 \\ 3+6-5 \end{bmatrix}\)
 AB = \(\begin{bmatrix} -2 \\ 4 \end{bmatrix}\)
-∴ (AB)T = \(\begin{bmatrix} -2 & 4 \end{bmatrix}\)', 12, -3),
-  (11, 'nimcet', 'maths', 'Differentiability', 'Easy', 'If \(\rm \sqrt y\) = sin x + cos x then \(\rm \dfrac {dy}{dx}\) is', jsonb_build_array('2 sin 2x', '2 cos 2x', 'cos x - sin x', 'None of the above'), 1, 'Given: \(\rm \sqrt y = \sin x + \cos x\)
+∴ \((AB)^T\) = \(\begin{bmatrix} -2 & 4 \end{bmatrix}\)', 12, -3),
+  (11, 'nimcet', 'maths', 'Differentiability', 'Easy', 'If \(\rm \sqrt y = \sin x + \cos x\) then \(\rm \dfrac{{dy}}{{dx}}\) is', jsonb_build_array('\(2\sin 2x\)', '\(2\cos 2x\)', '\(\cos x - \sin x\)', 'None of the above'), 1, 'Given: \(\rm \sqrt y = \sin x + \cos x\)
 To find: \(\rm \dfrac{{dy}}{{dx}}\)
 \(\rm \sqrt y = \sin x + \cos x\)
 Squaring both sides, we get
@@ -128,7 +128,7 @@ Squaring both sides, we get
 \( \Rightarrow y = 1 + \sin 2x\)   (∵ \(2\sin x\cos x = \sin 2x\))
 Differentiating with respect to \(x\), we get
 \(\rm \dfrac{{dy}}{{dx}} = 0 + 2\cos 2x = 2\cos 2x\)', 12, -3),
-  (12, 'nimcet', 'maths', 'Trigonometric Equations', 'Medium', 'Find the principal solution of the equation sec x = 2 ?', jsonb_build_array('\(\pi/2\)', '\(\pi/3\)', '\(5\pi/3\)', 'Both B and C'), 3, 'The given equation is:
+  (12, 'nimcet', 'maths', 'Trigonometric Equations', 'Medium', 'Find the principal solution of the equation \(\sec x = 2\) ?', jsonb_build_array('\(\pi/2\)', '\(\pi/3\)', '\(5\pi/3\)', 'Both B and C'), 3, 'The given equation is:
 \[
 \sec x = 2
 \]
@@ -170,7 +170,7 @@ Let \(\tan x = t\), then \({\sec ^2}x\,dx = dt\)
 Now by comparing \(\;\smallint \frac{{dt}}{{\sqrt {16 + {t^2}} }}\) with \(\smallint \frac{{dx}}{{\sqrt {{x^2} + {a^2}} }}\) we get, a = 4
 As we know that, \(\smallint \frac{{dx}}{{\sqrt {{x^2} + {a^2}} }} = \log \left| {x + \sqrt {{x^2} + {a^2}} } \right| + C\) where C is a constant
 \(\Rightarrow \smallint \frac{{dt}}{{\sqrt {16 + {t^2}} }} = \log \left| {t + \sqrt {{t^2} + 16} } \right| + C\)
-Now by substituting tan x = t in the above equation we get,
+Now by substituting \(\tan x = t\) in the above equation we get,
 \(\smallint \frac{{{{\sec }^2}x}}{{\sqrt {16 + {{\tan }^2}x} }}dx = \;\log \left| {\tan x + \sqrt {16 + {{\tan }^2}x} \;} \right| + C\) where C is a constant', 12, -3),
   (15, 'nimcet', 'maths', 'Limit of Functions', 'Medium', 'If \(\rm \displaystyle \lim_{x \rightarrow \infty} \left(\dfrac {x^2+x+1}{x+1}-px-q\right) = -3\) then \(p\) and \(q\) are?', jsonb_build_array('p = 1, q = 3', 'p = 2, q = 3', 'p = 3, q = 1', 'p = 3, q = 2'), 0, '\[
 \rm \displaystyle \lim_{x \rightarrow \infty} \left( \dfrac{x^2 + x + 1}{x + 1} - px - q \right) = -3
@@ -226,20 +226,20 @@ We also know that Σ p(x) = 1.
 ⇒ k + 2k + 3k = 1
 ⇒ 6k = 1
 ⇒ \(\rm k=\dfrac{1}{6}\).', 12, -3),
-  (18, 'nimcet', 'maths', 'Inverse Trigonometric Function', 'Medium', 'The principal value of \(\rm sin^{-1}(-\frac12)\) is', jsonb_build_array('\(\frac\pi6\)', '\(\frac{7\pi}{6}\)', '\(-\frac\pi6\)', '\(\frac{-\pi}{3}\)'), 2, 'Let, \(\rm sin^{-1}(-\frac12)\) = x
-⇒ sin x = \(-\frac12\)
-We know, \(\rm sin(\frac\pi6)=\frac12\)
-But, here sin x value is negative
-∴ x lies in 3rd OR 4th quadrant
-But principal value must be in [-π/2, π/2 ]
-∴ x = \(-\frac\pi6\)
-Hence, option (3) is correct.', 12, -3),
-  (19, 'nimcet', 'maths', 'Sets', 'Easy', 'Let, A = {(2n, 3n): n ∈ N} and B = {(3n, 5n): n ∈ N}. What is (A ∩ B) equal to?', jsonb_build_array('{(2n, 3n): n ∈ N}', '{(2n, 5n): n ∈ N}', '{(n, 3n): n ∈ N}', 'ϕ'), 3, 'A = {(2n, 3n): n ∈ N}
+  (18, 'nimcet', 'maths', 'Inverse Trigonometric Function', 'Medium', 'The principal value of \(\rm {\sin ^{ - 1}}\left( { - \frac{1}{2}} \right)\) is', jsonb_build_array('\(\frac\pi6\)', '\(\frac{7\pi}{6}\)', '\(-\frac\pi6\)', '\(\frac{-\pi}{3}\)'), 2, 'Let \({\sin ^{ - 1}}\left( { - \dfrac{1}{2}} \right) = x\)
+⇒ \(\sin x = - \dfrac{1}{2}\)
+We know, \(\sin \left( {\dfrac{\pi }{6}} \right) = \dfrac{1}{2}\)
+But, here \(\sin x\) value is negative
+∴ \(x\) lies in 3rd OR 4th quadrant
+But principal value must be in \(\left[ { - \dfrac{\pi }{2},\, \dfrac{\pi }{2}} \right]\)
+∴ \(x = - \dfrac{\pi }{6}\)
+Hence, option C is correct.', 12, -3),
+  (19, 'nimcet', 'maths', 'Sets', 'Easy', 'Let \(A = \left\{ {(2n,\,3n):n \in N} \right\}\) and \(B = \left\{ {(3n,\,5n):n \in N} \right\}\). What is \((A \cap B)\) equal to?', jsonb_build_array('\(\left\{ {(2n,\,3n):n \in N} \right\}\)', '\(\left\{ {(2n,\,5n):n \in N} \right\}\)', '\(\left\{ {(n,\,3n):n \in N} \right\}\)', '\(\phi \)'), 3, '\(A = \left\{ {(2n,\,3n):n \in N} \right\}\)
 = {(2, 3), (4, 6), (6, 9), ………} And
-B = {(3n, 5n): n ∈ N}
+\(B = \left\{ {(3n,\,5n):n \in N} \right\}\)
 = {(3, 5), (6, 10), (9, 15), ………}
 There is no member common to both the sets
-∴ A ∩ B = ϕ
+∴ \(A \cap B = \phi \)
 Hence, option D is correct.', 12, -3),
   (20, 'nimcet', 'maths', 'Continuity', 'Medium', '\(
 f(x) = \left[ |x| - |x - 1| \right]^2
@@ -257,13 +257,13 @@ Since \( f(x) \) is constant for \( x > 1 \),
 \[
 f''(x) = 0
 \]', 12, -3),
-  (21, 'nimcet', 'maths', 'Differential Equations', 'Medium', 'The differential equation representing the family of curves y = a sin (λx + α) is:', jsonb_build_array('\(\rm \frac {d^2y}{dx^2} + \lambda^2y = 0\)', '\(\rm \frac {d^2y}{dx^2} - \lambda^2y = 0\)', '\(\rm \frac {d^2y}{dx^2} + \lambda y = 0\)', 'None of the above'), 0, 'Given:
-y = a sin (λx + α) .... (1)
+  (21, 'nimcet', 'maths', 'Differential Equations', 'Medium', 'The differential equation representing the family of curves \(y = a\sin (\lambda x + \alpha )\) is:', jsonb_build_array('\(\rm \frac {d^2y}{dx^2} + \lambda^2y = 0\)', '\(\rm \frac {d^2y}{dx^2} - \lambda^2y = 0\)', '\(\rm \frac {d^2y}{dx^2} + \lambda y = 0\)', 'None of the above'), 0, 'Given:
+\(y = a\sin (\lambda x + \alpha )\) .... (1)
 Now differentiating both sides, we get
 \(⇒ \rm \frac{dy}{dx} = \frac{a d\sin{(\lambda x + \alpha)}}{d(\lambda x + \alpha)}\times\frac{{d(\lambda x + \alpha)}}{dx} \)
 ⇒ \(\rm \frac{dy}{dx} = a\lambda\cos\;(\lambda x+\alpha)\)
 Again differentiating both sides, we get
-\(\Rightarrow \frac{{{{\rm{d}}^2}{\rm{y}}}}{{{\rm{d}}{{\rm{x}}^2}}} = \rm -a\lambda^2\) sin (λx + α)
+\(\Rightarrow \frac{{{{\rm{d}}^2}{\rm{y}}}}{{{\rm{d}}{{\rm{x}}^2}}} = \rm - a{\lambda ^2}\sin (\lambda x + \alpha )\)
 From equation 1st, 
 \(\Rightarrow \frac{{{{\rm{d}}^2}{\rm{y}}}}{{{\rm{d}}{{\rm{x}}^2}}} = \rm -\lambda^2 y\)
 ∴ \(\rm \frac {d^2y}{dx^2} + \lambda^2y = 0\)', 12, -3),
@@ -276,12 +276,12 @@ A = \(\rm \displaystyle\int_{-2}^2 (1 - \dfrac {x^2}{4})dx \)
 ⇒A = 4 \(-\dfrac 4 3\)
 ⇒A = \(\dfrac 8 3\)
 Hence, the area of the region bounded by the curve \(\rm f(x)=1 - \dfrac{x^2}{4}, x \in [-2, 2]\) and the x-axis is \(\dfrac 8 3\) square units', 12, -3),
-  (23, 'nimcet', 'maths', 'Definite Integrals', 'Medium', 'Find the value of the \(\rm \int_{0}^{2\pi}{cosx}\ dx\)', jsonb_build_array('0', '2', '6', '4'), 0, 'Given: \(\rm \int_{0}^{2π}{cosx}\ dx\)
-Let, f(x) = cos x
-As we can see that, f(2π - x) = cos(2π - x) = cos x = f(x)
+  (23, 'nimcet', 'maths', 'Definite Integrals', 'Medium', 'Find the value of the \(\rm \int_{0}^{2\pi}{cosx}\ dx\)', jsonb_build_array('0', '2', '6', '4'), 0, 'Given: \(\rm \int_{0}^{2\pi }{{\cos x}}\;dx\)
+Let \(f(x) = \cos x\)
+As we can see that, \(f(2\pi - x) = \cos (2\pi - x) = \cos x = f(x)\)
 As we know that, if f(2a - x) = f(x) then \(\rm \int_{0}^{2a}f(x)dx=2\int_{0}^{a}f(x)dx\) 
-​\(\Rightarrow \rm \int_{0}^{2\pi}{cosx}\ dx=2 \int_{0}^{\pi}{cosx}\ dx=2\left [ sin x \right ]_{0}^{\Pi}=0\)​
-Hence, the correct option is 1.', 12, -3),
+​\(\Rightarrow \rm \int_{0}^{2\pi}{{\cos x}}\;dx = 2\int_{0}^{\pi}{{\cos x}}\;dx = 2\left[ {\sin x} \right]_{0}^{\pi } = 0\)​
+Hence, option A is correct.', 12, -3),
   (24, 'nimcet', 'maths', 'Line', 'Easy', 'Find the equation of the line whose inclination is \( \frac{5\pi}{6} \) and which makes an intercept of 6 units on the negative direction of the y-axis.', jsonb_build_array('\( x + \sqrt{3} y + 6\sqrt{3} = 0 \)', '\( x - \sqrt{3} y + 6\sqrt{3} = 0 \)', '\( x - \sqrt{3} y - 6\sqrt{3} = 0 \)', 'None of these'), 0, 'To find the equation of the line, we''re given: 
 Inclination of the line: $\theta = \frac{5\pi}{6}$ 
 y-intercept: The line cuts the y-axis at –6 (since it''s in the negative direction and 6 units) 
@@ -303,7 +303,7 @@ $$
 y = -\frac{1}{\sqrt{3}}x - 6
 $$
 \( x + \sqrt{3} y + 6\sqrt{3} = 0 \)', 12, -3),
-  (25, 'nimcet', 'maths', 'Application Of Derivative', 'Medium', 'Find the interval in which the function f(x) = (x + 2) e-x is decreasing ?', jsonb_build_array('[- 1, ∞)', '[1, ∞)', '(- ∞, - 1]', 'None of these'), 0, 'Given: f(x) = (x + 2) e-x 
+  (25, 'nimcet', 'maths', 'Application Of Derivative', 'Medium', 'Find the interval in which the function \(f(x) = (x + 2){e^{ - x}}\) is decreasing ?', jsonb_build_array('\(\left[ { - 1,\, \infty } \right)\)', '\(\left[ {1,\, \infty } \right)\)', '\(\left( { - \infty ,\, - 1} \right]\)', 'None of these'), 0, 'Given: \(f(x) = (x + 2){e^{ - x}}\)
 Here we have to find the interval in which f(x) is decreasing.
 Let''s first calculate f''(x)
 As we know that, \(\frac{d}{{dx}}\left[ {f\left( x \right) ⋅ g\left( x \right)} \right] = f\left( x \right) ⋅ \;\frac{{d\left\{ {g\left( x \right)} \right\}}}{{dx}}\; + \;\;g\left( x \right) ⋅ \;\frac{{d\left\{ {f\left( x \right)} \right\}}}{{dx}}\)
@@ -312,11 +312,11 @@ As we know that, \(\frac{{d\left( {{e^{ax}}} \right)}}{{dx}} = a ⋅ {e^{ax}}\)
 \(⇒ f''\left( x \right) = \; - \left( {x + 2} \right) ⋅ {e^{ - x}} + {e^{ - x}} ⋅ 1\)
 \(⇒ f''\left( x \right) = \; - \left( {x + 1} \right) ⋅ {e^{ - x}}\)
 As we know that for a decreasing function say f(x) we have f''(x) ≤ 0.
-⇒ - (x + 1) ⋅ e- x ≤ 0
-⇒ (x + 1) ⋅ e- x ≥ 0
-⇒ x + 1 ≥ 0 ---------(∵ e- x > 0)
-⇒ x ≥ - 1
-Hence, the interval in which the given function is decreasing is [- 1, ∞)', 12, -3),
+⇒ \( - \left( {x + 1} \right) ⋅ {e^{ - x}} ≤ 0\)
+⇒ \(\left( {x + 1} \right) ⋅ {e^{ - x}} ≥ 0\)
+⇒ \(x + 1 ≥ 0\) ---------(∵ \({e^{ - x}} > 0\))
+⇒ \(x ≥ - 1\)
+Hence, the interval in which the given function is decreasing is \(\left[ { - 1,\, \infty } \right)\)', 12, -3),
   (26, 'nimcet', 'maths', 'Matrices', 'Easy', 'If A = \(\left[ {\begin{array}{ccc} 1&{3 + x}&2\\ {1 - x}&2&{y + 1}\\ 2&{5 - y}&3 \end{array}} \right]\) is a symmetric matrix, then 3x + y is equal to?', jsonb_build_array('-1', '0', '1', 'none of these'), 0, '\(A = \left[ {\begin{array}{ccc} 1&{3 + x}&2\\ {1 - x}&2&{y + 1}\\ 2&{5 - y}&3 \end{array}} \right]\)
 \(A = {A^t}\)
  \( A^t=\left[ {\begin{array}{ccc} 1&{1 - x}&2\\ {3 + x}&2&{5 - y}\\ 2&{y + 1}&3 \end{array}} \right] = \left[ {\begin{array}{ccc} 1&{3 + x}&2\\ {1 - x}&2&{y + 1}\\ 2&{5 - y}&3 \end{array}} \right] = A\)
@@ -327,12 +327,12 @@ And, y + 1 = 5 - y
 ⇒ y = 2
 3x + y = 3(-1) + 2
 ∴ 3x + y = -1', 12, -3),
-  (27, 'nimcet', 'maths', 'Sequence And Series', 'Medium', 'Find the harmonic mean, if arithmetic mean is 27 and geometric mean is 9 ?', jsonb_build_array('9√3', '9', '3', '27'), 2, 'Given AM = 27 and GM = 9
-And we know that (GM)2 = (AM) × (HM)
-⇒(9)2 = 27 × HM
+  (27, 'nimcet', 'maths', 'Sequence And Series', 'Medium', 'Find the harmonic mean, if arithmetic mean is 27 and geometric mean is 9 ?', jsonb_build_array('\(9\sqrt 3 \)', '9', '3', '27'), 2, 'Given AM = 27 and GM = 9
+And we know that \({(GM)^2} = (AM) \times (HM)\)
+⇒ \({(9)^2} = 27 \times HM\)
 ⇒ HM = \(\frac{81}{27}\)
 = 3 
-Hence, option (3) is correct.', 12, -3),
+Hence, option C is correct.', 12, -3),
   (28, 'nimcet', 'maths', 'Probability', 'Medium', 'A man is known to speak truth 2 out of 3 times. He throws a die and reports that number obtained is a four. Find the probability that the number obtained is actually a four.', jsonb_build_array('1/14', '2/7', '3/7', '5/7'), 1, 'Let \(A\) be the event that the man reports that number four is obtained.
 Let \(E_1\) be the event that four is obtained and \(E_2\) be its complementary event.
 Then, \(P(E_1)\) = Probability that four occurs = \(1/6\)
@@ -342,7 +342,7 @@ Also, \(P(A|E_1)\) = Probability that the man reports four and it is actually a 
 By using Bayes'' theorem, the probability that the number obtained is actually a four:
 \(P\left( {E_1|A} \right) = \frac{{P\left( {E_1} \right)P(A|E_1)}}{{P\left( {E_1} \right)P\left( {A|E_1} \right) + P\left( {E_2} \right)P(A|E_2)}}\)
 \( \Rightarrow P\left( {E_1|A} \right) = \frac{{1/6 \times 2/3}}{{1/6 \times 2/3 + 5/6 \times 1/3}} = 2/7\)', 12, -3),
-  (29, 'nimcet', 'maths', 'Ellipse', 'Medium', 'If the latus rectum of an ellipse is equal to half of the minor axis, then what is its eccentricity?', jsonb_build_array('2 / √3', '1 / √3', '√3 / 2', '1 / √2'), 2, 'Given, the latus rectum of an ellipse is equal to half of the minor axis.
+  (29, 'nimcet', 'maths', 'Ellipse', 'Medium', 'If the latus rectum of an ellipse is equal to half of the minor axis, then what is its eccentricity?', jsonb_build_array('\(\dfrac{2}{{\sqrt 3 }}\)', '\(\dfrac{1}{{\sqrt 3 }}\)', '\(\dfrac{{\sqrt 3 }}{2}\)', '\(\dfrac{1}{{\sqrt 2 }}\)'), 2, 'Given, the latus rectum of an ellipse is equal to half of the minor axis.
 Suppose, the equation of ellipse is \(\rm \frac{x^2}{a^2}+\frac{y^2}{b^2} = 1\)
 length of Latus rectum of ellipse = \(\rm \frac{2b^2}{a}\)
 Length of minor axis = 2b.
@@ -353,19 +353,20 @@ If the equation of ellipse is \(\rm \frac{x^2}{a^2}+\frac{y^2}{b^2} = 1\) then e
 ⇒ \(e = \sqrt {1 - (\frac{1}{2})^2}\)
 ⇒ e = \(\rm\frac {\sqrt {3}}{2}\)
 If the latus rectum of an ellipse is equal to half of the minor axis, then what is its eccentricity e = \(\rm\frac {\sqrt {3}}{2}\)', 12, -3),
-  (30, 'nimcet', 'maths', 'Function and Relation', 'Easy', 'If * is a binary operation on Z such that a * b = a + b + 1 ∀ a, b ∈ Z then find the identity element of Z with respect to * ?', jsonb_build_array('-1', '1', '0', 'None of these'), 0, 'Given: * is a binary operation on Z such that a * b = a + b + 1 ∀ a, b ∈ Z.
-Let e be the identity element of Z with respect to *.
-As we know that if e is an identity element of a non-empty set S with respect to a binary operation * then a * e = e * a = a ∀ a ∈ S.
-Let a ∈ Z and because e is the identity element of Z with respect to given operation *.
-i.e a * e = a = e * a ∀ a ∈ Z.
-According to the definition of *, we have
-⇒ a * e = a + e + 1 = a ∀ a ∈ Z
-⇒ e = - 1
-Hence, - 1 is the identity element of Z with respect to given operation *.', 12, -3),
-  (31, 'nimcet', 'maths', 'Permutation and Combination', 'Medium', 'If \(\rm ^{22}C_m= {^{22}C_n}\), and m ≠ n, then m + n =', jsonb_build_array('44', '22', '11', '0'), 1, 'Here, \(\rm ^{22}C_m= {^{22}C_n}\)
-We know, If \(\rm ^{n}C_x= {^{n}C_y}\) and x ≠ y, then n = x + y, 
-∴ m + n = 22 
-Hence, option (2) is correct.', 12, -3),
+  (30, 'nimcet', 'maths', 'Function and Relation', 'Easy', 'If \(*\) is a binary operation on \(Z\) such that \(a * b = a + b + 1\;\forall \,a,\,b \in Z\) then find the identity element of \(Z\) with respect to \(*\) ?', jsonb_build_array('-1', '1', '0', 'None of these'), 0, 'Given: \(*\) is a binary operation on \(Z\) such that \(a * b = a + b + 1\;\forall \,a,\,b \in Z\).
+Let \(e\) be the identity element of \(Z\) with respect to \(*\).
+As we know that if \(e\) is an identity element of a non-empty set \(S\) with respect to a binary operation \(*\) then \(a * e = e * a = a\;\forall \,a \in S\).
+Let \(a \in Z\) and because \(e\) is the identity element of \(Z\) with respect to the given operation \(*\).
+i.e. \(a * e = a = e * a\;\forall \,a \in Z\).
+According to the definition of \(*\), we have
+⇒ \(a * e = a + e + 1 = a\;\forall \,a \in Z\)
+⇒ \(e = - 1\)
+Hence, \(- 1\) is the identity element of \(Z\) with respect to the given operation \(*\).
+Hence, option A is correct.', 12, -3),
+  (31, 'nimcet', 'maths', 'Permutation and Combination', 'Medium', 'If \(\rm ^{22}C_m= {^{22}C_n}\), and \(m \ne n\), then \(m + n =\)', jsonb_build_array('44', '22', '11', '0'), 1, 'Here, \(\rm ^{22}C_m= {^{22}C_n}\)
+We know, If \(\rm ^{n}C_x= {^{n}C_y}\) and \(x \ne y\), then \(n = x + y\), 
+∴ \(m + n = 22\)
+Hence, option B is correct.', 12, -3),
   (32, 'nimcet', 'maths', 'Matrices', 'Easy', 'Transpose of a column matrix is', jsonb_build_array('zero matrix', 'diagonal matrix', 'column matrix', 'row matrix'), 3, 'The transpose of a column matrix is a row matrix.
 A column matrix has a single column and multiple rows, like this:
 \[
@@ -418,12 +419,12 @@ Now,
 \( \Rightarrow {r^{11}} = {r^{p + 6}}\)
 \( \Rightarrow 11 = p + 6\)
 ∴ \(p = 5\)', 12, -3),
-  (36, 'nimcet', 'maths', 'Line', 'Easy', 'What is the inclination of the line x - y + √3 = 0 ?', jsonb_build_array('30°', '60°', '45°', '90°'), 2, 'Given: x - y + √3 = 0
+  (36, 'nimcet', 'maths', 'Line', 'Easy', 'What is the inclination of the line \(x - y + \sqrt 3 = 0\) ?', jsonb_build_array('30°', '60°', '45°', '90°'), 2, 'Given: \(x - y + \sqrt 3 = 0\)
 We will first express the equation of the line in the standard form.
-Thus the equation of the line is y = x + √3 
-Therefore, the slope of the given line is m = tan θ = 1
-∴ θ = tan-1 1 = 45° 
-Thus, the angle of inclination is 45°.', 12, -3),
+Thus the equation of the line is \(y = x + \sqrt 3 \)
+Therefore, the slope of the given line is \(m = \tan \theta = 1\)
+∴ \(\theta = {\tan ^{ - 1}}1 = 45^\circ \)
+Thus, the angle of inclination is \(45^\circ \).', 12, -3),
   (37, 'nimcet', 'maths', 'Line', 'Easy', 'What is the equation of the straight line which joins the intersection of the line x - y + 4 = 0 and y - 2x - 5 = 0 and the point (3, 2)?', jsonb_build_array('x + y - 11 = 0', 'x - 2y - 11 = 0', 'x + 3y - 11 = 0', 'x + 4y - 11 = 0'), 3, 'Given lines x - y + 4 = 0 ...(i)
 y - 2x - 5 = 0 ...(ii)
 Adding the 2 equation (i) and (ii)
@@ -443,13 +444,13 @@ Now the equation of the line to be find out is
 Which of the above statement(s) is/are correct?', jsonb_build_array('1 only', '2 only', 'Both 1 and 2', 'Neither 1 nor 2'), 1, 'Statement 1:
 If A and B are mutually exclusive events, then P (A ∩ B) = 0.
 We know that P (A ∪ B) = P(A) + P(B) – P (A ∩ B) = 0.6 + 0.6 = 1.2 > 1
-This contradicts ∵ probability of any event say A: 0 ≤ P (A) ≤ 1.
+This contradicts the fact that the probability of any event \(A\) satisfies \(0 \le P\left( A \right) \le 1\).
 Hence statement 1 is wrong.
 Statement 2:
 Given: P(A|B) = 1
 As we know, P (A | B) = P(A ∩ B) / P(B) = 1
 ⇒ B ⊆ A
-⇒ P (B̅ | A̅) = P(A̅ ∩ B̅) / P(A̅) = P(A ∪ B) / P(A̅) = P(A̅) / P(A̅) = 1
+⇒ \(P\left( {\bar B|\bar A} \right) = \dfrac{{P\left( {\bar A \cap \bar B} \right)}}{{P\left( {\bar A} \right)}} = \dfrac{{1 - P\left( {A \cup B} \right)}}{{P\left( {\bar A} \right)}} = \dfrac{{P\left( {\bar A} \right)}}{{P\left( {\bar A} \right)}} = 1\)
 Hence, statement 2 is true.', 12, -3),
   (39, 'nimcet', 'maths', 'Differentiability', 'Easy', 'If x = \(\rm {{1\ -\ t}\over {1\ +\ t}}\) and y = \(\rm {2t\over {1\ +\ t}}\), then find the value of \(\rm {d^2y\over dx^2}\).', jsonb_build_array('\(\rm\frac{1}{y}\)', '\(\rm\frac{-1}{y}\)', '\(\rm {{-1}\over {y^3}}\)', '0'), 3, 'We have x = \(\rm {{1\ -\ t}\over {1\ +\ t}}\) and y = \(\rm {2t\over {1\ +\ t}}\).
 We observe that x + y = \(\rm \left({{1\ -\ t}\over {1\ +\ t}}\right)+\left({{2t}\over {1\ +\ t}}\right)={1\ +\ t\over1\ + \ t}\) = 1.
@@ -458,33 +459,30 @@ Differentiating w.r.t. x, we get:
 ⇒ \(\rm {dy\over dx}\) = -1
 Differentiating again w.r.t. x, we get:
 \(\rm \frac{d^2y}{dx^2}=0\).', 12, -3),
-  (40, 'nimcet', 'maths', 'Determinants', 'Medium', 'Let A be a non-singular matrix of the order 2 × 2 then |A-1| =', jsonb_build_array('|A|', '\(\rm \frac {1}{|A|}\)', '0', 'None of these'), 1, 'Given that \( A \) is a non-singular matrix of order \( 2 \times 2 \), \[\]
-we need to determine \( |A^{-1}| \), where \( |A^{-1}| \) represents the determinant of the inverse of \( A \). \[\]
- Step 1: Determinant Property of Inverse Matrix \[\]
-For any square, non-singular matrix \( A \), the determinant of its inverse is given by:
+  (40, 'nimcet', 'maths', 'Determinants', 'Medium', 'Let A be a non-singular matrix of the order 2 × 2 then \(|{A^{ - 1}}|\) =', jsonb_build_array('|A|', '\(\rm \frac {1}{|A|}\)', '0', 'None of these'), 1, 'Given that \(A\) is a non-singular matrix of order \(2 \times 2\),
+we need to determine \(|{A^{ - 1}}|\), where \(|{A^{ - 1}}|\) represents the determinant of the inverse of \(A\).
+Step 1: Determinant Property of Inverse Matrix
+For any square, non-singular matrix \(A\), the determinant of its inverse is given by:
 \[
-|A^{-1}| = \frac{1}{|A|}
+|{A^{ - 1}}| = \frac{1}{{|A|}}
 \]
-where \( |A| \) is the determinant of \( A \). \[\]
- Step 2: Applying to a \( 2 \times 2 \) Matrix \[\]
-Since \( A \) is a \( 2 \times 2 \) matrix, this property holds, and we directly get:
+where \(|A|\) is the determinant of \(A\).
+Step 2: Applying to a \(2 \times 2\) Matrix
+Since \(A\) is a \(2 \times 2\) matrix, this property holds, and we directly get:
 \[
-|A^{-1}| = \frac{1}{|A|}
+|{A^{ - 1}}| = \frac{1}{{|A|}}
 \]
- Conclusion \[\]
-Thus, the determinant of the inverse of \( A \) is:
-\(
-\frac{1}{|A|}
-\)', 12, -3),
-  (41, 'nimcet', 'maths', 'Application Of Derivative', 'Medium', 'The normal to a given curve is parallel to x-axis if', jsonb_build_array('\(\frac{{dy}}{{dx}} = 0\)', '\(\frac{{dy}}{{dx}} = 1\)', '\(\frac{{dx}}{{dy}} = 0\)', '\(\frac{{dx}}{{dy}} = 1\)'), 2, 'Let us consider a function f(x) , such that slope of tangent be mt and slope of normal be mn
-Now , we know that, normal is perpendicular to tangent, such that mt × mn = -1
-mn × dy/dx = -1
-⇒ mn = - dx/dy
-Now, as per the question, the normal is parallel to the x-axis, so the slope of normal is equal to the slope of the x-axis (i.e. zero)
-∴ mn = 0
-⇒ - dx/dy = 0
-⇒ dx/dy = 0
-∴ The normal to a given curve is parallel to x-axis if dx/dy = 0', 12, -3),
+Conclusion
+Thus, the determinant of the inverse of \(A\) is \(\dfrac{1}{{|A|}}\).', 12, -3),
+  (41, 'nimcet', 'maths', 'Application Of Derivative', 'Medium', 'The normal to a given curve is parallel to x-axis if', jsonb_build_array('\(\frac{{dy}}{{dx}} = 0\)', '\(\frac{{dy}}{{dx}} = 1\)', '\(\frac{{dx}}{{dy}} = 0\)', '\(\frac{{dx}}{{dy}} = 1\)'), 2, 'Let us consider a function \(f(x)\), such that the slope of the tangent is \({m_t}\) and the slope of the normal is \({m_n}\).
+Now, we know that the normal is perpendicular to the tangent, such that \({m_t} \times {m_n} = - 1\).
+\({m_n} \times \dfrac{{dy}}{{dx}} = - 1\)
+⇒ \({m_n} = - \dfrac{{dx}}{{dy}}\)
+Now, as per the question, the normal is parallel to the x-axis, so the slope of the normal is equal to the slope of the x-axis (i.e. zero).
+∴ \({m_n} = 0\)
+⇒ \( - \dfrac{{dx}}{{dy}} = 0\)
+⇒ \(\dfrac{{dx}}{{dy}} = 0\)
+∴ The normal to a given curve is parallel to the x-axis if \(\dfrac{{dx}}{{dy}} = 0\).', 12, -3),
   (42, 'nimcet', 'maths', 'Probability', 'Medium', 'A coin is tossed 3 times. What is the probability that they will fall two heads and one tail?', jsonb_build_array('1 / 3', '1 / 2', '1 / 4', '3 / 8'), 3, 'A coin is tossed 3 times
 Sample Space are,
 S = {(H,H,H) , (H,H,T) , (H,T,H) , (H,T,T) , (T,H,H) , (T,H,T) , (T,T,H) , (T,T,T)}
@@ -528,14 +526,16 @@ For \( n = 8 \):
 \[
 S_8 = \frac{8 \times 9 \times 10}{3} = 240
 \]', 12, -3),
-  (46, 'nimcet', 'maths', 'Differential Equations', 'Medium', 'The solution of the differential equation \(\rm dy\over dx \) = 2x - 1 is', jsonb_build_array('\(\rm y = \frac 1 {\ln 2} 2^x +c\)', '\(\rm y^2 = \frac 1 {\ln 2} 2^x +c\)', '\(\rm 2y = \frac 1 {\ln 2} 2^x +c\)', '\(\rm 2y^2 = \frac 1 {\ln 2} 2^x +c\)'), 2, 'Given, the differential equation \(\rm \dfrac {dy}{dx}\) = 2x - 1 
-⇒ \(\rm \dfrac {dy}{dx}\) = \(\rm \dfrac {2^x}{2^{}}\)
-⇒ \(\rm {2^{}} \; dy = 2^x \; dx\)
+  (46, 'nimcet', 'maths', 'Differential Equations', 'Medium', 'The solution of the differential equation \(\rm \dfrac{{dy}}{{dx}}\) = \(2^{x - 1}\) is', jsonb_build_array('\(\rm y = \frac 1 {\ln 2} 2^x +c\)', '\(\rm y^2 = \frac 1 {\ln 2} 2^x +c\)', '\(\rm 2y = \frac 1 {\ln 2} 2^x +c\)', '\(\rm 2y^2 = \frac 1 {\ln 2} 2^x +c\)'), 2, 'Given, the differential equation \(\rm \dfrac{{dy}}{{dx}}\) = \({2^{x - 1}}\)
+⇒ \(\rm dy = {2^{x - 1}}\;dx\)
 Now, variables are separated.
 Integrating both sides, we get
-⇒ \(\rm2 \int \; dy = \int 2^x \; dx\)
-⇒ \(\rm 2y = \frac 1 {\ln 2} 2^x +c\)', 12, -3),
+⇒ \(\rm \int {dy} = \int {{2^{x - 1}}} \;dx\)
+⇒ \(\rm y = \dfrac{{{2^{x - 1}}}}{{\ln 2}} + c\)
+Multiplying both sides by 2, we get
+⇒ \(\rm 2y = \dfrac{{{2^x}}}{{\ln 2}} + c\)', 12, -3),
   (47, 'nimcet', 'maths', 'Function and Relation', 'Easy', 'If * is a binary operation on A = {1, 2, 3, 4, 5} given by the table shown below:
+\[
 \begin{array}{|c|c|c|c|c|c|}
 \hline
 * & 1 & 2 & 3 & 4 & 5 \\ \hline
@@ -582,8 +582,8 @@ Event of getting multiple of 2: 2, 4, 6
 Event getting 1: 1. 
 So, there is always a certain chance of occurrence of at least one of them when they are all considered together. Hence exhaustive events.', 12, -3),
   (50, 'nimcet', 'maths', 'Differentiability', 'Easy', 'If y = \(\rm \cos ^ {-1} \left(\frac {1 - x}{1 + x}\right)\), then find \(\rm\frac{dy}{dx}\).', jsonb_build_array('\(\rm2\over {1 + x}\)', '\(\rm 1\over {\sqrt x (x + 1)}\)', '\(\rm 1\over {x \sqrt{x + 1}}\)', '\(\rm1\over {1 + x}\)'), 1, 'We have y = \(\rm \cos ^ {-1} \left(\frac {1 - x}{1 + x}\right)\).
-Let x = tan2 z.
-∴ y = \(\rm \cos ^ {-1} \left(\frac {1 - \tan^2z}{1 + \tan^2z}\right)\) = cos-1 (cos 2z) = 2z.
+Let \(x = \tan^2 z\).
+∴ \(y = {\cos ^{ - 1}}\left( {\dfrac{{1 - {{\tan }^2}z}}{{1 + {{\tan }^2}z}}} \right) = {\cos ^{ - 1}}\left( {\cos 2z} \right) = 2z\).
 Now, differentiating w.r.t. z, we get:
 \(\rm\frac{dx}{dz}= \frac{d}{dz}\left(\tan^2z\right)=2\tan z\sec^2z\)
 \(\rm\frac{dy}{dz}= \frac{d}{dz}(2z)=2\)
@@ -654,8 +654,8 @@ How Jack is related to that grandson’s daughter-in-law?', jsonb_build_array('S
 \text{Jack (himself)} 
 \end{array}
 \]
-The person in the photograph is Jack himself. \[\]
-So, Jack is the husband of that grandson''s doughter-in-law.', 6, -1.5),
+The person in the photograph is Jack himself.
+So, Jack is the husband of that grandson''s daughter-in-law.', 6, -1.5),
   (72, 'nimcet', 'reasoning', 'Odd One Out', 'Easy', 'Find the odd number / letters or word from the given alternative', jsonb_build_array('Cool', 'Warm', 'Sultry', 'Hot', 'Humid'), 0, 'All except Cool denote uncomfortable weather conditions.', 6, -1.5),
   (73, 'nimcet', 'reasoning', 'Calendars', 'Easy', 'On what dates of April, 2001 did Wednesday fall?', jsonb_build_array('1st, 8th, 15th, 22nd, 29th', '2nd, 9th, 16th, 23rd, 30th', '3rd, 10th, 17th, 24th', '4th, 11th, 18th, 25th'), 3, 'We shall find the day on 1st April, 2001.
 1st April, 2001 = (2000 years + Period from 1.1.2001 to 1.4.2001)
@@ -676,9 +676,7 @@ and
 C is used for E.
 Thus, it is clear that each letter of the word FIRE stands for each corresponding letter of the coded word DGPC two places ahead. By applying the same principle, the letters QFMR will stand for SHOT. Hence, the last letter of the coded word is R.', 6, -1.5),
   (76, 'nimcet', 'reasoning', 'Calendars', 'Easy', 'Directions: Complete the sentences given below sing the correct alternative.
-If today is Wednesday, day after tomorrow will be', jsonb_build_array('Thursday', 'Monday', 'Tuesday', 'Saturday', 'None of the above'), 4, 'The correct answer is:5) None of the above
-Key Points
-Therefore, the correct answer is Option 5, ''None of the above''.', 6, -1.5),
+If today is Wednesday, day after tomorrow will be', jsonb_build_array('Thursday', 'Monday', 'Tuesday', 'Saturday', 'None of the above'), 4, 'Day after tomorrow is two days after today. If today is Wednesday, the day after tomorrow is Friday, which is not listed among the options. Hence, the correct answer is option E (''None of the above'').', 6, -1.5),
   (77, 'nimcet', 'reasoning', 'Coding Decoding', 'Easy', 'If in a certain code language, FLOWER is coded as UOLDVI, then how is TERMINAL coded in that language?', jsonb_build_array('FLKPMROZ', 'GVINRMZO', 'RVNIGLKA', 'MNIVGYEO'), 1, 'Each letter in the word is replaced by the letter which occupies the same position from the other end of the alphabet, to obtain the code. Thus, A is replaced by Z, B by Y, C by X, D by W and so on.', 6, -1.5),
   (78, 'nimcet', 'reasoning', 'Reasoning Analogies', 'Easy', 'Major is related to Leiutenant in the same way as ‘Squadron Leader is Related to _____?', jsonb_build_array('Pilot officer', 'Flying Attendant', 'Flying officer', 'More than one of the above'), 2, 'The relationship between "Major" and "Lieutenant" can be understood as a ranking within a military hierarchy where "Major" is a rank above "Lieutenant."
 Similarly, "Squadron Leader" is related to "Flying Officer" in a similar hierarchical manner as "Major" is related to "Lieutenant."
@@ -692,7 +690,7 @@ Hence 1st November = (Sunday + 3 odd days) = Wednesday', 6, -1.5),
 The analogy is: 343 : 7 :: 6859 : ? Step 1: Analyze the relationship in the first pair (343 : 7) We need to find how 343 and 7 are related. Let''s test for powers and roots. We can calculate the cube of 7: $7^3 = 7 \times 7 \times 7 = 49 \times 7 = 343$. The relationship is that the first number is the cube of the second number. Conversely, the second number is the cube root of the first number ($\sqrt[3]{343} = 7$). Step 2: Apply the relationship to the second pair (6859 : ?) Using the same logic, we need to find the cube root of 6859. Let the missing number be ''x''. The equation is $x^3 = 6859$. We can observe that the number 6859 ends in 9. The only digit (from 0-9) whose cube also ends in 9 is 9 itself ($9^3 = 729$). This means our answer must end in the digit 9. Looking at the options, the only number that ends in 9 is 19. To confirm, we can calculate $19^3$: $19 \times 19 \times 19 = 361 \times 19 = 6859$. Conclusion The missing number that completes the analogy is 19.
 This corresponds to option C.', 6, -1.5),
   (81, 'nimcet', 'reasoning', 'Coding Decoding', 'Easy', 'In a certain code, PRODUCTIONS is written as QQPCVEUHPMT. How is ORIENTATION written in that code?', jsonb_build_array('PQJDOVBSJNO', 'PQJDOUBUJPO', 'PSJFOVBSJNO', 'NSHFMVBSJNO', 'None of these'), 0, 'The first, third, fifth, seventh, ninth, and eleventh letters in the word are each moved one step forward; the second, fourth, eighth and tenth letters are each moved one step backward, while the middle (i.e. sixth) letter is moved two steps forward to obtain the corresponding letters of the code.', 6, -1.5),
-  (82, 'nimcet', 'reasoning', 'Reasoning Analogies', 'Easy', 'Amusing : Droll :: Abolish : ?', jsonb_build_array('Execute', 'Accept', 'Abort', 'Brake'), 2, '', 6, -1.5),
+  (82, 'nimcet', 'reasoning', 'Reasoning Analogies', 'Easy', 'Amusing : Droll :: Abolish : ?', jsonb_build_array('Execute', 'Accept', 'Abort', 'Brake'), 2, 'Amusing and Droll mean the same thing (synonyms). In the same way, Abolish and Abort both mean to put an end to something. Hence, option C is correct.', 6, -1.5),
   (83, 'nimcet', 'reasoning', 'Calendars', 'Easy', 'Directions: Question below is followed by two statements, I and II. Read the statements given and mark the answer.
 Is it Friday today?
 I. February 15 of this year was a Wednesday.
@@ -700,8 +698,8 @@ II. Today is March 12.', jsonb_build_array('Question can be answered by statemen
 Statement II:Today is March 12: We can’t tell which day today is, it can be any day.
 Taking both the statements together: We cannot tell whether it is Friday or not because we don’t know if the year is leap year or not.', 6, -1.5),
   (84, 'nimcet', 'reasoning', 'Reasoning Analogies', 'Easy', '343 : 7 :: 512 : ?', jsonb_build_array('2', '8', '6', '9'), 1, '343 : 7 :: 512 : ?
-Step 1: Analyze the relationship between the first pair. 343 is the cube of 7, since 73 = 343.
-Step 2: Apply the same relationship to the second pair. Find the cube root of 512. Since 83 = 512, the unknown number is 8.
+Step 1: Analyze the relationship between the first pair. 343 is the cube of 7, since \(7^3 = 343\).
+Step 2: Apply the same relationship to the second pair. Find the cube root of 512. Since \(8^3 = 512\), the unknown number is 8.
 Answer: The correct answer is (B) 8.', 6, -1.5),
   (85, 'nimcet', 'reasoning', 'Cause and Effect', 'Easy', 'Direction : Two statements I and II are given. These statement may be either independent causes or may be effects of independent causes or a common cause. One of these statements may be the effect of the other statements. Read both the statements and decide which of the following answer choice correctly depicts the relationship between these two statements. Mark answer :
 I. It is the aim of the city''s civic authority to get the air pollution reduced by 20% in the next two month.
@@ -711,96 +709,16 @@ I. The Government has imported large quantities of sugar as per trade agreement 
 II. The prices of sugar in the domestic market have fallen sharply in the recent months.', jsonb_build_array('Statement I is the cause and statement II is its effect', 'Statement II is the cause and statement I is its effect', 'Both the statements I and II are independent causes', 'Both the statements I and II are effects of independent causes', 'Both the statements I and II are effects of some common cause'), 0, 'The increase in supply always triggers a reduction in the prices.', 6, -1.5),
   (87, 'nimcet', 'reasoning', 'Reasoning Analogies', 'Easy', 'Timid : Ass :: Cunning : ?', jsonb_build_array('Ant', 'Fox', 'Rabbit', 'Horse'), 1, 'Ass is Timid and Fox is Cunning.', 6, -1.5),
   (88, 'nimcet', 'reasoning', 'Reasoning Analogies', 'Easy', 'Supervisor : Worker ::', jsonb_build_array('Junior : Senior', 'Superior : Inferior', 'Elder : Younger', 'Officer : Clerk'), 3, 'Supervisor supervises the Worker in the same way Officer supervises the Clerk.', 6, -1.5),
-  (89, 'nimcet', 'reasoning', 'Blood Relations', 'Easy', 'When Anuj saw Manish, he recalled, "He is the son of the father of my daughter''s mother." Who is Manish to Anuj?', jsonb_build_array('Brother-in-law', 'Brother', 'Cousin', 'Uncle'), 0, 'Anuj''s daughter''s mother---Anuj''s wife; Anuj''s wife father---Anu''s father-in-law; Father-in; Father-in-law''s son---Anuj brother-in-law. So, Manish is Anuj''s brother-in-law.', 6, -1.5),
+  (89, 'nimcet', 'reasoning', 'Blood Relations', 'Easy', 'When Anuj saw Manish, he recalled, "He is the son of the father of my daughter''s mother." Who is Manish to Anuj?', jsonb_build_array('Brother-in-law', 'Brother', 'Cousin', 'Uncle'), 0, 'Anuj''s daughter''s mother → Anuj''s wife; Anuj''s wife''s father → Anuj''s father-in-law; Anuj''s father-in-law''s son → Anuj''s brother-in-law. So, Manish is Anuj''s brother-in-law.', 6, -1.5),
   (90, 'nimcet', 'reasoning', 'Alphanumeric series', 'Easy', 'A series is given with one term missing. Choose the correct alternative from the given ones that will complete the series.
 \[ ADG, GJM, ?, SVY\]', jsonb_build_array('MRQ', 'MPS', 'SMP', 'MQS'), 1, 'The series follows a pattern where the first letter increases by 5, the second letter decreases by 6, the third letter increases by 7, and the fourth letter decreases by 8.', 6, -1.5),
-  (91, 'nimcet', 'english', 'Meaning of words and phrases', 'Easy', 'Select the most appropriate meaning of the given idiom.
-Make a bee line', jsonb_build_array('put the bees in a line', 'look for freebies', 'stand in a queue', 'go straight to'), 3, 'The correct answer is "go straight to"
-Key Points
-The meaning of the given idiom is "to go quickly and directly at or to (something or someone)"
-We use the given idiom in a situation where we are running towards something due to some urgency.
-Example: Prateek makes a bee line for the washroom as soon as he realised his pant is torn.
-Hence, the correct answer is option 4.
-Hinglish 
-The meaning of the given idiom is "जल्दी और सीधे जाना या (कुछ या किसी को)"', 4, -1),
-  (92, 'nimcet', 'english', 'Comprehension', 'Easy', '​In the following passage some words have been deleted. Fill in the blanks with the help of the alternatives given. Select the most appropriate option for each blank. 
-A (1)______ of trucks carrying soldiers was coming down the mountain road. The trucks (2) ______ slowly as there had been heavy snowfall in that area . Suddenly, with a (3) ______ a huge tree on the hill side fell bringing along with it boulders and mud. (4) ______, the driver of first truck stopped in time. The soldiers got down and started (5) ______ the road.
-Select the most appropriate option for blank (3).', jsonb_build_array('splash', 'scream', 'crash', 'buzz'), 2, 'The most appropriate option for blank (3) is: 
-C. crash 
-The sentence would read: 
-"Suddenly, with a crash, a huge tree on the hillside fell, bringing along with it boulders and mud." 
-"Crash" is the most suitable word here, as it describes the loud, sudden sound made by the falling tree and the debris.', 4, -1),
-  (93, 'nimcet', 'english', 'Meaning of words and phrases', 'Easy', 'Select the most appropriate meaning of the given idiom.
-In the blink of an eye', jsonb_build_array('Happen fast and instantaneously', 'To make progress', 'To flourish', 'More than one of the above'), 0, 'The correct answer is "Happen fast and instantaneously".
-Key Points
-"In the blink of an eye" is an idiom that means something happens very quickly.
-तेजी से घटित होता है
-The phrase can be used to describe events that occur suddenly or unexpectedly.
-It can also refer to actions that are completed in a short amount of time.
-Example: In the blink of an eye, the robber disappeared from the bank with a bag full of cash. 
-Thus, it is clear that option 1 correctly explains the given idiom.
-Hence, the correct answer is option 1.', 4, -1),
-  (94, 'nimcet', 'english', 'Meaning of words and phrases', 'Easy', 'Directions : Given below are some idioms/phrases followed by four alterative meanings to each. Choose the most appropriate answer from among the options (a), (b), (c) and (d).
-Talking twenty to the dozen', jsonb_build_array('talking hurriedly and rapidly', 'talking too much', 'talking without making sense', 'talking out of turn'), 0, 'The correct answer is- ''talking hurriedly and rapidly''
- Key Points
-let''s look at the meaning of the given idiom
-Talking twenty to the dozen: to speak rapidly and without stopping.(तेजी से और बिना रुके बोलना।)
-Example: He showed us around the house while talking nineteen to the dozen.
- My aunt can get talking twenty to the dozen if you get her on a topic she''s passionate about.​​
-​From the above lines, we can say that ''talking hurriedly and rapidly'' is the correct meaning of the given idiom.', 4, -1),
-  (95, 'nimcet', 'english', 'Synonyms and Antonyms', 'Easy', 'What is an antonym for ''strong''?', jsonb_build_array('Tough', 'Powerful', 'Weak', 'Sturdy'), 2, 'Weak is the opposite of strong. It indicates lack of strength.', 4, -1),
-  (96, 'nimcet', 'english', 'Basic English Grammar', 'Easy', 'The following sentence has been split into four segments. Identify the segment that contains a grammatical error.
-Rahul sings / very sweet / when he is / in a good mood', jsonb_build_array('very sweet', 'when he is', 'in a good mood', 'Rahul sings'), 0, 'The correct answer is ''very sweet''
-Key Points
-​Here ''sweet'' is an adjective which qualifies a subject (Noun/ Pronoun)
-However, an ''adverb'' is required to modify a Verb
-Example- Phillip sings loudly in the shower. 
-Thus, ''sweet'' will be replaced by ''sweetly''.
-Correct Sentence- Rahul sings very sweetly when he is in a good mood.', 4, -1),
-  (97, 'nimcet', 'english', 'Technical Writing', 'Easy', 'A student of class IV says, "After writing the first draft, I read it, make necessary changes and rewrite the draft again." The student is working at the writing stage of:', jsonb_build_array('Brainstorming', 'Listing', 'Proof reading', 'Revising'), 3, 'The writing process typically involves several stages, including planning or prewriting, drafting, revising, editing, and publishing.
-Key Points Here''s the chronological order of these stages:
-Planning or Prewriting: This stage involves generating ideas, conducting research, outlining the structure, and organizing thoughts before starting the actual writing. 
-Drafting: This is where the actual writing takes place, and the ideas and thoughts from the planning stage are transformed into a rough draft or initial version of the piece.
-Revising: After completing the draft, the writer proceeds to the revision stage. This involves reviewing and making changes to the content, structure, and organization of the draft to improve clarity, coherence, and overall effectiveness. 
-Editing: Once the revision stage is done, editing focuses on correcting grammar, spelling, punctuation, and other mechanical errors. 
-Publishing: The final step of the writing process is publishing. This can involve sharing the work with others, submitting it for publication, or making it available to the intended audience.
-Therefore, the student is working at the writing stage of revising.', 4, -1),
-  (98, 'nimcet', 'english', 'Basic English Grammar', 'Easy', 'Select the alternative that will improve the underlined part of the sentence. In case there is no improvement select ‘No improvement’.
-Sidharth want to become a football player but needs to practice more rigorously.', jsonb_build_array('wanted becoming', 'wants to become', 'is wanting to become', 'No improvement'), 1, 'The correct answer is - wants to become.
-Key Points
-The simple present tense is used when an action is happening right now, to state or ask about things in general, or when it happens regularly or unceasingly.
-The structure is given below:
-Subject + V1 + object.
-The verb will take ''s/es'' if the given noun/pronoun (3rd person) is singular.
-Example:
-​He plays badminton daily.​
-Certain verbs used only in the simple present tense are given below:
-​verbs of perception (see, hear, smell, etc.), think, know, has/have, possess, like, want, desire, hate, seem, imagine, etc.
-Example:
-​My brother is owning a car. (incorrect)
-​My brother owns a car. (correct)
-As per the rules given above, the 2nd option i.e. wants to become is the correct choice.
-Correct Sentence: Sidharth wants to become a football player but needs to practice more rigorously.', 4, -1),
-  (99, 'nimcet', 'english', 'Word Power', 'Easy', 'Choose the option which does not belong to the group (ODD-ONE-OUT).', jsonb_build_array('dull', 'gloomy', 'omnipresent', 'boring'), 2, 'Omnipresent does not belong to the group of dull (a), gloomy (depressed, sullen, dismal, depressing, dark) (b) and boring (d); they are synonyms. Except (c), all other options are wrong. Share this question with your friends', 4, -1),
-  (100, 'nimcet', 'english', 'Meaning of words and phrases', 'Easy', 'Direction: Choose the correct alternative mentioned below:
-A bolt from the blue', jsonb_build_array('An unexpected and unpleasant event', 'An inexplicable event', 'A delayed event', 'An unpleasant event'), 0, 'The correct answer is: ''An unexpected and unpleasant event''.
-Key Points
- The given Idiom is: ''A bolt from the blue''.(आकस्मिक घटना)
-The Idiom ''A bolt from the blue'' means something important or unusual that happens suddenly or unexpectedly.
-Example: The resignation of the chairman came like a bolt from the blue.
-Hence, the correct option of the given idiom is: ''An unexpected and unpleasant event''.(एक अप्रत्याशित और अप्रिय घटना)
-Therefore, the correct option is: ''Option 1''.
-Additional Information
- ''An inexplicable event'' means an event which cannot be described in words.(एक अकथनीय घटना)
-''A delayed event'' means an event which is late in time.(एक विलंबित घटना)
-''An unpleasant event'' means an event which is not pleasant.(एक अप्रिय घटना)', 4, -1),
-  (101, 'nimcet', 'computer', 'Organization of a computer', 'Easy', 'When 1,0 are two inputs given to the AND, OR gates then the outputs respectively are', jsonb_build_array('0, 0', '0, 1', '1, 0', '1, 1'), 1, '1 AND 0 = 0 1 OR 0 = 1', 6, -1.5),
-  (102, 'nimcet', 'computer', 'Number representations', 'Easy', 'The octal number 24 is equivalent to which binary number?', jsonb_build_array('11000', '10001', '100100', '10100'), 3, 'The octal number 24 is equivalent to binary 10100.', 6, -1.5),
-  (103, 'nimcet', 'computer', 'Central Processing Unit (CPU)', 'Easy', 'What is the function of the CPU''s Arithmetic Logic Unit (ALU)?', jsonb_build_array('To control input and output operations', 'To perform mathematical and logical operations', 'To store data permanently', 'To display images on the screen'), 1, 'The ALU (Arithmetic Logic Unit) in the CPU is responsible for performing mathematical and logical operations.', 6, -1.5),
-  (104, 'nimcet', 'computer', 'Organization of a computer', 'Easy', 'The drawback of building a large memory with DRAM is ______________', jsonb_build_array('The Slow speed of operation', 'The large cost factor', 'The inefficient memory organisation', 'All of the mentioned'), 0, 'The DRAMs were used for large memory modules for a long time until a substitute was found.', 6, -1.5),
-  (105, 'nimcet', 'computer', 'Organization of a computer', 'Easy', 'Which of the following is a reason for process suspension instead of termination?', jsonb_build_array('Invalid Instruction', 'Memory Unavailble', 'Privileged Instruction', 'Interactive user request'), 1, 'A process is terminated when the system is unable to provide the memory required, as it is more than the memory that it is actually contained in the system', 6, -1.5),
-  (106, 'nimcet', 'computer', 'Structure of instructions in CPU', 'Easy', 'Which register in CPU stores the instruction currently being executed?', jsonb_build_array('Memory address register (MAR)', 'Program counter (PC)', 'Instruction register (IR)', 'Memory data register (MDR)'), 2, 'The correct answer is Instruction register (IR). The Instruction Register (IR) in the CPU stores the instruction that is currently being executed. After fetching the instruction from memory, it is placed in the IR for decoding and execution.', 6, -1.5),
-  (107, 'nimcet', 'computer', 'Computer memory', 'Easy', 'Permanent Memory of a computer is known as-', jsonb_build_array('RAM', 'CD-ROM', 'ROM', 'CPU'), 2, 'The Correct Answer is ROM.
+  (91, 'nimcet', 'computer', 'Organization of a computer', 'Easy', 'When 1,0 are two inputs given to the AND, OR gates then the outputs respectively are', jsonb_build_array('0, 0', '0, 1', '1, 0', '1, 1'), 1, '1 AND 0 = 0 1 OR 0 = 1', 6, -1.5),
+  (92, 'nimcet', 'computer', 'Number representations', 'Easy', 'The octal number 24 is equivalent to which binary number?', jsonb_build_array('11000', '10001', '100100', '10100'), 3, 'The octal number 24 is equivalent to binary 10100.', 6, -1.5),
+  (93, 'nimcet', 'computer', 'Central Processing Unit (CPU)', 'Easy', 'What is the function of the CPU''s Arithmetic Logic Unit (ALU)?', jsonb_build_array('To control input and output operations', 'To perform mathematical and logical operations', 'To store data permanently', 'To display images on the screen'), 1, 'The ALU (Arithmetic Logic Unit) in the CPU is responsible for performing mathematical and logical operations.', 6, -1.5),
+  (94, 'nimcet', 'computer', 'Organization of a computer', 'Easy', 'The drawback of building a large memory with DRAM is ______________', jsonb_build_array('The Slow speed of operation', 'The large cost factor', 'The inefficient memory organisation', 'All of the mentioned'), 0, 'The DRAMs were used for large memory modules for a long time until a substitute was found.', 6, -1.5),
+  (95, 'nimcet', 'computer', 'Organization of a computer', 'Easy', 'Which of the following is a reason for process suspension instead of termination?', jsonb_build_array('Invalid Instruction', 'Memory Unavailable', 'Privileged Instruction', 'Interactive user request'), 1, 'A process is terminated when the system is unable to provide the memory required, as it is more than the memory that it is actually contained in the system', 6, -1.5),
+  (96, 'nimcet', 'computer', 'Structure of instructions in CPU', 'Easy', 'Which register in CPU stores the instruction currently being executed?', jsonb_build_array('Memory address register (MAR)', 'Program counter (PC)', 'Instruction register (IR)', 'Memory data register (MDR)'), 2, 'The correct answer is Instruction register (IR). The Instruction Register (IR) in the CPU stores the instruction that is currently being executed. After fetching the instruction from memory, it is placed in the IR for decoding and execution.', 6, -1.5),
+  (97, 'nimcet', 'computer', 'Computer memory', 'Easy', 'Permanent Memory of a computer is known as-', jsonb_build_array('RAM', 'CD-ROM', 'ROM', 'CPU'), 2, 'The Correct Answer is ROM.
 Key Points
 The permanent memory of a computer is known as ROM(Read-only memory).
 In computers and other electronic devices, read-only memory (ROM) is a form of non-volatile memory.
@@ -812,11 +730,11 @@ The memory is permanently installed on your computer. This is a read-only memory
 Random-access memory (RAM) is a type of computer memory that allows data and machine code to be read and modified in any order. It is commonly used to store working data and machine code.
 A CD-ROM is a data-containing optical compact disc that has been pre-pressed. CD-ROMs are a form of read-only memory that computers can read but not write to or delete.
 The electronic circuitry that executes instructions in a computer programme is known as a central processing unit (CPU), also known as a central processor, main processor, or simply processor.', 6, -1.5),
-  (108, 'nimcet', 'computer', 'Input/output devices', 'Easy', 'Which of the following memory unit is the first to get active when the computer is turned on?', jsonb_build_array('Main memory', 'BIOS chip', 'Cache memory', 'Secondary memory'), 1, 'The correct option is B. BIOS means Basic Input Output System. BIOS helps to perform the hardware test (POST) and initialize the booting sequence when the computer is turned on.', 6, -1.5),
-  (109, 'nimcet', 'computer', 'Computer memory', 'Easy', 'Which of the following is used in main memory?', jsonb_build_array('DDR', 'DRAM', 'SRAM', 'PRAM'), 1, 'The correct answer is DRAM.
+  (98, 'nimcet', 'computer', 'Input/output devices', 'Easy', 'Which of the following memory unit is the first to get active when the computer is turned on?', jsonb_build_array('Main memory', 'BIOS chip', 'Cache memory', 'Secondary memory'), 1, 'The correct option is B. BIOS means Basic Input Output System. BIOS helps to perform the hardware test (POST) and initialize the booting sequence when the computer is turned on.', 6, -1.5),
+  (99, 'nimcet', 'computer', 'Computer memory', 'Easy', 'Which of the following is used in main memory?', jsonb_build_array('DDR', 'DRAM', 'SRAM', 'PRAM'), 1, 'The correct answer is DRAM.
 Key Points
 DRAM:
-It is dynamic random access memory and is widely used as a computer''s main memory. Hence, Option 2 is correct.
+It is dynamic random access memory and is widely used as a computer''s main memory. Hence, option B is correct.
 Each DRAM memory cell is made up of a transistor and a capacitor within an integrated circuit, and a data bit is stored in the capacitor.
 DDR-RAM:
 It stands for Double Data Rate Synchronous Dynamic Random-Access Memory. 
@@ -830,9 +748,9 @@ SRAM is comprised of flip-flops.
 PRAM:
 In computer science, a parallel random-access machine is a shared-memory abstract machine.
 As its name indicates, the PRAM is intended as the parallel-computing analogy to the random-access machine.', 6, -1.5),
-  (110, 'nimcet', 'computer', 'Boolean algebra', 'Easy', 'The involution of A is equal to _________', jsonb_build_array('A', '2', '1', '0'), 0, 'The involution of A means double inversion of A (i.e. A) and is equal to A.', 6, -1.5),
-  (111, 'nimcet', 'computer', 'Central Processing Unit (CPU)', 'Easy', 'Which of the following is not a function of the CPU?', jsonb_build_array('Fetching instructions from memory', 'Decoding instructions', 'Executing instructions', 'Storing data permanently'), 3, 'Storing data permanently is not a function of the CPU; it is typically done by storage devices such as hard drives.', 6, -1.5),
-  (112, 'nimcet', 'computer', 'Number representations', 'Easy', 'What is the binary number for decimal number 9?', jsonb_build_array('1100', '1001', '0111', '1011'), 1, 'To convert the decimal number \( 9 \) to binary, we repeatedly divide the number by \( 2 \) and record the remainders:
+  (100, 'nimcet', 'computer', 'Boolean algebra', 'Easy', 'The involution of \(A\) is equal to _________', jsonb_build_array('A', '2', '1', '0'), 0, 'The involution of \(A\) means the double inversion of \(A\), i.e. \(\bar {\bar A} = A\), so it is equal to \(A\).', 6, -1.5),
+  (101, 'nimcet', 'computer', 'Central Processing Unit (CPU)', 'Easy', 'Which of the following is not a function of the CPU?', jsonb_build_array('Fetching instructions from memory', 'Decoding instructions', 'Executing instructions', 'Storing data permanently'), 3, 'Storing data permanently is not a function of the CPU; it is typically done by storage devices such as hard drives.', 6, -1.5),
+  (102, 'nimcet', 'computer', 'Number representations', 'Easy', 'What is the binary number for decimal number 9?', jsonb_build_array('1100', '1001', '0111', '1011'), 1, 'To convert the decimal number \( 9 \) to binary, we repeatedly divide the number by \( 2 \) and record the remainders:
  1. \( 9 \div 2 = 4 \) remainder \( 1 \) 
  2. \( 4 \div 2 = 2 \) remainder \( 0 \) 
  3. \( 2 \div 2 = 1 \) remainder \( 0 \) 
@@ -843,12 +761,12 @@ The binary equivalent of the decimal number \( 9 \) is:
 \[
 1001_2
 \]', 6, -1.5),
-  (113, 'nimcet', 'computer', 'Computer memory', 'Easy', 'Which of the following, which is the fastest ?', jsonb_build_array('CD-ROM', 'RAM', 'Registers', 'Cache'), 2, 'Registers are the fastest form of memory, followed by cache memory, RAM, and then secondary storage devices like CD-ROMs.', 6, -1.5),
-  (114, 'nimcet', 'computer', 'Input/output devices', 'Easy', 'Punched cards are used in _______________', jsonb_build_array('Low speed computers', 'High speed computers', 'Super computers', 'Mac devices'), 0, 'The correct answer is Low speed computers. Punched cards were used in early computing systems, particularly in low-speed computers, for data input and storage. These cards had holes punched in them to represent data, and they were read by machines. They were eventually replaced by more efficient and faster data storage methods.', 6, -1.5),
-  (115, 'nimcet', 'computer', 'Central Processing Unit (CPU)', 'Easy', 'The part of a processor which contains hardware necessary to perform all the operations required by a computer:', jsonb_build_array('Data path', 'Controller', 'Registers', 'Cache'), 0, 'For explanation I would say: A processor is a part of the computer which does all the data manipulation and decision making. A processor comprises of: A data path which contains the hardware necessary to perform all the operations. A controller tells the data path what needs to be done. The registers act as intermediate storage for the data.', 6, -1.5),
-  (116, 'nimcet', 'computer', 'Number representations', 'Easy', 'The octal number 64.5 is equivalent to which binary number?', jsonb_build_array('110010.101', '110110.000', '110100.101', '111000.011'), 2, 'The octal number 64 is equivalent to binary 110100, and 0.5 in octal is 0.101 in binary. So, the binary equivalent of 64.5 is 110100.1.', 6, -1.5),
-  (117, 'nimcet', 'computer', 'Boolean algebra', 'Easy', 'The boolean function A + BC is a reduced form of ____________', jsonb_build_array('AB + BC', '(A + B)(A + C)', 'AB + ABC', '(A + C)B'), 1, 'None.', 6, -1.5),
-  (118, 'nimcet', 'computer', 'Computer memory', 'Easy', '________ is a supplementary memory system which stores frequently used instructions and data for quicker processing.', jsonb_build_array('Cache memory', 'RAM', 'Register', 'Hard disk'), 0, 'The correct answer is Cache memoryKey Points
+  (103, 'nimcet', 'computer', 'Computer memory', 'Easy', 'Which of the following, which is the fastest ?', jsonb_build_array('CD-ROM', 'RAM', 'Registers', 'Cache'), 2, 'Registers are the fastest form of memory, followed by cache memory, RAM, and then secondary storage devices like CD-ROMs.', 6, -1.5),
+  (104, 'nimcet', 'computer', 'Input/output devices', 'Easy', 'Punched cards are used in _______________', jsonb_build_array('Low speed computers', 'High speed computers', 'Super computers', 'Mac devices'), 0, 'The correct answer is Low speed computers. Punched cards were used in early computing systems, particularly in low-speed computers, for data input and storage. These cards had holes punched in them to represent data, and they were read by machines. They were eventually replaced by more efficient and faster data storage methods.', 6, -1.5),
+  (105, 'nimcet', 'computer', 'Central Processing Unit (CPU)', 'Easy', 'The part of a processor which contains hardware necessary to perform all the operations required by a computer:', jsonb_build_array('Data path', 'Controller', 'Registers', 'Cache'), 0, 'For explanation I would say: A processor is a part of the computer which does all the data manipulation and decision making. A processor comprises of: A data path which contains the hardware necessary to perform all the operations. A controller tells the data path what needs to be done. The registers act as intermediate storage for the data.', 6, -1.5),
+  (106, 'nimcet', 'computer', 'Number representations', 'Easy', 'The octal number 64.5 is equivalent to which binary number?', jsonb_build_array('110010.101', '110110.000', '110100.101', '111000.011'), 2, 'The octal number 64 is equivalent to binary 110100, and 0.5 in octal is 0.101 in binary. So, the binary equivalent of 64.5 is 110100.101.', 6, -1.5),
+  (107, 'nimcet', 'computer', 'Boolean algebra', 'Easy', 'The boolean function \(A + BC\) is a reduced form of ____________', jsonb_build_array('\(AB + BC\)', '\((A + B)(A + C)\)', '\(AB + ABC\)', '\((A + C)B\)'), 1, 'By the distributive law \(A + BC = (A + B)(A + C)\), so option B is the reduced form. The other options are either not reduced or not equivalent to \(A + BC\).', 6, -1.5),
+  (108, 'nimcet', 'computer', 'Computer memory', 'Easy', '________ is a supplementary memory system which stores frequently used instructions and data for quicker processing.', jsonb_build_array('Cache memory', 'RAM', 'Register', 'Hard disk'), 0, 'The correct answer is Cache memoryKey Points
 The correct answer is Cache memory.
 Quick Access: Cache memory stores copies of frequently used data coming from the slower main memory (RAM). It''s closer to the CPU, which makes fetching commands quicker and overall process much faster. Utilizing cache improves system performance because it can access this data faster than it could from the main memory.
 Temporal Locality: Cache memory operates on the principle of locality of reference, specifically the temporal locality, which states that if data is referenced once, it''s likely to be referenced again soon. Therefore, storing this frequently used data in cache reduces time-consuming operations and increases efficiency.
@@ -866,14 +784,94 @@ Hard disk:
 The hard disk is the electromagnetic storage. It is the secondary storage of computers.
 It stores and retrieves data in the form of magnetic storage. It has one or more platters.
 It has a circular metal disk that is mounted inside the hard disk. It has electromagnetic read or writes heads which are called Magnetic heads.', 6, -1.5),
-  (119, 'nimcet', 'computer', 'Number representations', 'Easy', 'Which of the following is not a weighted code?', jsonb_build_array('Decimal Number system', 'Excess 3 Code', 'Binary number System', 'None of these'), 1, '', 6, -1.5),
-  (120, 'nimcet', 'computer', 'Input/output devices', 'Easy', 'Which of the following characteristics make ROM (Read Only memory) more significant in the computer system?', jsonb_build_array('ROM provides a large amount of capacity to store your data permanently.', 'ROM is easily upgradable.', 'It is non-volatile in nature, hence data stored in ROM remains as it is even the system is powered off.', 'All of the above.'), 2, 'The correct option is C.', 6, -1.5);
+  (109, 'nimcet', 'computer', 'Number representations', 'Easy', 'Which of the following is not a weighted code?', jsonb_build_array('Decimal Number system', 'Excess 3 Code', 'Binary number System', 'None of these'), 1, 'Excess-3 is not a weighted code: its code words are obtained by adding 3 (0011) to the BCD value, so the bit positions carry no fixed weights. The decimal and binary number systems, and BCD codes such as 8421, are weighted codes. Hence, option B is correct.', 6, -1.5),
+  (110, 'nimcet', 'computer', 'Input/output devices', 'Easy', 'Which of the following characteristics make ROM (Read Only memory) more significant in the computer system?', jsonb_build_array('ROM provides a large amount of capacity to store your data permanently.', 'ROM is easily upgradable.', 'It is non-volatile in nature, hence data stored in ROM remains as it is even the system is powered off.', 'All of the above.'), 2, 'The correct option is C.', 6, -1.5),
+  (111, 'nimcet', 'english', 'Meaning of words and phrases', 'Easy', 'Select the most appropriate meaning of the given idiom.
+Make a bee line', jsonb_build_array('put the bees in a line', 'look for freebies', 'stand in a queue', 'go straight to'), 3, 'The correct answer is "go straight to"
+Key Points
+The meaning of the given idiom is "to go quickly and directly at or to (something or someone)"
+We use the given idiom in a situation where we are running towards something due to some urgency.
+Example: Prateek makes a bee line for the washroom as soon as he realised his pant is torn.
+Hence, the correct answer is option D.
+Hinglish 
+The meaning of the given idiom is "जल्दी और सीधे जाना या (कुछ या किसी को)"', 4, -1),
+  (112, 'nimcet', 'english', 'Comprehension', 'Easy', '​In the following passage some words have been deleted. Fill in the blanks with the help of the alternatives given. Select the most appropriate option for each blank. 
+A (1)______ of trucks carrying soldiers was coming down the mountain road. The trucks (2) ______ slowly as there had been heavy snowfall in that area . Suddenly, with a (3) ______ a huge tree on the hill side fell bringing along with it boulders and mud. (4) ______, the driver of first truck stopped in time. The soldiers got down and started (5) ______ the road.
+Select the most appropriate option for blank (3).', jsonb_build_array('splash', 'scream', 'crash', 'buzz'), 2, 'The most appropriate option for blank (3) is: 
+C. crash 
+The sentence would read: 
+"Suddenly, with a crash, a huge tree on the hillside fell, bringing along with it boulders and mud." 
+"Crash" is the most suitable word here, as it describes the loud, sudden sound made by the falling tree and the debris.', 4, -1),
+  (113, 'nimcet', 'english', 'Meaning of words and phrases', 'Easy', 'Select the most appropriate meaning of the given idiom.
+In the blink of an eye', jsonb_build_array('Happen fast and instantaneously', 'To make progress', 'To flourish', 'More than one of the above'), 0, 'The correct answer is "Happen fast and instantaneously".
+Key Points
+"In the blink of an eye" is an idiom that means something happens very quickly.
+तेजी से घटित होता है
+The phrase can be used to describe events that occur suddenly or unexpectedly.
+It can also refer to actions that are completed in a short amount of time.
+Example: In the blink of an eye, the robber disappeared from the bank with a bag full of cash. 
+Thus, it is clear that option A correctly explains the given idiom.
+Hence, the correct answer is option A.', 4, -1),
+  (114, 'nimcet', 'english', 'Meaning of words and phrases', 'Easy', 'Directions : Given below are some idioms/phrases followed by four alterative meanings to each. Choose the most appropriate answer from among the options (a), (b), (c) and (d).
+Talking twenty to the dozen', jsonb_build_array('talking hurriedly and rapidly', 'talking too much', 'talking without making sense', 'talking out of turn'), 0, 'The correct answer is- ''talking hurriedly and rapidly''
+ Key Points
+let''s look at the meaning of the given idiom
+Talking twenty to the dozen: to speak rapidly and without stopping.(तेजी से और बिना रुके बोलना।)
+Example: He showed us around the house while talking nineteen to the dozen.
+ My aunt can get talking twenty to the dozen if you get her on a topic she''s passionate about.​​
+​From the above lines, we can say that ''talking hurriedly and rapidly'' is the correct meaning of the given idiom.', 4, -1),
+  (115, 'nimcet', 'english', 'Synonyms and Antonyms', 'Easy', 'What is an antonym for ''strong''?', jsonb_build_array('Tough', 'Powerful', 'Weak', 'Sturdy'), 2, 'Weak is the opposite of strong. It indicates lack of strength.', 4, -1),
+  (116, 'nimcet', 'english', 'Basic English Grammar', 'Easy', 'The following sentence has been split into four segments. Identify the segment that contains a grammatical error.
+Rahul sings / very sweet / when he is / in a good mood', jsonb_build_array('very sweet', 'when he is', 'in a good mood', 'Rahul sings'), 0, 'The correct answer is ''very sweet''
+Key Points
+​Here ''sweet'' is an adjective which qualifies a subject (Noun/ Pronoun)
+However, an ''adverb'' is required to modify a Verb
+Example- Phillip sings loudly in the shower. 
+Thus, ''sweet'' will be replaced by ''sweetly''.
+Correct Sentence- Rahul sings very sweetly when he is in a good mood.', 4, -1),
+  (117, 'nimcet', 'english', 'Technical Writing', 'Easy', 'A student of class IV says, "After writing the first draft, I read it, make necessary changes and rewrite the draft again." The student is working at the writing stage of:', jsonb_build_array('Brainstorming', 'Listing', 'Proof reading', 'Revising'), 3, 'The writing process typically involves several stages, including planning or prewriting, drafting, revising, editing, and publishing.
+Key Points Here''s the chronological order of these stages:
+Planning or Prewriting: This stage involves generating ideas, conducting research, outlining the structure, and organizing thoughts before starting the actual writing. 
+Drafting: This is where the actual writing takes place, and the ideas and thoughts from the planning stage are transformed into a rough draft or initial version of the piece.
+Revising: After completing the draft, the writer proceeds to the revision stage. This involves reviewing and making changes to the content, structure, and organization of the draft to improve clarity, coherence, and overall effectiveness. 
+Editing: Once the revision stage is done, editing focuses on correcting grammar, spelling, punctuation, and other mechanical errors. 
+Publishing: The final step of the writing process is publishing. This can involve sharing the work with others, submitting it for publication, or making it available to the intended audience.
+Therefore, the student is working at the writing stage of revising.', 4, -1),
+  (118, 'nimcet', 'english', 'Basic English Grammar', 'Easy', 'Select the alternative that will improve the underlined part of the sentence. In case there is no improvement select ‘No improvement’.
+Sidharth want to become a football player but needs to practice more rigorously.', jsonb_build_array('wanted becoming', 'wants to become', 'is wanting to become', 'No improvement'), 1, 'The correct answer is - wants to become.
+Key Points
+The simple present tense is used when an action is happening right now, to state or ask about things in general, or when it happens regularly or unceasingly.
+The structure is given below:
+Subject + V1 + object.
+The verb will take ''s/es'' if the given noun/pronoun (3rd person) is singular.
+Example:
+​He plays badminton daily.​
+Certain verbs used only in the simple present tense are given below:
+​verbs of perception (see, hear, smell, etc.), think, know, has/have, possess, like, want, desire, hate, seem, imagine, etc.
+Example:
+​My brother is owning a car. (incorrect)
+​My brother owns a car. (correct)
+As per the rules given above, the 2nd option i.e. wants to become is the correct choice.
+Correct Sentence: Sidharth wants to become a football player but needs to practice more rigorously.', 4, -1),
+  (119, 'nimcet', 'english', 'Word Power', 'Easy', 'Choose the option which does not belong to the group (ODD-ONE-OUT).', jsonb_build_array('dull', 'gloomy', 'omnipresent', 'boring'), 2, 'Omnipresent does not belong to the group of dull (a), gloomy (depressed, sullen, dismal, depressing, dark) (b) and boring (d); they are synonyms. Except (c), all other options are wrong. Share this question with your friends', 4, -1),
+  (120, 'nimcet', 'english', 'Meaning of words and phrases', 'Easy', 'Direction: Choose the correct alternative mentioned below:
+A bolt from the blue', jsonb_build_array('An unexpected and unpleasant event', 'An inexplicable event', 'A delayed event', 'An unpleasant event'), 0, 'The correct answer is: ''An unexpected and unpleasant event''.
+Key Points
+ The given Idiom is: ''A bolt from the blue''.(आकस्मिक घटना)
+The Idiom ''A bolt from the blue'' means something important or unusual that happens suddenly or unexpectedly.
+Example: The resignation of the chairman came like a bolt from the blue.
+Hence, the correct option of the given idiom is: ''An unexpected and unpleasant event''.(एक अप्रत्याशित और अप्रिय घटना)
+Therefore, the correct option is option A.
+Additional Information
+ ''An inexplicable event'' means an event which cannot be described in words.(एक अकथनीय घटना)
+''A delayed event'' means an event which is late in time.(एक विलंबित घटना)
+''An unpleasant event'' means an event which is not pleasant.(एक अप्रिय घटना)', 4, -1);
 
 -- 3. Fail loudly when the target test is missing (aborts everything — nothing is written).
 do $$
 begin
-  if not exists (select 1 from public.tests where title = 'NIMCET MOCK - 01') then
-    raise exception 'No test titled "%" found. Copy the exact title from Table Editor → tests and regenerate this file with that title — nothing was written.', 'NIMCET MOCK - 01';
+  if not exists (select 1 from public.tests where title = '"') then
+    raise exception 'No test titled "%" found. Copy the exact title from Table Editor → tests and regenerate this file with that title — nothing was written.', '"';
   end if;
 end $$;
 
@@ -894,7 +892,7 @@ update public.tests t set
                       order by q.created_at
                       limit 1
                     ) x on true)
-where t.title = 'NIMCET MOCK - 01';
+where t.title = '"';
 
 -- 6. Verification — these result sets show what the run did.
 select s.section,
@@ -912,6 +910,6 @@ select t.id, t.title, t.published, t.minutes,
        array_length(t.question_ids, 1) as linked_questions,
        t.sections
 from public.tests t
-where t.title = 'NIMCET MOCK - 01';
+where t.title = '"';
 
 commit;

@@ -8,7 +8,7 @@ import {
   SESSION_COLS,
   type MockSessionRow,
 } from "@/lib/exam-finalize";
-import { isFullMockTemplate, templateParts } from "@/lib/nimcet-full-mock";
+import { isFullMockTemplate, templateParts, templateSections } from "@/lib/nimcet-full-mock";
 
 // POST /api/student/attempt/start — { testId }
 //
@@ -71,6 +71,7 @@ export async function POST(req: Request) {
     }
 
     const parts = templateParts();
+    const sections = templateSections();
 
     const openSession = async (): Promise<MockSessionRow | null> => {
       const { data, error } = await svc
@@ -100,7 +101,9 @@ export async function POST(req: Request) {
             sessionId: prior.id,
             resumed: true,
             parts,
+            sections,
             index,
+            section: sections.find((s) => s.part === index)?.key ?? null,
             remainingSec: Math.ceil(partRemainingMs(parts, Math.max(0, elapsed), index) / 1000),
             serverNow: now,
           });
@@ -140,7 +143,9 @@ export async function POST(req: Request) {
           sessionId: (created as { id: string }).id,
           resumed: false,
           parts,
+          sections,
           index: 0,
+          section: sections.find((s) => s.part === 0)?.key ?? null,
           remainingSec: parts[0].minutes * 60,
           serverNow: now,
           previous,

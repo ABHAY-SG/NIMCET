@@ -18,7 +18,7 @@
 begin;
 
 -- 1. Additive schema: optional question figure (0009) and the test metadata
---    columns this seed writes (0005/0006). Safe if they already exist.
+--    columns this seed writes (0005/0006/0007). Safe if they already exist.
 alter table public.questions
   add column if not exists image_url text not null default '';
 alter table public.tests
@@ -27,6 +27,8 @@ alter table public.tests
   add column if not exists instructions text not null default '';
 alter table public.tests
   add column if not exists sections jsonb not null default '[]'::jsonb;
+alter table public.tests
+  add column if not exists template text not null default '';
 
 -- 2. Stage the paper (ordered by seq).
 drop table if exists pg_temp.seed_nimcet_2026;
@@ -1487,9 +1489,9 @@ update public.questions q
    and coalesce(q.image_url, '') = '';
 
 -- 5. Create the test if it does not exist, then refresh it on every run.
---    tests.template is deliberately left at its default (''), so this is a
---    normal practice/submit test, not the server-owned full-mock template.
-insert into public.tests (exam, title, tag, minutes, free, published, question_ids, description, instructions, sections)
+--    The NIMCET 2026 PYQ uses the server-owned full-mock template so the
+--    official three timed parts are enforced by the server, not the browser.
+insert into public.tests (exam, title, tag, minutes, free, published, question_ids, description, instructions, sections, template)
 select 'nimcet', 'NIMCET 2026 PAPER', 'NIMCET PYQ · 2026', 120, true, true,
        (select array_agg(x.id order by s.seq)
           from seed_nimcet_2026 s
@@ -1502,14 +1504,18 @@ select 'nimcet', 'NIMCET 2026 PAPER', 'NIMCET PYQ · 2026', 120, true, true,
        'NIMCET 2026 previous-year question paper (PYQ) — 120 questions, 1000 marks, 120 minutes. Official NIMCET 2026 pattern: Mathematics (50), Logical Reasoning (40), Computer Awareness (20) and English (10).',
        'Read all instructions carefully before you begin.
 
-• This previous-year paper has 3 timed parts: Mathematics — 50 questions, 70 minutes; Analytical Ability & Logical Reasoning — 40 questions, 30 minutes; Computer Awareness & General English — 30 questions, 20 minutes.
-• Each section runs on its own clock. When a section''s time ends it is locked and you are moved to the next section automatically.
+• This paper follows the official NIMCET 2026 pattern: four subject sections in three timed parts.
+• Part I — Mathematics: 50 questions, 70 minutes.
+• Part II — Analytical Ability & Logical Reasoning: 40 questions, 30 minutes.
+• Part III — Computer Awareness (20 questions) and General English (10 questions): 30 questions, 20 minutes shared by both subjects.
+• Each timed part runs on its own clock. A part locks when its time ends and the next part opens automatically; you cannot return to a finished part. Within Part III, both subjects remain available until the shared 20-minute clock ends.
 • Marking: Mathematics +12 / −3 · Analytical Ability & Logical Reasoning +6 / −1.5 · Computer Awareness +6 / −1.5 · English +4 / −1.
 • There is no penalty for unanswered questions.
-• Use the palette to navigate within the current section, and mark questions for review to revisit them before the section ends.
-• The paper is auto-submitted when the final section ends; you may also submit early from the header.
-• Correct answers and full explanations appear on your scorecard after you submit.',
-       '[{"label":"Mathematics","minutes":70,"count":50},{"label":"Analytical Ability & Logical Reasoning","minutes":30,"count":40},{"label":"Computer Awareness & General English","minutes":20,"count":30}]'::jsonb
+• Use the palette to navigate within the current subject section, and mark questions for review to revisit them before the part ends.
+• The paper is auto-submitted when Part III ends.
+• Correct answers and full explanations appear on your scorecard after the paper is submitted.',
+       '[{"label":"Mathematics","minutes":70,"count":50},{"label":"Analytical Ability & Logical Reasoning","minutes":30,"count":40},{"label":"Computer Awareness & General English","minutes":20,"count":30}]'::jsonb,
+       'nimcet-2026'
 where not exists (select 1 from public.tests where title = 'NIMCET 2026 PAPER');
 
 update public.tests t set
@@ -1529,14 +1535,18 @@ update public.tests t set
   description  = 'NIMCET 2026 previous-year question paper (PYQ) — 120 questions, 1000 marks, 120 minutes. Official NIMCET 2026 pattern: Mathematics (50), Logical Reasoning (40), Computer Awareness (20) and English (10).',
   instructions = 'Read all instructions carefully before you begin.
 
-• This previous-year paper has 3 timed parts: Mathematics — 50 questions, 70 minutes; Analytical Ability & Logical Reasoning — 40 questions, 30 minutes; Computer Awareness & General English — 30 questions, 20 minutes.
-• Each section runs on its own clock. When a section''s time ends it is locked and you are moved to the next section automatically.
+• This paper follows the official NIMCET 2026 pattern: four subject sections in three timed parts.
+• Part I — Mathematics: 50 questions, 70 minutes.
+• Part II — Analytical Ability & Logical Reasoning: 40 questions, 30 minutes.
+• Part III — Computer Awareness (20 questions) and General English (10 questions): 30 questions, 20 minutes shared by both subjects.
+• Each timed part runs on its own clock. A part locks when its time ends and the next part opens automatically; you cannot return to a finished part. Within Part III, both subjects remain available until the shared 20-minute clock ends.
 • Marking: Mathematics +12 / −3 · Analytical Ability & Logical Reasoning +6 / −1.5 · Computer Awareness +6 / −1.5 · English +4 / −1.
 • There is no penalty for unanswered questions.
-• Use the palette to navigate within the current section, and mark questions for review to revisit them before the section ends.
-• The paper is auto-submitted when the final section ends; you may also submit early from the header.
-• Correct answers and full explanations appear on your scorecard after you submit.',
-  sections     = '[{"label":"Mathematics","minutes":70,"count":50},{"label":"Analytical Ability & Logical Reasoning","minutes":30,"count":40},{"label":"Computer Awareness & General English","minutes":20,"count":30}]'::jsonb
+• Use the palette to navigate within the current subject section, and mark questions for review to revisit them before the part ends.
+• The paper is auto-submitted when Part III ends.
+• Correct answers and full explanations appear on your scorecard after the paper is submitted.',
+  sections     = '[{"label":"Mathematics","minutes":70,"count":50},{"label":"Analytical Ability & Logical Reasoning","minutes":30,"count":40},{"label":"Computer Awareness & General English","minutes":20,"count":30}]'::jsonb,
+  template     = 'nimcet-2026'
 where t.title = 'NIMCET 2026 PAPER';
 
 -- 6. Verification — these result sets show what the run did.
@@ -1555,7 +1565,7 @@ select count(*) as total_questions,
        sum(s.plus) as total_max_marks
 from seed_nimcet_2026 s;
 
-select t.id, t.title, t.exam, t.tag, t.published, t.minutes,
+select t.id, t.title, t.exam, t.tag, t.published, t.minutes, t.template,
        array_length(t.question_ids, 1) as linked_questions,
        jsonb_array_length(t.sections) as timed_parts,
        (select sum(p->>'count')::int from jsonb_array_elements(t.sections) p) as section_question_sum

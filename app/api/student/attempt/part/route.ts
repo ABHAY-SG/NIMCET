@@ -4,7 +4,7 @@ import { errorPayload, isUuid } from "@/lib/admin-queries";
 import { activeIndexAt, partRemainingMs, partWindows, SECTION_GRACE_MS } from "@/lib/exam-session";
 import { asParts, fetchSafeQuestions, loadSession } from "@/lib/exam-finalize";
 import { partRanges } from "@/lib/exam-parts";
-import { templateParts } from "@/lib/nimcet-full-mock";
+import { sectionByKey, templateParts, templateSections } from "@/lib/nimcet-full-mock";
 
 // POST /api/student/attempt/part — { sessionId, index }
 //
@@ -34,8 +34,17 @@ export async function POST(req: Request) {
     }
 
     const parts = templateParts();
+    const sections = templateSections();
     const index = Number(body.index);
     if (!Number.isInteger(index) || index < 0 || index >= parts.length) {
+      return NextResponse.json({ error: "Invalid section." }, { status: 400 });
+    }
+
+    // Optional subject section. It must belong to the requested timed part;
+    // a browser cannot ask for another part's subject through this window.
+    const requestedSection = typeof body.section === "string" ? body.section.trim() : "";
+    const section = requestedSection ? sectionByKey(requestedSection) : null;
+    if (requestedSection && (!section || section.part !== index)) {
       return NextResponse.json({ error: "Invalid section." }, { status: 400 });
     }
 
@@ -66,15 +75,21 @@ export async function POST(req: Request) {
     }
 
     const ranges = partRanges(parts);
-    const ids = session.question_ids.slice(ranges[index].start, ranges[index].end);
+    const ids = section
+      ? session.question_ids.slice(section.start, Math.min(section.end, session.question_ids.length))
+      : session.question_ids.slice(ranges[index].start, ranges[index].end);
     const questions = await fetchSafeQuestions(svc, ids);
-    // Stored snapshot for this section — lets a refreshed tab restore exactly
-    // what the student had answered (and nothing else).
-    const picks = asParts(session.parts)[index]?.answers ?? [];
+    // Stored snapshot for this timed part — filtered to the requested subject
+    // so the browser never receives another section's answers or questions.
+    const allowed = new Set(ids);
+    const picks = (asParts(session.parts)[index]?.answers ?? []).filter((p) => allowed.has(p.id));
 
     return NextResponse.json({
       index,
-      label: parts[index].label,
+      section: section?.key ?? null,
+      label: section?.label ?? parts[index].label,
+      partLabel: parts[index].label,
+      sections,
       questions,
       picks,
       remainingSec: Math.ceil(partRemainingMs(parts, elapsed, index) / 1000),

@@ -39,6 +39,31 @@ export type SubjectRule = {
   part: number;
 };
 
+/**
+ * A subject section inside the official paper. Sections restart their question
+ * numbering at 1 and are navigated independently, but their clock belongs to
+ * the timed part that contains them. Part III holds two sections (Computer
+ * Awareness and English) that share its single official 20-minute clock.
+ */
+export type ExamSection = {
+  key: SubjectKey;
+  label: string;
+  short: string;
+  count: number;
+  /** 0-based timed part that owns this section's clock. */
+  part: number;
+  /** 0-based index of the first question in the paper. */
+  start: number;
+  /** Exclusive end index in the paper. */
+  end: number;
+  plus: number;
+  minus: number;
+  /** Minutes in the owning timed part (shared when `shared` is true). */
+  minutes: number;
+  /** True when another subject shares the same timed part / clock. */
+  shared: boolean;
+};
+
 export const SUBJECTS: SubjectRule[] = [
   { key: "maths", label: "Mathematics", short: "Maths", count: 50, plus: 12, minus: -3, part: 0 },
   { key: "reasoning", label: "Analytical Ability & Logical Reasoning", short: "Reasoning", count: 40, plus: 6, minus: -1.5, part: 1 },
@@ -53,6 +78,48 @@ export function templateParts(): ExamPart[] {
     { label: "Part II — Analytical Ability & Logical Reasoning", minutes: 30, count: 40 },
     { label: "Part III — Computer Awareness & General English", minutes: 20, count: 30 },
   ];
+}
+
+/**
+ * The four subject sections of the paper, in official order and with their
+ * paper-wide question ranges. Ranges are contiguous because the full-mock
+ * composition gate requires the paper to be grouped Mathematics → Reasoning →
+ * Computer Awareness → English.
+ */
+export function templateSections(): ExamSection[] {
+  const parts = templateParts();
+  let start = 0;
+  return SUBJECTS.map((s) => {
+    const part = parts[s.part];
+    const section: ExamSection = {
+      key: s.key,
+      label: s.label,
+      short: s.short,
+      count: s.count,
+      part: s.part,
+      start,
+      end: start + s.count,
+      plus: s.plus,
+      minus: s.minus,
+      minutes: part?.minutes ?? 0,
+      shared: SUBJECTS.filter((other) => other.part === s.part).length > 1,
+    };
+    start += s.count;
+    return section;
+  });
+}
+
+/** Subject sections that belong to one timed part, in paper order. */
+export function sectionsForPart(part: number): ExamSection[] {
+  return templateSections().filter((s) => s.part === part);
+}
+
+/** Look up a subject section by its stable key (case-insensitive). */
+export function sectionByKey(key: unknown): ExamSection | null {
+  if (typeof key !== "string") return null;
+  const trimmed = key.trim().toLowerCase();
+  if (!trimmed) return null;
+  return templateSections().find((s) => s.key === trimmed) ?? null;
 }
 
 /** Short marking note shown for a part when it holds mixed subjects (Part III). */

@@ -22,7 +22,6 @@ import {
   FULL_MOCK_MINUTES,
   FULL_MOCK_QUESTIONS,
   isFullMockTemplate,
-  partNote,
   SUBJECTS,
   templateParts,
 } from "@/lib/nimcet-full-mock";
@@ -287,16 +286,23 @@ export default function MockHub({
       // the template (no bank prefetch) and the server serves each timed
       // section only when its window opens.
       const parts = templateParts();
-      const scheme: SchemeRow[] = parts.map((p, i) => {
-        const subs = SUBJECTS.filter((s) => s.part === i);
+      const roman = ["I", "II", "III"];
+      const scheme: SchemeRow[] = SUBJECTS.map((s) => {
+        const part = parts[s.part];
+        const sharedWith = SUBJECTS.filter((other) => other.part === s.part && other.key !== s.key);
         return {
-          label: p.label,
-          count: p.count,
-          marks: subs.reduce((sum, s) => sum + s.count * s.plus, 0),
-          plus: subs[0]?.plus ?? 0,
-          minus: subs[0]?.minus ?? 0,
-          minutes: p.minutes,
-          note: partNote(i) || undefined,
+          label: s.label,
+          count: s.count,
+          marks: s.count * s.plus,
+          plus: s.plus,
+          minus: s.minus,
+          minutes: part.minutes,
+          part: s.part,
+          shared: sharedWith.length > 0,
+          note:
+            sharedWith.length > 0
+              ? `Part ${roman[s.part]} · shares the ${part.minutes}-minute clock with ${sharedWith.map((x) => x.label).join(" and ")}`
+              : `Part ${roman[s.part]}`,
         };
       });
       setSetup({

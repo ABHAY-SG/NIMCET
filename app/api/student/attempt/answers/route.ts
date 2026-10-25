@@ -4,15 +4,17 @@ import { errorPayload, isUuid } from "@/lib/admin-queries";
 import { activeIndexAt, partWindows, sanitizePicks, SECTION_GRACE_MS } from "@/lib/exam-session";
 import { asParts, loadSession } from "@/lib/exam-finalize";
 import { partRanges } from "@/lib/exam-parts";
-import { templateParts } from "@/lib/nimcet-full-mock";
+import { sectionByKey, templateParts } from "@/lib/nimcet-full-mock";
 
-// POST /api/student/attempt/answers — { sessionId, index, answers }
+// POST /api/student/attempt/answers — { sessionId, index, section?, answers }
 //
-// Autosaves one section's answer snapshot. Accepted only while that section is
-// the active one and inside its window (+ a short network grace); submissions
-// for a future or finished section are rejected with { expired } so the client
-// can realign. The snapshot REPLACES the stored one — the last accepted state
-// is what the final score is computed from.
+// Autosaves one subject section's answer snapshot. Accepted only while that
+// section's timed part is active and inside its window (+ a short network
+// grace); submissions for a future or finished part are rejected with
+// { expired } so the client can realign. When a section is supplied, only that
+// subject's picks are replaced, so saving English cannot erase Computer
+// Awareness answers inside Part III. Without a section (legacy clients), the
+// whole timed-part snapshot is replaced as before.
 
 export async function POST(req: Request) {
   const ctx = await requireUser();
@@ -37,6 +39,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid section." }, { status: 400 });
     }
 
+    const requestedSection = typeof body.section === "string" ? body.section.trim() : "";
+    const section = requestedSection ? sectionByKey(requestedSection) : null;
+    if (requestedSection && (!section || section.part !== index)) {
+      return NextResponse.json({ error: "Invalid section." }, { status: 400 });
+    }
+
     const startedMs = Date.parse(session.started_at);
     const now = Date.now();
     const elapsed = Number.isFinite(startedMs) ? Math.max(0, now - startedMs) : 0;
@@ -51,7 +59,9 @@ export async function POST(req: Request) {
     }
 
     const ranges = partRanges(parts);
-    const ids = session.question_ids.slice(ranges[index].start, ranges[index].end);
+    const ids = section
+      ? session.question_ids.slice(section.start, Math.min(section.end, session.question_ids.length))
+      : session.question_ids.slice(ranges[index].start, ranges[index].end);
     const picks = sanitizePicks(body.answers, new Set(ids), ids.length);
     if (picks === null) {
       return NextResponse.json({ error: "Invalid answers payload." }, { status: 400 });
@@ -59,7 +69,17 @@ export async function POST(req: Request) {
 
     const stored = asParts(session.parts);
     while (stored.length < parts.length) stored.push({ answers: [], lockedAt: null });
-    stored[index] = { ...stored[index], answers: picks };
+    if (section) {
+      // Save one subject at a time. Keeping the other subjects' picks means
+      // switching between Computer Awareness and English inside Part III can
+      // never erase the answers saved for the other subject.
+      const allowed = new Set(ids);
+      const kept = (stored[index]?.answers ?? []).filter((p) => !allowed.has(p.id));
+      stored[index] = { ...stored[index], answers: [...kept, ...picks] };
+    } else {
+      // Legacy/full-part save: the snapshot replaces the whole timed part.
+      stored[index] = { ...stored[index], answers: picks };
+    }
 
     const { data: updated, error: uErr } = await svc
       .from("mock_sessions")
@@ -72,7 +92,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This attempt is already finished.", finished: true }, { status: 409 });
     }
 
-    return NextResponse.json({ ok: true, saved: picks.length, serverNow: now });
+    return NextResponse.json({ ok: true, saved: picks.length, section: section?.key ?? null, serverNow: now });
   } catch (e) {
     const p = errorPayload(e, "Could not save answers.");
     return NextResponse.json({ error: p.error }, { status: p.status });

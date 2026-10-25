@@ -9,30 +9,81 @@ export type SchemeRow = {
   plus: number;
   minus: number;
   minutes?: number;
+  /** Optional 0-based timed part index when one part holds several subjects. */
+  part?: number;
+  /** True when this subject shares its timed part's clock with another subject. */
+  shared?: boolean;
   /** Optional clarification shown under the row (e.g. Part III mixes two subjects). */
   note?: string;
 };
 
-// Palette colours shared by the instructions legend and the live question
-// navigator so the two can never drift apart.
-export const PALETTE: Record<
-  "current" | "unanswered" | "answered" | "marked" | "both",
-  CSSProperties
-> = {
-  current: { border: "2px solid var(--accent)", background: "transparent" },
-  unanswered: { background: "var(--pill)", border: "1px solid var(--border)", color: "var(--muted)" },
-  answered: { background: "#16a34a", color: "#ffffff" },
-  marked: { background: "#d97706", color: "#ffffff" },
-  both: { background: "#16a34a", color: "#ffffff", boxShadow: "0 0 0 2px #d97706 inset" },
+// The four navigator meanings are intentionally fixed colours (not theme
+// tokens): a student must be able to recognise blue/green/white/red in every
+// test and in both light and dark themes. "both" is the same marked-for-review
+// red with a green inset, so an answered-and-marked question still reads as
+// marked first while preserving the answered signal.
+export type NavKey = "opened" | "unvisited" | "answered" | "marked" | "both";
+export type NavLegendKey = Exclude<NavKey, "both">;
+
+export const PALETTE: Record<NavKey, CSSProperties> = {
+  opened: { background: "#2563eb", color: "#ffffff", border: "1px solid #1d4ed8" },
+  unvisited: { background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1" },
+  answered: { background: "#16a34a", color: "#ffffff", border: "1px solid #15803d" },
+  marked: { background: "#dc2626", color: "#ffffff", border: "1px solid #b91c1c" },
+  both: {
+    background: "#dc2626",
+    color: "#ffffff",
+    border: "1px solid #b91c1c",
+    boxShadow: "inset 0 0 0 2px #16a34a",
+  },
 };
 
-const LEGEND_ROWS: Array<{ key: keyof typeof PALETTE; label: string }> = [
-  { key: "current", label: "Current question" },
-  { key: "unanswered", label: "Unattempted" },
+export const NAV_LEGEND: Array<{ key: NavLegendKey; label: string }> = [
+  { key: "opened", label: "Opened" },
   { key: "answered", label: "Answered" },
+  { key: "unvisited", label: "Not Visited" },
   { key: "marked", label: "Marked for review" },
-  { key: "both", label: "Answered + marked" },
 ];
+
+export const NAV_STATUS_LABEL: Record<NavKey, string> = {
+  opened: "opened",
+  unvisited: "not visited",
+  answered: "answered",
+  marked: "marked for review",
+  both: "answered and marked for review",
+};
+
+/** Marked wins over answered; visited-unanswered is "opened"; otherwise white. */
+export function navStatus(visited: boolean, answered: boolean, marked: boolean): NavKey {
+  if (marked) return answered ? "both" : "marked";
+  if (answered) return "answered";
+  if (visited) return "opened";
+  return "unvisited";
+}
+
+/** Status fill plus a current-question ring that stays visible on every fill. */
+export function navCellStyle(status: NavKey, current: boolean): CSSProperties {
+  const style: CSSProperties = { ...PALETTE[status] };
+  if (current) {
+    const ring = "0 0 0 2px #ffffff, 0 0 0 4px #2563eb";
+    style.boxShadow = style.boxShadow ? `${style.boxShadow}, ${ring}` : ring;
+  }
+  return style;
+}
+
+const NAV_TEXT: Record<NavLegendKey, string> = {
+  opened: "#1d4ed8",
+  answered: "#15803d",
+  unvisited: "#334155",
+  marked: "#b91c1c",
+};
+
+const NAV_WORD: Record<NavLegendKey, string> = {
+  opened: "BLUE",
+  answered: "GREEN",
+  unvisited: "WHITE",
+  marked: "RED",
+};
 
 const CARD: CSSProperties = {
   background: "var(--card)",
@@ -59,15 +110,12 @@ function Bullet({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Tile({ icon, label, value, note }: { icon: string; label: string; value: string; note: string }) {
+function Tile({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl px-3.5 py-3" style={{ background: "var(--pill)", border: "1px solid var(--border)" }}>
-      <span aria-hidden className="text-lg">{icon}</span>
-      <span className="min-w-0">
-        <span className="mono block text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.12em" }}>{label}</span>
-        <span className="dash-display block text-xl font-extrabold leading-6" style={{ color: "var(--text)" }}>{value}</span>
-        <span className="block text-[11px]" style={{ color: "var(--muted)" }}>{note}</span>
-      </span>
+    <div className="rounded-xl px-3.5 py-3" style={{ background: "var(--pill)", border: "1px solid var(--border)" }}>
+      <span className="mono block text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.12em" }}>{label}</span>
+      <span className="dash-display block text-xl font-extrabold leading-6" style={{ color: "var(--text)" }}>{value}</span>
+      <span className="block text-[11px]" style={{ color: "var(--muted)" }}>{note}</span>
     </div>
   );
 }
@@ -97,13 +145,21 @@ export default function MockInstructions({
   const [page, setPage] = useState<1 | 2>(1);
   const [agreed, setAgreed] = useState(false);
   const showTime = scheme.some((s) => s.minutes != null && s.minutes > 0);
+  const partCount = scheme.some((s) => s.part !== undefined)
+    ? new Set(scheme.map((s) => s.part)).size
+    : scheme.length;
+  const hasSharedPart = scheme.some((s) => s.shared);
 
   const general: string[] = [
     timed
-      ? `The paper is divided into ${scheme.length} timed sections — ${scheme.map((s) => s.label).join(", ")} — with a combined clock of ${minutes} minutes.`
+      ? partCount === scheme.length
+        ? `The paper is divided into ${partCount} timed sections — ${scheme.map((s) => s.label).join(", ")} — with a combined clock of ${minutes} minutes.`
+        : `The paper is divided into ${partCount} timed parts across ${scheme.length} subject sections — ${scheme.map((s) => s.label).join(", ")} — with a combined clock of ${minutes} minutes.`
       : `The paper has ${count} questions to be answered in ${minutes} minutes.`,
     timed
-      ? "Each section runs on its own clock. A section locks the moment its time ends and the next one opens automatically — you cannot return to a finished section."
+      ? hasSharedPart
+        ? "Each timed part runs on its own clock. A part locks the moment its time ends and the next one opens automatically — you cannot return to a finished part. Subjects that share a part also share that part's clock."
+        : "Each timed part runs on its own clock. A part locks the moment its time ends and the next one opens automatically — you cannot return to a finished part."
       : "The countdown starts as soon as you begin and never pauses, even if you switch tabs or refresh the page.",
     `Every question is a multiple-choice question with 4 options — exactly one option is correct.`,
     "Unattempted questions score 0. There is no negative marking for leaving a question blank.",
@@ -116,21 +172,11 @@ export default function MockInstructions({
     "This is an original NIMCET-style practice paper, not the official question paper.",
   ];
 
-  const navigation: string[] = [
-    "Click an option to select it — your choice is saved instantly. Click it again, or use Reset, to clear it.",
-    "Move through the paper with Next / Previous, or jump straight to any question from the Question Navigator.",
-    "Mark for Review flags a question so you can find it easily before time runs out. It never affects scoring.",
-    timed
-      ? "Navigator numbers are section-local — question numbering restarts with every section."
-      : "The navigator shows every question with its live state — answered, marked or unattempted.",
-  ];
-
   return (
     <div className="mx-auto w-full max-w-4xl">
       <section className="overflow-hidden rounded-2xl" style={CARD}>
         {/* Identity strip */}
         <div className="flex flex-wrap items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
-          <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg" style={{ background: "#fef3c7", color: "#d97706", border: "1px solid #fde68a" }}>🏆</span>
           <div className="min-w-0 flex-1">
             <p className="mono text-[10px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.16em" }}>BEFORE YOU START</p>
             <h2 className="dash-display truncate text-lg font-extrabold tracking-tight" style={{ color: "var(--text)" }} title={title}>{title}</h2>
@@ -158,8 +204,8 @@ export default function MockInstructions({
         {page === 1 ? (
           <div className="grid gap-4 px-5 py-5 lg:grid-cols-2">
             <div className="rounded-xl p-4" style={{ border: "1px solid var(--border)" }}>
-              <h3 className="flex items-center gap-2 text-[15px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
-                <span aria-hidden>📋</span> General Instructions
+              <h3 className="text-[15px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
+                General Instructions
               </h3>
               <ol className="mt-3 space-y-2.5 text-[13px] leading-6" style={{ color: "var(--muted)" }}>
                 {general.map((b, i) => (
@@ -186,32 +232,53 @@ export default function MockInstructions({
                 </div>
               )}
             </div>
-            <div className="rounded-xl p-4" style={{ border: "1px solid var(--border)" }}>
-              <h3 className="flex items-center gap-2 text-[15px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
-                <span aria-hidden>🧭</span> Navigational Instructions
+            <div
+              className="rounded-xl p-4 sm:p-5"
+              style={{ background: "#ffffff", border: "1px solid #e2e8f0" }}
+            >
+              <h3
+                id="navigational-instructions"
+                className="text-[15px] font-extrabold tracking-tight"
+                style={{ color: "#1e293b" }}
+              >
+                Navigational Instructions
               </h3>
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {LEGEND_ROWS.map((r) => (
-                  <span key={r.key} className="flex items-center gap-2">
-                    <span aria-hidden className="shrink-0 rounded-md" style={{ ...PALETTE[r.key], width: 18, height: 18 }} />
-                    <span className="text-[12.5px] font-semibold" style={{ color: "var(--muted)" }}>{r.label}</span>
-                  </span>
+              <ul
+                aria-labelledby="navigational-instructions"
+                className="mt-3 list-disc space-y-2.5 pl-5 text-[13px] leading-6 marker:text-slate-400"
+                style={{ color: "#334155" }}
+              >
+                {NAV_LEGEND.map((item) => (
+                  <li key={item.key}>
+                    Questions that are{" "}
+                    <strong className="font-extrabold" style={{ color: "#1e293b" }}>
+                      {item.label}
+                    </strong>{" "}
+                    are marked in{" "}
+                    {item.key === "unvisited" ? (
+                      <span className="mx-0.5 inline-flex items-center rounded-md border border-slate-300 bg-slate-100 px-1.5 py-0.5 align-baseline text-[10.5px] font-extrabold tracking-wide text-slate-700">
+                        WHITE
+                      </span>
+                    ) : (
+                      <strong className="font-extrabold" style={{ color: NAV_TEXT[item.key] }}>
+                        {NAV_WORD[item.key]}
+                      </strong>
+                    )}{" "}
+                    colour.
+                  </li>
                 ))}
-              </div>
-              <ul className="mt-3.5 space-y-2.5 text-[13px] leading-6" style={{ color: "var(--muted)" }}>
-                {navigation.map((b, i) => <Bullet key={i}>{b}</Bullet>)}
               </ul>
             </div>
           </div>
         ) : (
           <div className="px-5 py-5">
-            <h3 className="flex items-center gap-2 text-[15px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
-              <span aria-hidden>🗒️</span> Exam Details
+            <h3 className="text-[15px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
+              Exam Details
             </h3>
             <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
-              <Tile icon="🕒" label="Duration" value={`${minutes} min`} note={timed ? `${scheme.length} timed sections` : "single continuous clock"} />
-              <Tile icon="📘" label="Questions" value={String(count)} note="4 options each" />
-              <Tile icon="🏆" label="Maximum marks" value={fmtMarks(totalMarks)} note="scored on the server" />
+              <Tile label="Duration" value={`${minutes} min`} note={timed ? (partCount === scheme.length ? `${partCount} timed sections` : `${partCount} timed parts · ${scheme.length} subjects`) : "single continuous clock"} />
+              <Tile label="Questions" value={String(count)} note="4 options each" />
+              <Tile label="Maximum marks" value={fmtMarks(totalMarks)} note="scored on the server" />
             </div>
 
             {scheme.length > 0 && (
@@ -242,14 +309,14 @@ export default function MockInstructions({
                           <td className="mono px-2 py-2 text-right">{s.count}</td>
                           <td className="mono px-2 py-2 text-right">{fmtMarks(s.marks)}</td>
                           <td className="mono px-2 py-2 text-right">+{s.plus} / {s.minus}</td>
-                          {showTime && <td className="mono py-2 pl-3 text-right">{s.minutes} min</td>}
+                          {showTime && <td className="mono py-2 pl-3 text-right">{s.minutes} min{s.shared ? " (shared)" : ""}</td>}
                         </tr>
                       ))}
                       <tr style={{ borderTop: "1.5px solid var(--border)", color: "var(--text)" }}>
                         <td className="py-2 pr-3 font-extrabold">Total</td>
                         <td className="mono px-2 py-2 text-right font-extrabold">{count}</td>
                         <td className="mono px-2 py-2 text-right font-extrabold">{fmtMarks(totalMarks)}</td>
-                        <td className="mono px-2 py-2 text-right font-extrabold">per section</td>
+                        <td className="mono px-2 py-2 text-right font-extrabold">per {partCount === scheme.length ? "section" : "part"}</td>
                         {showTime && <td className="mono py-2 pl-3 text-right font-extrabold">{minutes} min</td>}
                       </tr>
                     </tbody>

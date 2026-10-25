@@ -10,8 +10,15 @@
 // answers while it runs → at 0:00 the next part opens automatically → after
 // Part III the attempt is scored on the server and the result screen appears.
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { PALETTE } from "./mock-instructions";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  NAV_LEGEND,
+  NAV_STATUS_LABEL,
+  PALETTE,
+  navCellStyle,
+  navStatus,
+  type NavLegendKey,
+} from "./mock-instructions";
 import { MathText } from "./math-text";
 import {
   clearExamMarks,
@@ -21,6 +28,19 @@ import {
 } from "@/lib/exam-marks";
 
 type Part = { label: string; minutes: number; count: number };
+type Section = {
+  key: string;
+  label: string;
+  short: string;
+  count: number;
+  part: number;
+  start: number;
+  end: number;
+  plus: number;
+  minus: number;
+  minutes: number;
+  shared: boolean;
+};
 type Q = { id: string; section: string; stem: string; options: string[]; plus: number; minus: number };
 type Pick = { id: string; answer: number | null };
 
@@ -106,7 +126,9 @@ type StartResponse = ApiError & {
   sessionId?: string;
   resumed?: boolean;
   parts?: Part[];
+  sections?: Section[];
   index?: number;
+  section?: string | null;
   remainingSec?: number;
   serverNow?: number;
   previous?: { score: number; correct: number; wrong: number; skipped: number } | null;
@@ -114,6 +136,10 @@ type StartResponse = ApiError & {
 
 type PartResponse = ApiError & {
   index?: number;
+  section?: string | null;
+  label?: string;
+  partLabel?: string;
+  sections?: Section[];
   questions?: Q[];
   picks?: Pick[];
   remainingSec?: number;
@@ -150,11 +176,14 @@ export default function MockExam({
   const [fatal, setFatal] = useState("");
   const [note, setNote] = useState("");
   const [parts, setParts] = useState<Part[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [partIndex, setPartIndex] = useState(0);
+  const [sectionKey, setSectionKey] = useState("");
   const [questions, setQuestions] = useState<Q[]>([]);
   const [pos, setPos] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number | null>>({});
   const [marked, setMarked] = useState<Record<string, true>>({});
+  const [visited, setVisited] = useState<Record<string, true>>({});
   const [remaining, setRemaining] = useState<number | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [result, setResult] = useState<Result | null>(null);
@@ -163,13 +192,15 @@ export default function MockExam({
   const mountedRef = useRef(true);
   const sessionRef = useRef("");
   const partsRef = useRef<Part[]>([]);
+  const sectionsRef = useRef<Section[]>([]);
   const indexRef = useRef(0);
+  const sectionRef = useRef("");
   const questionsRef = useRef<Q[]>([]);
   const answersRef = useRef<Record<string, number | null>>({});
   const offsetRef = useRef(0); // serverNow - Date.now()
   const deadlineRef = useRef(0); // server-clock epoch ms of the active part's end
   const lastSentRef = useRef("[]"); // JSON of the snapshot the server has
-  const savingRef = useRef(false);
+  const saveInFlightRef = useRef<Promise<boolean> | null>(null);
   const transitioningRef = useRef(false);
   const endedRef = useRef(false);
 
@@ -189,31 +220,44 @@ export default function MockExam({
     return out;
   }, []);
 
-  const saveNow = useCallback(async (): Promise<void> => {
+  const saveNow = useCallback(async (): Promise<boolean> => {
+    // Serialize saves: a subject switch must not load the next section while an
+    // older snapshot is still in flight (that could drop the latest answer).
+    if (saveInFlightRef.current) await saveInFlightRef.current;
     const sid = sessionRef.current;
     const qs = questionsRef.current;
-    if (!sid || qs.length === 0 || endedRef.current) return;
+    if (!sid || qs.length === 0 || endedRef.current) return true;
     const picks = picksNow(qs, answersRef.current);
     const payload = JSON.stringify(picks);
-    if (payload === lastSentRef.current || savingRef.current) return;
-    savingRef.current = true;
+    if (payload === lastSentRef.current) return true;
     setSaveState("saving");
-    const j = await postJson<AnswersResponse>("/api/student/attempt/answers", {
-      sessionId: sid,
-      index: indexRef.current,
-      answers: picks,
-    });
-    savingRef.current = false;
-    if (!mountedRef.current) return;
-    if (typeof j.serverNow === "number") offsetRef.current = j.serverNow - Date.now();
-    if (j.ok || (j.error === undefined && j.saved !== undefined)) {
-      lastSentRef.current = payload;
-      setSaveState("saved");
-    } else if (j.expired || j.finished) {
-      // The section closed (or the attempt ended) — the 0:00 tick moves on.
-      lastSentRef.current = payload;
-    } else {
+    const task = (async (): Promise<boolean> => {
+      const j = await postJson<AnswersResponse>("/api/student/attempt/answers", {
+        sessionId: sid,
+        index: indexRef.current,
+        section: sectionRef.current || undefined,
+        answers: picks,
+      });
+      if (!mountedRef.current) return true;
+      if (typeof j.serverNow === "number") offsetRef.current = j.serverNow - Date.now();
+      if (j.ok || (j.error === undefined && j.saved !== undefined)) {
+        lastSentRef.current = payload;
+        setSaveState("saved");
+        return true;
+      }
+      if (j.expired || j.finished) {
+        // The section closed (or the attempt ended) — the 0:00 tick moves on.
+        lastSentRef.current = payload;
+        return true;
+      }
       setSaveState("error");
+      return false;
+    })();
+    saveInFlightRef.current = task;
+    try {
+      return await task;
+    } finally {
+      saveInFlightRef.current = null;
     }
   }, [picksNow]);
 
@@ -252,11 +296,15 @@ export default function MockExam({
     }
   }, [complete]);
 
-  const loadPart = useCallback(
-    async (i: number): Promise<"ok" | "expired" | "finished" | "error"> => {
+  const loadSection = useCallback(
+    async (i: number, key?: string): Promise<"ok" | "expired" | "finished" | "error"> => {
       const sid = sessionRef.current;
       if (!sid) return "error";
-      const j = await postJson<PartResponse>("/api/student/attempt/part", { sessionId: sid, index: i });
+      const j = await postJson<PartResponse>("/api/student/attempt/part", {
+        sessionId: sid,
+        index: i,
+        section: key || undefined,
+      });
       if (!mountedRef.current || endedRef.current) return "error";
       if (typeof j.serverNow === "number") offsetRef.current = j.serverNow - Date.now();
       if (j.finished) return "finished";
@@ -265,6 +313,10 @@ export default function MockExam({
         setSaveState("error");
         setNote(j.error ?? "Could not load the section — retrying.");
         return "error";
+      }
+      if (Array.isArray(j.sections)) {
+        sectionsRef.current = j.sections;
+        setSections(j.sections);
       }
       const qs = j.questions;
       const ans: Record<string, number | null> = {};
@@ -276,12 +328,14 @@ export default function MockExam({
       }
       questionsRef.current = qs;
       indexRef.current = i;
+      sectionRef.current = j.section ?? key ?? "";
       answersRef.current = ans;
       lastSentRef.current = JSON.stringify(picksNow(qs, ans));
       const leftSec = typeof j.remainingSec === "number" ? j.remainingSec : (partsRef.current[i]?.minutes ?? 0) * 60;
       deadlineRef.current = Date.now() + offsetRef.current + leftSec * 1000;
       setQuestions(qs);
       setPartIndex(i);
+      setSectionKey(sectionRef.current);
       setAnswers(ans);
       setMarked(marksForQuestions(sid, qs.map((x) => x.id)));
       setPos(0);
@@ -300,10 +354,11 @@ export default function MockExam({
       let i = indexRef.current + 1;
       const ps = partsRef.current;
       while (i < ps.length) {
-        let r = await loadPart(i);
+        const first = sectionsRef.current.find((s) => s.part === i);
+        let r = await loadSection(i, first?.key);
         if (r === "error") {
           await sleep(1500);
-          r = await loadPart(i);
+          r = await loadSection(i, first?.key);
         }
         if (r === "ok") return;
         if (r === "finished") {
@@ -311,7 +366,7 @@ export default function MockExam({
           return;
         }
         if (r === "error") {
-          setNote("Connection trouble while moving to the next section — retrying…");
+          setNote("Connection trouble while moving to the next part — retrying…");
           return;
         }
         i += 1; // "expired": that section closed before it could open — skip on
@@ -320,7 +375,37 @@ export default function MockExam({
     } finally {
       transitioningRef.current = false;
     }
-  }, [finishWithRetry, loadPart, saveNow]);
+  }, [finishWithRetry, loadSection, saveNow]);
+
+  // Subject switch inside the active timed part (only Part III has two
+  // subjects). The part clock keeps running; answers are flushed first.
+  const switchSection = useCallback(
+    async (key: string): Promise<void> => {
+      if (transitioningRef.current || endedRef.current) return;
+      const target = sectionsRef.current.find((s) => s.key === key);
+      if (!target || target.part !== indexRef.current || target.key === sectionRef.current) return;
+      transitioningRef.current = true;
+      try {
+        const saved = await saveNow();
+        if (!saved) {
+          setNote("Could not save this subject — staying here so your answers are not lost. Retrying in the background.");
+          return;
+        }
+        const r = await loadSection(target.part, target.key);
+        if (r === "expired") {
+          transitioningRef.current = false;
+          await goNext();
+        } else if (r === "finished") {
+          await finishWithRetry();
+        } else if (r === "error") {
+          setNote("Could not open that subject — please retry.");
+        }
+      } finally {
+        transitioningRef.current = false;
+      }
+    },
+    [finishWithRetry, goNext, loadSection, saveNow]
+  );
 
   // Kick the whole flow off exactly once per mount.
   useEffect(() => {
@@ -337,6 +422,10 @@ export default function MockExam({
       sessionRef.current = j.sessionId;
       partsRef.current = j.parts;
       setParts(j.parts);
+      if (Array.isArray(j.sections)) {
+        sectionsRef.current = j.sections;
+        setSections(j.sections);
+      }
       indexRef.current = Math.max(0, Math.min(j.index ?? 0, j.parts.length - 1));
       if (j.previous) {
         setNote(
@@ -350,14 +439,15 @@ export default function MockExam({
         setRemaining(j.remainingSec);
         deadlineRef.current = Date.now() + offsetRef.current + j.remainingSec * 1000;
       }
-      const r = await loadPart(indexRef.current);
+      const first = sectionsRef.current.find((s) => s.part === indexRef.current);
+      const r = await loadSection(indexRef.current, first?.key ?? j.section ?? undefined);
       if (r === "finished") await finishWithRetry();
       else if (r === "expired") void goNext();
     })();
     return () => {
       mountedRef.current = false;
     };
-  }, [finishWithRetry, goNext, loadPart, testId]);
+  }, [finishWithRetry, goNext, loadSection, testId]);
 
   // The clock: one 500 ms tick, straight from the server-anchored deadline.
   useEffect(() => {
@@ -388,6 +478,17 @@ export default function MockExam({
     return () => window.clearInterval(iv);
   }, [phase, saveNow]);
 
+  // Track the questions actually shown so the navigator can distinguish
+  // "Opened" from "Not Visited". Current is also derived from pos in render,
+  // so the first paint never flashes white before this effect runs.
+  /* eslint-disable react-hooks/set-state-in-effect -- visible-question tracking is a post-render UI bookkeeping update. */
+  useEffect(() => {
+    const id = questions[pos]?.id;
+    if (!id) return;
+    setVisited((v) => (v[id] ? v : { ...v, [id]: true }));
+  }, [questions, pos]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   // Best-effort flush when the tab is hidden or closed mid-section.
   useEffect(() => {
     if (phase !== "running") return;
@@ -403,7 +504,7 @@ export default function MockExam({
           method: "POST",
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId: sid, index: indexRef.current, answers: picks }),
+          body: JSON.stringify({ sessionId: sid, index: indexRef.current, section: sectionRef.current || undefined, answers: picks }),
           keepalive: true,
         });
         lastSentRef.current = payload;
@@ -448,7 +549,7 @@ export default function MockExam({
     writeExamMarks(sid, stored);
   };
   const exitExam = () => {
-    if (!window.confirm("Leave the exam? The server clock keeps running — come back before the section ends to continue where you left off.")) return;
+    if (!window.confirm("Leave the exam? The server clock keeps running — come back before the current part ends to continue where you left off.")) return;
     onExit();
   };
 
@@ -654,15 +755,16 @@ export default function MockExam({
   }
 
   // ---- running ----
-  const visAnswered = questions.filter((x) => answers[x.id] != null).length;
-  const visMarked = questions.filter((x) => marked[x.id]).length;
-  const visBoth = questions.filter((x) => answers[x.id] != null && marked[x.id]).length;
-  const legend: Array<{ key: keyof typeof PALETTE; label: string; count: number }> = [
-    { key: "unanswered", label: "Unattempted", count: questions.length - visAnswered },
-    { key: "answered", label: "Answered", count: visAnswered - visBoth },
-    { key: "marked", label: "Marked", count: visMarked - visBoth },
-    { key: "both", label: "Answered + marked", count: visBoth },
-  ];
+  const activeSection = sections.find((s) => s.key === sectionKey) ?? null;
+  const sectionName = activeSection?.label ?? parts[partIndex]?.label ?? partShort(partIndex);
+  const isVisited = (id: string) =>
+    !!visited[id] || questions[pos]?.id === id || answers[id] != null || !!marked[id];
+  const counts: Record<NavLegendKey, number> = {
+    opened: questions.filter((x) => isVisited(x.id) && answers[x.id] == null && !marked[x.id]).length,
+    answered: questions.filter((x) => answers[x.id] != null && !marked[x.id]).length,
+    unvisited: questions.filter((x) => !isVisited(x.id)).length,
+    marked: questions.filter((x) => !!marked[x.id]).length,
+  };
   const low = remaining !== null && remaining <= 60;
 
   return (
@@ -676,27 +778,17 @@ export default function MockExam({
           <h2 className="truncate text-[15px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
             {title}
           </h2>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {parts.map((pt, i) => {
-            const state = i < partIndex ? "done" : i === partIndex ? "cur" : "next";
-            return (
-              <span
-                key={pt.label}
-                title={`${pt.label} · ${pt.minutes} min · ${pt.count}Q`}
-                className="mono rounded-lg px-2 py-1 text-[10.5px] font-bold"
-                style={
-                  state === "cur"
-                    ? { background: "var(--accent)", color: "var(--accent-fg)" }
-                    : state === "done"
-                      ? { background: "var(--pill)", color: "var(--muted)", textDecoration: "line-through" }
-                      : { background: "var(--pill)", color: "var(--muted)", opacity: 0.65 }
-                }
-              >
-                {partShort(i)}
-              </span>
-            );
-          })}
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] font-semibold" style={{ color: "var(--muted)" }}>
+            <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--accent)", color: "var(--accent-fg)" }}>
+              {partShort(partIndex)}
+            </span>
+            <span>{sectionName}</span>
+            <span aria-hidden>·</span>
+            <span>{questions.length || activeSection?.count || 0} questions</span>
+            {activeSection?.shared && (
+              <span>· shares the official {activeSection.minutes}-minute clock</span>
+            )}
+          </p>
         </div>
         <span className="mono rounded-xl px-3 py-1.5 text-lg font-extrabold tabular-nums" style={{ background: low ? "color-mix(in srgb, #dc2626 12%, transparent)" : "var(--pill)", color: low ? "#dc2626" : "var(--text)" }}>
           {fmtClock(remaining)}
@@ -705,6 +797,44 @@ export default function MockExam({
           Exit
         </button>
       </div>
+
+      {sections.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
+          {sections.map((s) => {
+            const current = s.part === partIndex && s.key === sectionKey;
+            const done = s.part < partIndex;
+            const open = s.part === partIndex;
+            return (
+              <button
+                key={s.key}
+                type="button"
+                disabled={!open || current}
+                onClick={() => void switchSection(s.key)}
+                aria-current={current ? "step" : undefined}
+                title={`${s.label} · ${s.count}Q · ${s.minutes} min${s.shared ? " shared" : ""}`}
+                className="mono inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-[10.5px] font-bold disabled:cursor-default"
+                style={
+                  current
+                    ? { background: "var(--accent)", color: "var(--accent-fg)" }
+                    : done
+                      ? { background: "var(--pill)", color: "var(--muted)", textDecoration: "line-through" }
+                      : open
+                        ? { background: "var(--pill)", color: "var(--text)", border: "1px solid var(--accent)" }
+                        : { background: "var(--pill)", color: "var(--muted)", opacity: 0.65 }
+                }
+              >
+                <span>{s.short}</span>
+                <span className="opacity-75">{s.count}</span>
+              </button>
+            );
+          })}
+          <span className="ml-auto text-[10.5px] font-semibold" style={{ color: "var(--muted)" }}>
+            {activeSection?.shared
+              ? `Part III: both subjects share the official ${activeSection.minutes}-minute clock.`
+              : `${partShort(partIndex)} of ${parts.length}`}
+          </span>
+        </div>
+      )}
 
       {note && (
         <div className="flex items-start gap-2 px-4 py-2.5 text-[12.5px] leading-5" style={{ borderBottom: "1px solid var(--border)", background: "color-mix(in srgb, var(--accent) 6%, transparent)", color: "var(--text)" }}>
@@ -725,13 +855,16 @@ export default function MockExam({
                   Q{pos + 1} / {questions.length}
                 </span>
                 <span className="mono rounded px-2 py-0.5 font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>
-                  {parts[partIndex]?.label ?? partShort(partIndex)}
+                  {sectionName}
+                </span>
+                <span className="mono rounded px-2 py-0.5" style={{ background: "var(--pill)", color: "var(--muted)" }}>
+                  {activeSection?.count ?? questions.length}Q section
                 </span>
                 <span className="mono rounded px-2 py-0.5" style={{ background: "var(--pill)", color: "var(--muted)" }}>
                   +{fmtMarks(q.plus)} / {fmtMarks(q.minus)}
                 </span>
                 {marked[q.id] && (
-                  <span className="rounded px-2 py-0.5 font-bold text-white" style={{ background: "#d97706" }}>
+                  <span className="rounded px-2 py-0.5 font-bold text-white" style={{ background: "#dc2626" }}>
                     Marked for review
                   </span>
                 )}
@@ -788,7 +921,7 @@ export default function MockExam({
                   type="button"
                   onClick={toggleMark}
                   className="cursor-pointer rounded-xl px-3 py-2 text-[12.5px] font-bold"
-                  style={marked[q.id] ? { background: "#d97706", color: "#ffffff" } : { background: "var(--pill)", color: "var(--text)", border: "1px solid var(--border)" }}
+                  style={marked[q.id] ? { background: "#dc2626", color: "#ffffff", border: "1px solid #b91c1c" } : { background: "var(--pill)", color: "var(--text)", border: "1px solid var(--border)" }}
                 >
                   {marked[q.id] ? "Unmark" : "Mark for review"}
                 </button>
@@ -810,7 +943,7 @@ export default function MockExam({
               </p>
               <button
                 type="button"
-                onClick={() => void loadPart(indexRef.current)}
+                onClick={() => void loadSection(indexRef.current, sectionRef.current || undefined)}
                 className="mt-3 cursor-pointer rounded-xl px-4 py-2 text-[12.5px] font-bold"
                 style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
               >
@@ -824,31 +957,35 @@ export default function MockExam({
         <div>
           <div className="rounded-2xl p-3" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
             <p className="mono text-[10px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
-              {partShort(partIndex).toUpperCase()} NAVIGATOR
+              {(activeSection?.short ?? partShort(partIndex)).toUpperCase()} NAVIGATOR
             </p>
             <div className="mt-2 grid grid-cols-6 gap-1.5">
               {questions.map((qq, i) => {
-                const isAns = answers[qq.id] != null;
-                const isMark = !!marked[qq.id];
-                const base = isAns && isMark ? PALETTE.both : isAns ? PALETTE.answered : isMark ? PALETTE.marked : PALETTE.unanswered;
-                const s: CSSProperties = { ...base };
-                if (i === pos) s.boxShadow = `${s.boxShadow ? `${s.boxShadow}, ` : ""}0 0 0 2.5px color-mix(in srgb, var(--accent) 55%, transparent)`;
+                const status = navStatus(isVisited(qq.id), answers[qq.id] != null, !!marked[qq.id]);
                 return (
-                  <button key={qq.id} type="button" onClick={() => setPos(i)} className="mono cursor-pointer rounded-lg py-1.5 text-[11px] font-bold" style={s}>
+                  <button
+                    key={qq.id}
+                    type="button"
+                    onClick={() => setPos(i)}
+                    aria-label={`Question ${i + 1}, ${NAV_STATUS_LABEL[status]}${i === pos ? ", current" : ""}`}
+                    aria-current={i === pos ? "true" : undefined}
+                    className="mono cursor-pointer rounded-md py-1.5 text-[11px] font-bold"
+                    style={navCellStyle(status, i === pos)}
+                  >
                     {i + 1}
                   </button>
                 );
               })}
             </div>
             <div className="mt-3 space-y-1">
-              {legend.map((r) => (
+              {NAV_LEGEND.map((r) => (
                 <div key={r.key} className="flex items-center gap-2 text-[11.5px]">
                   <span aria-hidden className="shrink-0 rounded" style={{ ...PALETTE[r.key], width: 14, height: 14 }} />
                   <span className="flex-1 font-semibold" style={{ color: "var(--muted)" }}>
                     {r.label}
                   </span>
                   <span className="mono font-bold" style={{ color: "var(--text)" }}>
-                    {r.count}
+                    {counts[r.key]}
                   </span>
                 </div>
               ))}
@@ -863,7 +1000,9 @@ export default function MockExam({
                     : "Answers save automatically"}
             </p>
             <p className="mt-2 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
-              This section submits itself at 0:00, and a finished section cannot be reopened.
+              {activeSection?.shared
+                ? `This part submits itself at 0:00. ${activeSection.label} shares its official ${activeSection.minutes}-minute clock with the other Part III subject.`
+                : "This part submits itself at 0:00, and a finished part cannot be reopened."}
             </p>
             {remaining !== null && remaining <= 0 && (
               <button

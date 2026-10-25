@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       if (elapsed < partsTotalMs(parts) - 3_000) {
         return NextResponse.json(
           {
-            error: "The exam is still running — results appear when the final section ends.",
+            error: "The exam is still running — results appear when the final part ends.",
             remainingSec: Math.ceil((partsTotalMs(parts) - elapsed) / 1000),
             serverNow: now,
           },

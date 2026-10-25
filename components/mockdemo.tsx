@@ -11,7 +11,14 @@ import {
   LEGACY_RUN_KEY,
   type ExamPart,
 } from "@/lib/exam-parts";
-import { PALETTE } from "@/components/mock-instructions";
+import {
+  NAV_LEGEND,
+  NAV_STATUS_LABEL,
+  PALETTE,
+  navCellStyle,
+  navStatus,
+  type NavLegendKey,
+} from "@/components/mock-instructions";
 import { MathText } from "@/components/math-text";
 
 export type MockQuestion = {
@@ -69,6 +76,7 @@ type SavedRun = {
   name?: string;
   answers?: Record<string, number>;
   marked?: Record<string, true>;
+  visited?: Record<string, true>;
   idx?: number;
   startAt?: number;
 };
@@ -127,6 +135,7 @@ export default function MockDemo({
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [marked, setMarked] = useState<Record<number, true>>({});
+  const [visited, setVisited] = useState<Record<number, true>>({});
   const [left, setLeft] = useState(mins * 60);
   const [part, setPart] = useState(0);
   const [done, setDone] = useState(false);
@@ -192,6 +201,14 @@ export default function MockDemo({
         }
         setMarked(restoredMarked);
       }
+      if (s.visited && typeof s.visited === "object") {
+        const restoredVisited: Record<number, true> = {};
+        for (const k of Object.keys(s.visited)) {
+          const i = Number(k);
+          if (Number.isInteger(i) && i >= 0 && i < list.length) restoredVisited[i] = true;
+        }
+        setVisited(restoredVisited);
+      }
       if (timed && ranges) {
         const ap = activePartAt(timed, Date.now() - s.startAt);
         partRef.current = ap;
@@ -207,6 +224,16 @@ export default function MockDemo({
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Record the question currently on screen as opened. The current cell also
+  // falls back to idx in render, so the first paint never flashes white while
+  // this post-render effect runs.
+  /* eslint-disable react-hooks/set-state-in-effect -- marking the visible question is a post-render UI bookkeeping update. */
+  useEffect(() => {
+    if (!started || done) return;
+    setVisited((v) => (v[idx] ? v : { ...v, [idx]: true }));
+  }, [started, done, idx]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
@@ -252,9 +279,9 @@ export default function MockDemo({
     const startAt = startAtRef.current;
     if (startAt == null) return;
     try {
-      sessionStorage.setItem(RUN_KEY, JSON.stringify({ name: testName, answers, marked, idx, startAt }));
+      sessionStorage.setItem(RUN_KEY, JSON.stringify({ name: testName, answers, marked, visited, idx, startAt }));
     } catch {}
-  }, [persist, started, done, answers, marked, idx, testName]);
+  }, [persist, started, done, answers, marked, visited, idx, testName]);
 
   // Warn before closing the tab mid-test (real mocks only).
   useEffect(() => {
@@ -347,6 +374,7 @@ export default function MockDemo({
     setSubmitError("");
     setAnswers({});
     setMarked({});
+    setVisited({});
     setIdx(0);
     setPart(0);
     setLeft(mins * 60);
@@ -544,27 +572,21 @@ export default function MockDemo({
     });
   };
   const paletteIdx = cur ? list.slice(cur.start, cur.end).map((_, j) => cur.start + j) : list.map((_, i) => i);
-  // Navigator counts are scoped to the active section when the paper is
-  // sectioned; answered/marked state itself persists across sections.
+  // Statuses are derived from the active section's questions. A question is
+  // "opened" once it has been shown, answered or marked, so restored answers
+  // and the first paint (before the visited effect runs) classify correctly.
+  const isVisited = (i: number) =>
+    !!visited[i] || i === idx || answers[i] != null || !!marked[i];
   const visAnswered = paletteIdx.filter((i) => answers[i] != null).length;
-  const visMarked = paletteIdx.filter((i) => !!marked[i]).length;
-  const visBoth = paletteIdx.filter((i) => answers[i] != null && !!marked[i]).length;
-  const low = left <= 60;
-  const cellStyle = (i: number): CSSProperties => {
-    const isAns = answers[i] != null;
-    const isMark = !!marked[i];
-    const base = isAns && isMark ? PALETTE.both : isAns ? PALETTE.answered : isMark ? PALETTE.marked : PALETTE.unanswered;
-    const s: CSSProperties = { ...base };
-    if (i === idx) s.boxShadow = `${s.boxShadow ? `${s.boxShadow}, ` : ""}0 0 0 2.5px color-mix(in srgb, var(--accent) 55%, transparent)`;
-    return s;
+  const counts: Record<NavLegendKey, number> = {
+    opened: paletteIdx.filter((i) => isVisited(i) && answers[i] == null && !marked[i]).length,
+    answered: paletteIdx.filter((i) => answers[i] != null && !marked[i]).length,
+    unvisited: paletteIdx.filter((i) => !isVisited(i)).length,
+    marked: paletteIdx.filter((i) => !!marked[i]).length,
   };
-  const legend: Array<{ key: keyof typeof PALETTE; label: string; count?: number }> = [
-    { key: "current", label: "Current" },
-    { key: "unanswered", label: "Unattempted", count: qTotal - visAnswered },
-    { key: "answered", label: "Answered", count: visAnswered - visBoth },
-    { key: "marked", label: "Marked", count: visMarked - visBoth },
-    { key: "both", label: "Answered + marked", count: visBoth },
-  ];
+  const low = left <= 60;
+  const cellStyle = (i: number): CSSProperties =>
+    navCellStyle(navStatus(isVisited(i), answers[i] != null, !!marked[i]), i === idx);
   return (
     <div className="overflow-hidden rounded-2xl backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
       {/* Exam top bar: identity, section state, clock, submit */}
@@ -711,7 +733,7 @@ export default function MockDemo({
               aria-pressed={!!marked[idx]}
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold"
               style={marked[idx]
-                ? { background: "#fef3c7", border: "1px solid #f59e0b", color: "#92400e" }
+                ? { background: "#dc2626", border: "1px solid #b91c1c", color: "#ffffff" }
                 : { border: "1px solid var(--border)", color: "var(--muted)" }}
             >
               {marked[idx] ? "⚑ Marked for review" : "⚐ Mark for review"}
@@ -724,30 +746,34 @@ export default function MockDemo({
             <span className="text-[13px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>Question Navigator</span>
             <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--pill)", color: "var(--muted)" }}>{qTotal} Q</span>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-            {legend.map((l) => (
+          <div className="grid grid-cols-1 gap-1.5">
+            {NAV_LEGEND.map((l) => (
               <span key={l.key} className="flex items-center gap-2">
-                <span aria-hidden className="shrink-0 rounded-md" style={{ ...PALETTE[l.key], width: 18, height: 18 }} />
+                <span aria-hidden className="shrink-0 rounded" style={{ ...PALETTE[l.key], width: 16, height: 16 }} />
                 <span className="min-w-0 truncate text-[11px] font-semibold" style={{ color: "var(--muted)" }}>
-                  {l.label}{l.count != null ? ` (${l.count})` : ""}
+                  {l.label} ({counts[l.key]})
                 </span>
               </span>
             ))}
           </div>
           <div className="grid grid-cols-6 gap-1.5">
-            {paletteIdx.map((i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => goto(i)}
-                aria-label={`Question ${(cur ? i - cur.start : i) + 1}${answers[i] != null ? " (answered)" : ""}${marked[i] ? " (marked for review)" : ""}`}
-                aria-current={i === idx ? "true" : undefined}
-                className="mono h-9 w-9 cursor-pointer rounded-lg text-[12px] font-bold transition-transform hover:-translate-y-px"
-                style={cellStyle(i)}
-              >
-                {(cur ? i - cur.start : i) + 1}
-              </button>
-            ))}
+            {paletteIdx.map((i) => {
+              const localNo = (cur ? i - cur.start : i) + 1;
+              const status = navStatus(isVisited(i), answers[i] != null, !!marked[i]);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => goto(i)}
+                  aria-label={`Question ${localNo}, ${NAV_STATUS_LABEL[status]}${i === idx ? ", current" : ""}`}
+                  aria-current={i === idx ? "true" : undefined}
+                  className="mono h-9 w-9 cursor-pointer rounded-md text-[12px] font-bold transition-transform hover:-translate-y-px"
+                  style={cellStyle(i)}
+                >
+                  {localNo}
+                </button>
+              );
+            })}
           </div>
         </aside>
       </div>

@@ -674,6 +674,80 @@ II. The prices of sugar in the domestic market have fallen sharply in the recent
 "nimcet","reasoning","Blood Relations","Easy","When Anuj saw Manish, he recalled, ""He is the son of the father of my daughter's mother."" Who is Manish to Anuj?","Brother-in-law","Brother","Cousin","Uncle","","A","Anuj's daughter's mother → Anuj's wife; Anuj's wife's father → Anuj's father-in-law; Anuj's father-in-law's son → Anuj's brother-in-law. So, Manish is Anuj's brother-in-law.","6","-1.5"
 "nimcet","reasoning","Alphanumeric series","Easy","A series is given with one term missing. Choose the correct alternative from the given ones that will complete the series.
 \[ ADG, GJM, ?, SVY\]","MRQ","MPS","SMP","MQS","","B","The series follows a pattern where the first letter increases by 5, the second letter decreases by 6, the third letter increases by 7, and the fourth letter decreases by 8.","6","-1.5"
+"nimcet","computer","Organization of a computer","Easy","When 1,0 are two inputs given to the AND, OR gates then the outputs respectively are","0, 0","0, 1","1, 0","1, 1","","B","1 AND 0 = 0 1 OR 0 = 1","6","-1.5"
+"nimcet","computer","Number representations","Easy","The octal number 24 is equivalent to which binary number?","11000","10001","100100","10100","","D","The octal number 24 is equivalent to binary 10100.","6","-1.5"
+"nimcet","computer","Central Processing Unit (CPU)","Easy","What is the function of the CPU's Arithmetic Logic Unit (ALU)?","To control input and output operations","To perform mathematical and logical operations","To store data permanently","To display images on the screen","","B","The ALU (Arithmetic Logic Unit) in the CPU is responsible for performing mathematical and logical operations.","6","-1.5"
+"nimcet","computer","Organization of a computer","Easy","The drawback of building a large memory with DRAM is ______________","The Slow speed of operation","The large cost factor","The inefficient memory organisation","All of the mentioned","","A","The DRAMs were used for large memory modules for a long time until a substitute was found.","6","-1.5"
+"nimcet","computer","Organization of a computer","Easy","Which of the following is a reason for process suspension instead of termination?","Invalid Instruction","Memory Unavailable","Privileged Instruction","Interactive user request","","B","A process is terminated when the system is unable to provide the memory required, as it is more than the memory that it is actually contained in the system","6","-1.5"
+"nimcet","computer","Structure of instructions in CPU","Easy","Which register in CPU stores the instruction currently being executed?","Memory address register (MAR)","Program counter (PC)","Instruction register (IR)","Memory data register (MDR)","","C","The correct answer is Instruction register (IR). The Instruction Register (IR) in the CPU stores the instruction that is currently being executed. After fetching the instruction from memory, it is placed in the IR for decoding and execution.","6","-1.5"
+"nimcet","computer","Computer memory","Easy","Permanent Memory of a computer is known as-","RAM","CD-ROM","ROM","CPU","","C","The Correct Answer is ROM.
+Key Points
+The permanent memory of a computer is known as ROM(Read-only memory).
+In computers and other electronic devices, read-only memory (ROM) is a form of non-volatile memory.
+After the memory unit is manufactured, data contained in ROM cannot be electronically changed. Read-only memory, also known as firmware, is useful for storing software that is rarely updated during the life of the device.
+Plug-in cartridges containing ROM can be used to distribute software applications (such as video games) for programmable computers.
+Read-only memory refers to memory that is hard-wired and cannot be modified electronically after manufactures, such as a diode matrix or a mask ROM integrated circuit (IC).
+Additional Information
+The memory is permanently installed on your computer. This is a read-only memory. The working memory of a computer, also known as random-access memory. The hardware allows data to be passed through a device. 
+Random-access memory (RAM) is a type of computer memory that allows data and machine code to be read and modified in any order. It is commonly used to store working data and machine code.
+A CD-ROM is a data-containing optical compact disc that has been pre-pressed. CD-ROMs are a form of read-only memory that computers can read but not write to or delete.
+The electronic circuitry that executes instructions in a computer programme is known as a central processing unit (CPU), also known as a central processor, main processor, or simply processor.","6","-1.5"
+"nimcet","computer","Input/output devices","Easy","Which of the following memory unit is the first to get active when the computer is turned on?","Main memory","BIOS chip","Cache memory","Secondary memory","","B","The correct option is B. BIOS means Basic Input Output System. BIOS helps to perform the hardware test (POST) and initialize the booting sequence when the computer is turned on.","6","-1.5"
+"nimcet","computer","Computer memory","Easy","Which of the following is used in main memory?","DDR","DRAM","SRAM","PRAM","","B","The correct answer is DRAM.
+Key Points
+DRAM:
+It is dynamic random access memory and is widely used as a computer's main memory. Hence, option B is correct.
+Each DRAM memory cell is made up of a transistor and a capacitor within an integrated circuit, and a data bit is stored in the capacitor.
+DDR-RAM:
+It stands for Double Data Rate Synchronous Dynamic Random-Access Memory. 
+These are the computer memory that transfers the data twice as fast as regular chips like SDRAM chips because DDR memory can send and receive signals twice per clock cycle as a comparison.
+SRAM:
+It stands for Static Random Access Memory.
+It is a form of a semiconductor.
+It is widely used in microprocessors, general computing applications, and electronic devices.
+The SRAM is volatile in nature which means the data stored in it gets all wiped out once the power supply is cut.
+SRAM is comprised of flip-flops. 
+PRAM:
+In computer science, a parallel random-access machine is a shared-memory abstract machine.
+As its name indicates, the PRAM is intended as the parallel-computing analogy to the random-access machine.","6","-1.5"
+"nimcet","computer","Boolean algebra","Easy","The involution of \(A\) is equal to _________","A","2","1","0","","A","The involution of \(A\) means the double inversion of \(A\), i.e. \(\bar {\bar A} = A\), so it is equal to \(A\).","6","-1.5"
+"nimcet","computer","Central Processing Unit (CPU)","Easy","Which of the following is not a function of the CPU?","Fetching instructions from memory","Decoding instructions","Executing instructions","Storing data permanently","","D","Storing data permanently is not a function of the CPU; it is typically done by storage devices such as hard drives.","6","-1.5"
+"nimcet","computer","Number representations","Easy","What is the binary number for decimal number 9?","1100","1001","0111","1011","","B","To convert the decimal number \( 9 \) to binary, we repeatedly divide the number by \( 2 \) and record the remainders:
+ 1. \( 9 \div 2 = 4 \) remainder \( 1 \) 
+ 2. \( 4 \div 2 = 2 \) remainder \( 0 \) 
+ 3. \( 2 \div 2 = 1 \) remainder \( 0 \) 
+ 4. \( 1 \div 2 = 0 \) remainder \( 1 \) 
+ Now, read the remainders from bottom to top: \( 1001 \).
+ Final Answer:
+The binary equivalent of the decimal number \( 9 \) is:
+\[
+1001_2
+\]","6","-1.5"
+"nimcet","computer","Computer memory","Easy","Which of the following, which is the fastest ?","CD-ROM","RAM","Registers","Cache","","C","Registers are the fastest form of memory, followed by cache memory, RAM, and then secondary storage devices like CD-ROMs.","6","-1.5"
+"nimcet","computer","Input/output devices","Easy","Punched cards are used in _______________","Low speed computers","High speed computers","Super computers","Mac devices","","A","The correct answer is Low speed computers. Punched cards were used in early computing systems, particularly in low-speed computers, for data input and storage. These cards had holes punched in them to represent data, and they were read by machines. They were eventually replaced by more efficient and faster data storage methods.","6","-1.5"
+"nimcet","computer","Central Processing Unit (CPU)","Easy","The part of a processor which contains hardware necessary to perform all the operations required by a computer:","Data path","Controller","Registers","Cache","","A","For explanation I would say: A processor is a part of the computer which does all the data manipulation and decision making. A processor comprises of: A data path which contains the hardware necessary to perform all the operations. A controller tells the data path what needs to be done. The registers act as intermediate storage for the data.","6","-1.5"
+"nimcet","computer","Number representations","Easy","The octal number 64.5 is equivalent to which binary number?","110010.101","110110.000","110100.101","111000.011","","C","The octal number 64 is equivalent to binary 110100, and 0.5 in octal is 0.101 in binary. So, the binary equivalent of 64.5 is 110100.101.","6","-1.5"
+"nimcet","computer","Boolean algebra","Easy","The boolean function \(A + BC\) is a reduced form of ____________","\(AB + BC\)","\((A + B)(A + C)\)","\(AB + ABC\)","\((A + C)B\)","","B","By the distributive law \(A + BC = (A + B)(A + C)\), so option B is the reduced form. The other options are either not reduced or not equivalent to \(A + BC\).","6","-1.5"
+"nimcet","computer","Computer memory","Easy","________ is a supplementary memory system which stores frequently used instructions and data for quicker processing.","Cache memory","RAM","Register","Hard disk","","A","The correct answer is Cache memoryKey Points
+The correct answer is Cache memory.
+Quick Access: Cache memory stores copies of frequently used data coming from the slower main memory (RAM). It's closer to the CPU, which makes fetching commands quicker and overall process much faster. Utilizing cache improves system performance because it can access this data faster than it could from the main memory.
+Temporal Locality: Cache memory operates on the principle of locality of reference, specifically the temporal locality, which states that if data is referenced once, it's likely to be referenced again soon. Therefore, storing this frequently used data in cache reduces time-consuming operations and increases efficiency.
+Different Levels: There are different levels of cache memory (L1, L2, L3) with varying sizes and speeds. L1 cache is the smallest and fastest, located inside the processor chip. L2 and L3 caches are bigger and slightly slower, but still much faster than accessing data from RAM or a hard drive. The different levels allow systems to effectively optimize speed and cost.
+Additional Information
+Random Access Memory: 
+It's a volatile type of memory that stores data currently being used by the operating system and programs.
+Without enough RAM, your computer will experience slowdowns and performance issues.
+Computer register:
+This refers to a small, high-speed storage location within a computer's Central Processing Unit (CPU) used to hold data or instructions that are currently being processed.
+Different types of registers exist, each with specific functions.
+Data register: This is a system for recording and storing information, often used in databases, organizations, or for research purposes. Examples include voter registration, product registration, or patient medical records.
+Control register: This type of register stores control signals or settings that govern the operation of a device or system. It might define operating modes, communication protocols, or other configuration parameters.
+Hard disk:
+The hard disk is the electromagnetic storage. It is the secondary storage of computers.
+It stores and retrieves data in the form of magnetic storage. It has one or more platters.
+It has a circular metal disk that is mounted inside the hard disk. It has electromagnetic read or writes heads which are called Magnetic heads.","6","-1.5"
+"nimcet","computer","Number representations","Easy","Which of the following is not a weighted code?","Decimal Number system","Excess 3 Code","Binary number System","None of these","","B","Excess-3 is not a weighted code: its code words are obtained by adding 3 (0011) to the BCD value, so the bit positions carry no fixed weights. The decimal and binary number systems, and BCD codes such as 8421, are weighted codes. Hence, option B is correct.","6","-1.5"
+"nimcet","computer","Input/output devices","Easy","Which of the following characteristics make ROM (Read Only memory) more significant in the computer system?","ROM provides a large amount of capacity to store your data permanently.","ROM is easily upgradable.","It is non-volatile in nature, hence data stored in ROM remains as it is even the system is powered off.","All of the above.","","C","The correct option is C.","6","-1.5"
 "nimcet","english","Meaning of words and phrases","Easy","Select the most appropriate meaning of the given idiom.
 Make a bee line","put the bees in a line","look for freebies","stand in a queue","go straight to","","D","The correct answer is ""go straight to""
 Key Points
@@ -754,77 +828,3 @@ Additional Information
  'An inexplicable event' means an event which cannot be described in words.(एक अकथनीय घटना)
 'A delayed event' means an event which is late in time.(एक विलंबित घटना)
 'An unpleasant event' means an event which is not pleasant.(एक अप्रिय घटना)","4","-1.0"
-"nimcet","computer","Organization of a computer","Easy","When 1,0 are two inputs given to the AND, OR gates then the outputs respectively are","0, 0","0, 1","1, 0","1, 1","","B","1 AND 0 = 0 1 OR 0 = 1","6","-1.5"
-"nimcet","computer","Number representations","Easy","The octal number 24 is equivalent to which binary number?","11000","10001","100100","10100","","D","The octal number 24 is equivalent to binary 10100.","6","-1.5"
-"nimcet","computer","Central Processing Unit (CPU)","Easy","What is the function of the CPU's Arithmetic Logic Unit (ALU)?","To control input and output operations","To perform mathematical and logical operations","To store data permanently","To display images on the screen","","B","The ALU (Arithmetic Logic Unit) in the CPU is responsible for performing mathematical and logical operations.","6","-1.5"
-"nimcet","computer","Organization of a computer","Easy","The drawback of building a large memory with DRAM is ______________","The Slow speed of operation","The large cost factor","The inefficient memory organisation","All of the mentioned","","A","The DRAMs were used for large memory modules for a long time until a substitute was found.","6","-1.5"
-"nimcet","computer","Organization of a computer","Easy","Which of the following is a reason for process suspension instead of termination?","Invalid Instruction","Memory Unavailable","Privileged Instruction","Interactive user request","","B","A process is terminated when the system is unable to provide the memory required, as it is more than the memory that it is actually contained in the system","6","-1.5"
-"nimcet","computer","Structure of instructions in CPU","Easy","Which register in CPU stores the instruction currently being executed?","Memory address register (MAR)","Program counter (PC)","Instruction register (IR)","Memory data register (MDR)","","C","The correct answer is Instruction register (IR). The Instruction Register (IR) in the CPU stores the instruction that is currently being executed. After fetching the instruction from memory, it is placed in the IR for decoding and execution.","6","-1.5"
-"nimcet","computer","Computer memory","Easy","Permanent Memory of a computer is known as-","RAM","CD-ROM","ROM","CPU","","C","The Correct Answer is ROM.
-Key Points
-The permanent memory of a computer is known as ROM(Read-only memory).
-In computers and other electronic devices, read-only memory (ROM) is a form of non-volatile memory.
-After the memory unit is manufactured, data contained in ROM cannot be electronically changed. Read-only memory, also known as firmware, is useful for storing software that is rarely updated during the life of the device.
-Plug-in cartridges containing ROM can be used to distribute software applications (such as video games) for programmable computers.
-Read-only memory refers to memory that is hard-wired and cannot be modified electronically after manufactures, such as a diode matrix or a mask ROM integrated circuit (IC).
-Additional Information
-The memory is permanently installed on your computer. This is a read-only memory. The working memory of a computer, also known as random-access memory. The hardware allows data to be passed through a device. 
-Random-access memory (RAM) is a type of computer memory that allows data and machine code to be read and modified in any order. It is commonly used to store working data and machine code.
-A CD-ROM is a data-containing optical compact disc that has been pre-pressed. CD-ROMs are a form of read-only memory that computers can read but not write to or delete.
-The electronic circuitry that executes instructions in a computer programme is known as a central processing unit (CPU), also known as a central processor, main processor, or simply processor.","6","-1.5"
-"nimcet","computer","Input/output devices","Easy","Which of the following memory unit is the first to get active when the computer is turned on?","Main memory","BIOS chip","Cache memory","Secondary memory","","B","The correct option is B. BIOS means Basic Input Output System. BIOS helps to perform the hardware test (POST) and initialize the booting sequence when the computer is turned on.","6","-1.5"
-"nimcet","computer","Computer memory","Easy","Which of the following is used in main memory?","DDR","DRAM","SRAM","PRAM","","B","The correct answer is DRAM.
-Key Points
-DRAM:
-It is dynamic random access memory and is widely used as a computer's main memory. Hence, option B is correct.
-Each DRAM memory cell is made up of a transistor and a capacitor within an integrated circuit, and a data bit is stored in the capacitor.
-DDR-RAM:
-It stands for Double Data Rate Synchronous Dynamic Random-Access Memory. 
-These are the computer memory that transfers the data twice as fast as regular chips like SDRAM chips because DDR memory can send and receive signals twice per clock cycle as a comparison.
-SRAM:
-It stands for Static Random Access Memory.
-It is a form of a semiconductor.
-It is widely used in microprocessors, general computing applications, and electronic devices.
-The SRAM is volatile in nature which means the data stored in it gets all wiped out once the power supply is cut.
-SRAM is comprised of flip-flops. 
-PRAM:
-In computer science, a parallel random-access machine is a shared-memory abstract machine.
-As its name indicates, the PRAM is intended as the parallel-computing analogy to the random-access machine.","6","-1.5"
-"nimcet","computer","Boolean algebra","Easy","The involution of \(A\) is equal to _________","A","2","1","0","","A","The involution of \(A\) means the double inversion of \(A\), i.e. \(\bar {\bar A} = A\), so it is equal to \(A\).","6","-1.5"
-"nimcet","computer","Central Processing Unit (CPU)","Easy","Which of the following is not a function of the CPU?","Fetching instructions from memory","Decoding instructions","Executing instructions","Storing data permanently","","D","Storing data permanently is not a function of the CPU; it is typically done by storage devices such as hard drives.","6","-1.5"
-"nimcet","computer","Number representations","Easy","What is the binary number for decimal number 9?","1100","1001","0111","1011","","B","To convert the decimal number \( 9 \) to binary, we repeatedly divide the number by \( 2 \) and record the remainders:
- 1. \( 9 \div 2 = 4 \) remainder \( 1 \) 
- 2. \( 4 \div 2 = 2 \) remainder \( 0 \) 
- 3. \( 2 \div 2 = 1 \) remainder \( 0 \) 
- 4. \( 1 \div 2 = 0 \) remainder \( 1 \) 
- Now, read the remainders from bottom to top: \( 1001 \).
- Final Answer:
-The binary equivalent of the decimal number \( 9 \) is:
-\[
-1001_2
-\]","6","-1.5"
-"nimcet","computer","Computer memory","Easy","Which of the following, which is the fastest ?","CD-ROM","RAM","Registers","Cache","","C","Registers are the fastest form of memory, followed by cache memory, RAM, and then secondary storage devices like CD-ROMs.","6","-1.5"
-"nimcet","computer","Input/output devices","Easy","Punched cards are used in _______________","Low speed computers","High speed computers","Super computers","Mac devices","","A","The correct answer is Low speed computers. Punched cards were used in early computing systems, particularly in low-speed computers, for data input and storage. These cards had holes punched in them to represent data, and they were read by machines. They were eventually replaced by more efficient and faster data storage methods.","6","-1.5"
-"nimcet","computer","Central Processing Unit (CPU)","Easy","The part of a processor which contains hardware necessary to perform all the operations required by a computer:","Data path","Controller","Registers","Cache","","A","For explanation I would say: A processor is a part of the computer which does all the data manipulation and decision making. A processor comprises of: A data path which contains the hardware necessary to perform all the operations. A controller tells the data path what needs to be done. The registers act as intermediate storage for the data.","6","-1.5"
-"nimcet","computer","Number representations","Easy","The octal number 64.5 is equivalent to which binary number?","110010.101","110110.000","110100.101","111000.011","","C","The octal number 64 is equivalent to binary 110100, and 0.5 in octal is 0.101 in binary. So, the binary equivalent of 64.5 is 110100.101.","6","-1.5"
-"nimcet","computer","Boolean algebra","Easy","The boolean function \(A + BC\) is a reduced form of ____________","\(AB + BC\)","\((A + B)(A + C)\)","\(AB + ABC\)","\((A + C)B\)","","B","By the distributive law \(A + BC = (A + B)(A + C)\), so option B is the reduced form. The other options are either not reduced or not equivalent to \(A + BC\).","6","-1.5"
-"nimcet","computer","Computer memory","Easy","________ is a supplementary memory system which stores frequently used instructions and data for quicker processing.","Cache memory","RAM","Register","Hard disk","","A","The correct answer is Cache memoryKey Points
-The correct answer is Cache memory.
-Quick Access: Cache memory stores copies of frequently used data coming from the slower main memory (RAM). It's closer to the CPU, which makes fetching commands quicker and overall process much faster. Utilizing cache improves system performance because it can access this data faster than it could from the main memory.
-Temporal Locality: Cache memory operates on the principle of locality of reference, specifically the temporal locality, which states that if data is referenced once, it's likely to be referenced again soon. Therefore, storing this frequently used data in cache reduces time-consuming operations and increases efficiency.
-Different Levels: There are different levels of cache memory (L1, L2, L3) with varying sizes and speeds. L1 cache is the smallest and fastest, located inside the processor chip. L2 and L3 caches are bigger and slightly slower, but still much faster than accessing data from RAM or a hard drive. The different levels allow systems to effectively optimize speed and cost.
-Additional Information
-Random Access Memory: 
-It's a volatile type of memory that stores data currently being used by the operating system and programs.
-Without enough RAM, your computer will experience slowdowns and performance issues.
-Computer register:
-This refers to a small, high-speed storage location within a computer's Central Processing Unit (CPU) used to hold data or instructions that are currently being processed.
-Different types of registers exist, each with specific functions.
-Data register: This is a system for recording and storing information, often used in databases, organizations, or for research purposes. Examples include voter registration, product registration, or patient medical records.
-Control register: This type of register stores control signals or settings that govern the operation of a device or system. It might define operating modes, communication protocols, or other configuration parameters.
-Hard disk:
-The hard disk is the electromagnetic storage. It is the secondary storage of computers.
-It stores and retrieves data in the form of magnetic storage. It has one or more platters.
-It has a circular metal disk that is mounted inside the hard disk. It has electromagnetic read or writes heads which are called Magnetic heads.","6","-1.5"
-"nimcet","computer","Number representations","Easy","Which of the following is not a weighted code?","Decimal Number system","Excess 3 Code","Binary number System","None of these","","B","Excess-3 is not a weighted code: its code words are obtained by adding 3 (0011) to the BCD value, so the bit positions carry no fixed weights. The decimal and binary number systems, and BCD codes such as 8421, are weighted codes. Hence, option B is correct.","6","-1.5"
-"nimcet","computer","Input/output devices","Easy","Which of the following characteristics make ROM (Read Only memory) more significant in the computer system?","ROM provides a large amount of capacity to store your data permanently.","ROM is easily upgradable.","It is non-volatile in nature, hence data stored in ROM remains as it is even the system is powered off.","All of the above.","","C","The correct option is C.","6","-1.5"

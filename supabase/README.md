@@ -15,6 +15,7 @@ does not apply schema changes at runtime.
 | `0007_full_mock.sql` | `tests.template`, `mock_sessions`, full-mock backfill, one-open-session index. |
 | `0008_security_remediation.sql` | Existing-database defensive pass: backfills the ledger, adds/verifies the one-open-session unique index, re-asserts hardening. |
 | `0009_question_images.sql` | Additive `questions.image_url` for figure-based questions. |
+| `0010_nimcet_sections.sql` | Marks the NIMCET 2026 PYQ as a server-owned full mock so it uses the official three timed parts. No subject-section schema change; subject ranges derive from the template. |
 
 ## Existing production database
 
@@ -22,6 +23,9 @@ If `0001`–`0007` were already applied before the ledger existed, **do not reru
 them**. Run only:
 
 1. `0008_security_remediation.sql`
+2. `0010_nimcet_sections.sql` — marks the NIMCET 2026 PYQ as a server-owned
+   full mock and reorders `NIMCET MOCK - 01` into official subject order so
+   the four section ranges match the real questions.
 
 It will:
 
