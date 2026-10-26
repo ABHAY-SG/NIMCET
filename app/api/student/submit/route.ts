@@ -179,7 +179,16 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      allowed = new Set(testIds);
+      // Reuse the same QA-filtered practice scope as the question read route.
+      // A test whose paper failed/stale QA must not be scored from the bank.
+      const access = await loadQuestionAccess(svc);
+      if (testIds.some((id) => !access.practice.has(id))) {
+        return NextResponse.json(
+          { error: "This test is temporarily unavailable while its questions are being checked. Please try again later." },
+          { status: 403 }
+        );
+      }
+      allowed = access.practice;
       attemptName = (tq.title || test).trim().slice(0, 120) || test;
     }
 

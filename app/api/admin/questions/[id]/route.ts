@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
 import { errorPayload, isUuid } from "@/lib/admin-queries";
 import { logAdminAction } from "@/lib/audit";
+import { validateAndPersistQuestion } from "@/lib/qa/server";
 
 const DIFFS = ["Easy", "Medium", "Hard"];
 
@@ -49,6 +50,7 @@ function pick(body: Record<string, unknown>): Record<string, unknown> {
   for (const k of ["answer", "plus", "minus"] as const) {
     if (body[k] !== undefined) out[k] = Number(body[k]);
   }
+  if (body.qa_model !== undefined) out.qa_model = body.qa_model;
   return out;
 }
 
@@ -102,7 +104,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
     });
 
-    return NextResponse.json({ ok: true });
+    // The DB trigger marks the old result stale. Rerun immediately so the
+    // editor and the QA dashboard see the new state, and so an affected test
+    // can be revalidated before its next publish transition.
+    let qa = null;
+    let qaError: string | null = null;
+    try {
+      qa = (await validateAndPersistQuestion(svc, id))?.result ?? null;
+    } catch (e) {
+      qaError = e instanceof Error ? e.message : "QA validation failed.";
+    }
+
+    return NextResponse.json({ ok: true, qa, ...(qaError ? { qaError } : {}) });
   } catch (e) {
     const p = errorPayload(e, "Update failed.");
     return NextResponse.json({ error: p.error }, { status: p.status });

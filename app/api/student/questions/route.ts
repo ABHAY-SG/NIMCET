@@ -6,6 +6,7 @@ import {
   loadQuestionAccess,
   loadSessionQuestionIds,
 } from "@/lib/student-question-access";
+import { loadQaAccess, qaQuestionAllowed } from "@/lib/qa/server";
 
 // Columns safe for students: no answer key, no explanations, no PII.
 const SAFE = "id,exam,section,topic,difficulty,stem,options,image_url,plus,minus,created_at";
@@ -51,8 +52,13 @@ export async function GET(req: Request) {
 
     if (ids.length > 0) {
       const sessionIds = await loadSessionQuestionIds(svc, user.id);
+      const qa = await loadQaAccess(svc);
       const allowed = new Set<string>(access.practice);
-      for (const id of sessionIds) allowed.add(id);
+      // Own-session review is allowed to include review-level questions, but a
+      // failed/stale result fails closed even for a past attempt.
+      for (const id of sessionIds) {
+        if (qaQuestionAllowed(qa, id, true)) allowed.add(id);
+      }
       if (ids.some((id) => !allowed.has(id))) {
         return NextResponse.json({ error: "Question not available." }, { status: 403 });
       }

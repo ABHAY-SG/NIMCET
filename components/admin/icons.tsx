@@ -6,6 +6,7 @@ export type IconName =
   | "overview"
   | "tests"
   | "questions"
+  | "qa"
   | "students"
   | "attempts"
   | "analytics"
@@ -64,6 +65,12 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <circle cx="12" cy="12" r="9" />
       <path d="M9.5 9.2a2.6 2.6 0 0 1 4.8 1.3c0 1.6-2.2 2-2.2 3.2" />
       <path d="M12 17h.01" />
+    </>
+  ),
+  qa: (
+    <>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+      <path d="M9 11.5l2 2 4-4" />
     </>
   ),
   students: (

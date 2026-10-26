@@ -3,6 +3,12 @@ import { requireAdmin } from "@/lib/admin-server";
 import { errorPayload, fetchAllTests, fullMockIssues, fullMockIssueText, isUuid, normalizeFullMockIds } from "@/lib/admin-queries";
 import { FULL_MOCK_MINUTES, FULL_MOCK_TEMPLATE, isFullMockTemplate, templateParts } from "@/lib/nimcet-full-mock";
 import { logAdminAction } from "@/lib/audit";
+import {
+  compositionFindings,
+  evaluateTestForPublish,
+  qaBlockedMessage,
+  recordQaReview,
+} from "@/lib/qa/server";
 
 function validate(body: Record<string, unknown>): string | null {
   const s = (v: unknown) => (typeof v === "string" ? v : "");
@@ -127,28 +133,96 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       : isFullMockTemplate(existing.template)
         ? FULL_MOCK_TEMPLATE
         : "";
-    const finalPublished = body.published !== undefined ? Boolean(body.published) : Boolean(existing.published);
+    const requestedPublished = body.published !== undefined ? Boolean(body.published) : Boolean(existing.published);
+    const wasPublished = Boolean(existing.published);
+    const fingerprintChanged =
+      body.question_ids !== undefined ||
+      body.title !== undefined ||
+      body.exam !== undefined ||
+      body.minutes !== undefined ||
+      wantsTemplate;
+    const publishingNow = requestedPublished && !wasPublished;
     let finalIds: string[] = Array.isArray(body.question_ids)
       ? (body.question_ids as string[])
       : Array.isArray(existing.question_ids)
         ? existing.question_ids
         : [];
-    const publishingNow = finalPublished && !existing.published;
-    const contentChanged = body.question_ids !== undefined || wantsTemplate;
-    if (finalTemplate === FULL_MOCK_TEMPLATE && (contentChanged || publishingNow)) {
+    if (finalTemplate === FULL_MOCK_TEMPLATE && (fingerprintChanged || publishingNow)) {
       // Canonical subject order keeps the runner's fixed part slices correct.
       finalIds = await normalizeFullMockIds(svc, finalIds);
       patch.question_ids = finalIds;
     }
-    if (finalTemplate === FULL_MOCK_TEMPLATE && (publishingNow || (finalPublished && contentChanged))) {
+    if (finalTemplate === FULL_MOCK_TEMPLATE && requestedPublished && (fingerprintChanged || publishingNow)) {
       const issues = await fullMockIssues(svc, finalIds);
       if (issues.length > 0) {
         return NextResponse.json({ error: fullMockIssueText(issues) }, { status: 400 });
       }
     }
 
-    const { error } = await svc.from("tests").update(patch).eq("id", id);
-    if (error) throw error;
+    const overrideReason = typeof body.qa_override_reason === "string" ? body.qa_override_reason.trim() : "";
+    // Content edits to a published test are written as a draft first, then
+    // validated, then republished. If QA fails the test stays unpublished:
+    // that is the fail-closed behaviour, not a silent content change.
+    const needsPublishGate = requestedPublished && (fingerprintChanged || publishingNow);
+    if (needsPublishGate) {
+      patch.published = false;
+    } else if (requestedPublished && wasPublished && !fingerprintChanged) {
+      // No-op publish request: do not touch `published`, so a legacy
+      // already-published row is not forced through the gate unnecessarily.
+      delete patch.published;
+    } else {
+      patch.published = requestedPublished;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      const { error } = await svc.from("tests").update(patch).eq("id", id);
+      if (error) throw error;
+    }
+
+    let checked: Awaited<ReturnType<typeof evaluateTestForPublish>> = null;
+    if (needsPublishGate) {
+      const extraFindings = finalTemplate
+        ? compositionFindings(await fullMockIssues(svc, finalIds))
+        : [];
+      checked = await evaluateTestForPublish(svc, id, {
+        extraFindings,
+        overrideReason: overrideReason || undefined,
+      });
+      if (!checked || !checked.result.eligible) {
+        await recordQaReview(svc, {
+          actorId: actor.id,
+          testId: id,
+          action: "publish_blocked",
+          reason: overrideReason || null,
+          findings: checked?.result.findings ?? [],
+        });
+        await logAdminAction(svc, {
+          actor,
+          action: "test.update",
+          entity: "test",
+          entityId: id,
+          details: { title: existing.title, changed: Object.keys(patch), qaBlocked: true },
+        });
+        return NextResponse.json(
+          {
+            error: `Publishing blocked. ${qaBlockedMessage(checked?.result)} The test remains unpublished.`,
+            qa: checked?.result ?? null,
+          },
+          { status: 400 }
+        );
+      }
+      const { error: publishErr } = await svc.from("tests").update({ published: true }).eq("id", id);
+      if (publishErr) throw publishErr;
+      if (overrideReason) {
+        await recordQaReview(svc, {
+          actorId: actor.id,
+          testId: id,
+          action: "override",
+          reason: overrideReason,
+          findings: checked.result.findings,
+        });
+      }
+    }
 
     await logAdminAction(svc, {
       actor,
@@ -166,7 +240,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      published: requestedPublished,
+      qa: checked?.result ?? null,
+    });
   } catch (e) {
     const p = errorPayload(e, "Update failed.");
     return NextResponse.json({ error: p.error }, { status: p.status });

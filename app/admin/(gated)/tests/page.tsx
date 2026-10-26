@@ -382,6 +382,9 @@ export default function AdminTests() {
       setEditor(null);
       reload();
     } catch (e) {
+      // A published test whose content edit failed QA is intentionally left
+      // unpublished (fail-closed). Refresh so the list reflects that.
+      reload();
       toast(e instanceof Error ? e.message : "Save failed.", "error");
     } finally {
       setEditorBusy(false);

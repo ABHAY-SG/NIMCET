@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
-import { errorPayload, fullMockIssues, fullMockIssueText } from "@/lib/admin-queries";
+import { errorPayload, fullMockIssues } from "@/lib/admin-queries";
 import { isFullMockTemplate } from "@/lib/nimcet-full-mock";
 import { logAdminAction } from "@/lib/audit";
+import {
+  compositionFindings,
+  evaluateTestForPublish,
+  qaBlockedMessage,
+  recordQaReview,
+} from "@/lib/qa/server";
+import type { QaFinding } from "@/lib/qa/types";
 
 // POST /api/admin/tests/bulk — publish / unpublish / free / paid / delete for a
 // set of tests. Delete refuses any test that has recorded attempts unless the
@@ -16,7 +23,12 @@ export async function POST(req: Request) {
   if ("error" in ctx) return ctx.error;
   const { svc, user: actor } = ctx;
   try {
-    const body = (await req.json()) as { ids?: unknown; action?: unknown; force?: unknown };
+    const body = (await req.json()) as {
+      ids?: unknown;
+      action?: unknown;
+      force?: unknown;
+      qa_override_reason?: unknown;
+    };
     const rawIds = Array.isArray(body.ids) ? body.ids : [];
     const ids = [...new Set(rawIds.filter((v): v is string => typeof v === "string" && v.trim().length > 0).map((v) => v.trim()))];
     const action = String(body.action ?? "") as BulkAction;
@@ -50,17 +62,68 @@ export async function POST(req: Request) {
     }
     const foundIds = found.map((t) => t.id);
 
-    // Publishing a full-mock draft goes through the same composition gate as
-    // the single-test publish path — a bulk action must not bypass it.
+    // Every publish — single or bulk — goes through the same QA gate. Preflight
+    // every selected test first so a batch never partially publishes.
+    let qaRows: Array<{
+      id: string;
+      title: string;
+      status: string;
+      eligible: boolean;
+      message: string;
+      findings: QaFinding[];
+    }> = [];
     if (action === "publish") {
+      const overrideReason = typeof body.qa_override_reason === "string" ? body.qa_override_reason.trim() : "";
+      const blocked: typeof qaRows = [];
       for (const t of found) {
-        if (!isFullMockTemplate(t.template) || t.published) continue;
-        const issues = await fullMockIssues(svc, Array.isArray(t.question_ids) ? t.question_ids : []);
-        if (issues.length > 0) {
-          return NextResponse.json(
-            { error: `“${t.title}” — ${fullMockIssueText(issues)}` },
-            { status: 400 }
-          );
+        const extraFindings = isFullMockTemplate(t.template)
+          ? compositionFindings(await fullMockIssues(svc, Array.isArray(t.question_ids) ? t.question_ids : []))
+          : [];
+        const checked = await evaluateTestForPublish(svc, t.id, {
+          extraFindings,
+          overrideReason: overrideReason || undefined,
+        });
+        const result = checked?.result;
+        qaRows.push({
+          id: t.id,
+          title: t.title,
+          status: result?.status ?? "FAILED",
+          eligible: result?.eligible === true,
+          message: qaBlockedMessage(result),
+          findings: result?.findings ?? [],
+        });
+        if (!result?.eligible) blocked.push(qaRows[qaRows.length - 1]);
+      }
+      if (blocked.length > 0) {
+        for (const row of blocked) {
+          await recordQaReview(svc, {
+            actorId: actor.id,
+            testId: row.id,
+            action: "publish_blocked",
+            reason: overrideReason || null,
+            findings: row.findings,
+          });
+        }
+        return NextResponse.json(
+          {
+            error: `Publishing blocked for ${blocked.length} test(s). Nothing was published. ${blocked
+              .slice(0, 3)
+              .map((b) => `“${b.title}” — ${b.message}`)
+              .join(" ")}`,
+            blocked,
+          },
+          { status: 400 }
+        );
+      }
+      if (overrideReason) {
+        for (const row of qaRows) {
+          await recordQaReview(svc, {
+            actorId: actor.id,
+            testId: row.id,
+            action: "override",
+            reason: overrideReason,
+            findings: row.findings,
+          });
         }
       }
     }
@@ -139,7 +202,7 @@ export async function POST(req: Request) {
       entity: "test",
       details: { count: foundIds.length, titles: found.slice(0, 20).map((t) => t.title) },
     });
-    return NextResponse.json({ ok: true, affected: foundIds.length });
+    return NextResponse.json({ ok: true, affected: foundIds.length, ...(action === "publish" ? { qa: qaRows } : {}) });
   } catch (e) {
     const p = errorPayload(e, "Bulk action failed.");
     return NextResponse.json({ error: p.error }, { status: p.status });

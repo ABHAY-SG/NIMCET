@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
 import { errorPayload, fetchAllQuestionsLite, toCsv } from "@/lib/admin-queries";
 import { logAdminAction } from "@/lib/audit";
+import { validateAndPersistQuestion } from "@/lib/qa/server";
 
 function toNum(v: string | null, fallback: number, min: number, max: number): number {
   const n = Number(v);
@@ -199,16 +200,18 @@ export async function POST(req: Request) {
         explanation: s(body.explanation).trim(),
         plus: body.plus === undefined ? 4 : Number(body.plus),
         minus: body.minus === undefined ? -1 : Number(body.minus),
+        ...(body.qa_model !== undefined ? { qa_model: body.qa_model } : {}),
       })
       .select("id")
       .single();
     if (error) throw error;
+    const id = (data as { id: string }).id;
 
     await logAdminAction(svc, {
       actor,
       action: "question.create",
       entity: "question",
-      entityId: (data as { id: string }).id,
+      entityId: id,
       details: {
         exam: s(body.exam).trim(),
         section: s(body.section).trim(),
@@ -218,7 +221,17 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ id: (data as { id: string }).id });
+    // QA never blocks creating a draft. The result is returned so the editor
+    // can show findings immediately; publishing a test is gated separately.
+    let qa = null;
+    let qaError: string | null = null;
+    try {
+      qa = (await validateAndPersistQuestion(svc, id))?.result ?? null;
+    } catch (e) {
+      qaError = e instanceof Error ? e.message : "QA validation failed.";
+    }
+
+    return NextResponse.json({ id, qa, ...(qaError ? { qaError } : {}) });
   } catch (e) {
     const p = errorPayload(e, "Create failed.");
     return NextResponse.json({ error: p.error }, { status: p.status });

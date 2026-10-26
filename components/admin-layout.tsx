@@ -20,6 +20,7 @@ const NAV: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/admin", label: "Overview", icon: "overview" },
   { href: "/admin/tests", label: "Mock Tests", icon: "tests" },
   { href: "/admin/questions", label: "Question Bank", icon: "questions" },
+  { href: "/admin/qa", label: "Question QA", icon: "qa" },
   { href: "/admin/students", label: "Students", icon: "students" },
   { href: "/admin/attempts", label: "Results & Attempts", icon: "attempts" },
   { href: "/admin/analytics", label: "Analytics", icon: "analytics" },

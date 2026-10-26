@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-server";
-import { errorPayload, fetchAllRows, fetchAllTests, normTitle } from "@/lib/admin-queries";
+import { errorPayload, fetchAllRows, fetchAllTests, fullMockIssues, normTitle } from "@/lib/admin-queries";
 import { FULL_LENGTH_QUESTIONS, parseRow, type ParsedRow } from "@/lib/question-rows";
 import {
   FULL_MOCK_MINUTES,
@@ -12,6 +12,12 @@ import {
   templateParts,
 } from "@/lib/nimcet-full-mock";
 import { logAdminAction } from "@/lib/audit";
+import {
+  compositionFindings,
+  evaluateTestForPublish,
+  qaBlockedMessage,
+  recordQaReview,
+} from "@/lib/qa/server";
 
 const s = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
@@ -206,13 +212,16 @@ export async function POST(req: Request) {
     const questionIds = ordered.map((r) => byStem.get(normTitle(r.stem)));
     if (questionIds.some((id) => !id)) throw new Error("Question ids could not be resolved after insert.");
 
+    const requestedPublish = body.published === true;
     const insert: Record<string, unknown> = {
       exam,
       title,
       tag,
       minutes: Math.floor(minutes),
       free: body.free === undefined ? true : Boolean(body.free),
-      published: body.published === undefined ? false : Boolean(body.published),
+      // Created as a draft so the QA result can be persisted before the DB
+      // publish trigger evaluates it.
+      published: false,
       question_ids: questionIds as string[],
     };
     if (migrated) {
@@ -227,30 +236,81 @@ export async function POST(req: Request) {
 
     const { data: t, error: tErr } = await svc.from("tests").insert(insert).select("id").single();
     if (tErr) throw tErr;
+    const id = (t as { id: string }).id;
     newIds = []; // the questions now belong to a real test — never clean them up
+
+    const overrideReason = typeof body.qa_override_reason === "string" ? body.qa_override_reason.trim() : "";
+    let checked: Awaited<ReturnType<typeof evaluateTestForPublish>> = null;
+    try {
+      const extraFindings = template
+        ? compositionFindings(await fullMockIssues(svc, questionIds as string[]))
+        : [];
+      checked = await evaluateTestForPublish(svc, id, {
+        extraFindings,
+        overrideReason: overrideReason || undefined,
+      });
+    } catch (e) {
+      await svc.from("tests").delete().eq("id", id);
+      throw e;
+    }
+
+    if (requestedPublish) {
+      if (!checked || !checked.result.eligible) {
+        await recordQaReview(svc, {
+          actorId: actor.id,
+          testId: id,
+          action: "publish_blocked",
+          reason: overrideReason || null,
+          findings: checked?.result.findings ?? [],
+        });
+        await svc.from("tests").delete().eq("id", id);
+        return NextResponse.json(
+          {
+            error: `Publishing blocked. ${qaBlockedMessage(checked?.result)}`,
+            qa: checked?.result ?? null,
+          },
+          { status: 400 }
+        );
+      }
+      const { error: publishErr } = await svc.from("tests").update({ published: true }).eq("id", id);
+      if (publishErr) {
+        await svc.from("tests").delete().eq("id", id);
+        throw publishErr;
+      }
+      if (overrideReason) {
+        await recordQaReview(svc, {
+          actorId: actor.id,
+          testId: id,
+          action: "override",
+          reason: overrideReason,
+          findings: checked.result.findings,
+        });
+      }
+    }
 
     await logAdminAction(svc, {
       actor,
       action: "test.create_from_csv",
       entity: "test",
-      entityId: (t as { id: string }).id,
+      entityId: id,
       details: {
         title,
         questions: ordered.length,
         inserted,
         reused: ordered.length - inserted,
-        published: insert.published as boolean,
+        published: requestedPublish,
         ...(template ? { template } : {}),
       },
     });
 
     return NextResponse.json({
-      id: (t as { id: string }).id,
+      id,
       title,
       questions: ordered.length,
       inserted,
       reused: ordered.length - inserted,
-      published: insert.published as boolean,
+      published: requestedPublish,
+      qa: checked?.result ?? null,
       ...(template ? { template } : {}),
     });
   } catch (e) {

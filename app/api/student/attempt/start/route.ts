@@ -9,6 +9,8 @@ import {
   type MockSessionRow,
 } from "@/lib/exam-finalize";
 import { isFullMockTemplate, templateParts, templateSections } from "@/lib/nimcet-full-mock";
+import { qaAccessForTest } from "@/lib/student-question-access";
+import { loadQaAccess } from "@/lib/qa/server";
 
 // POST /api/student/attempt/start — { testId }
 //
@@ -122,6 +124,12 @@ export async function POST(req: Request) {
         }
         // Another request may have opened a fresh session in the meantime.
         continue;
+      }
+
+      const qa = await loadQaAccess(svc);
+      const gate = qaAccessForTest(qa, test.id, Array.isArray(test.question_ids) ? test.question_ids : []);
+      if (!gate.allowed) {
+        return NextResponse.json({ error: gate.reason }, { status: 403 });
       }
 
       const { data: created, error: cErr } = await svc

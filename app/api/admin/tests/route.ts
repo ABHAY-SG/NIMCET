@@ -13,6 +13,12 @@ import {
 } from "@/lib/admin-queries";
 import { FULL_MOCK_MINUTES, FULL_MOCK_TEMPLATE, isFullMockTemplate, templateParts } from "@/lib/nimcet-full-mock";
 import { logAdminAction } from "@/lib/audit";
+import {
+  compositionFindings,
+  evaluateTestForPublish,
+  qaBlockedMessage,
+  recordQaReview,
+} from "@/lib/qa/server";
 
 function toNum(v: string | null, fallback: number, min: number, max: number): number {
   const n = Number(v);
@@ -186,7 +192,9 @@ export async function POST(req: Request) {
       tag: s(body.tag),
       minutes: body.minutes === undefined ? 30 : Number(body.minutes),
       free: body.free === undefined ? true : Boolean(body.free),
-      published: body.published === undefined ? false : Boolean(body.published),
+      // Always create as a draft: the QA state must exist before the DB
+      // publish trigger can approve a published row. It is flipped below.
+      published: false,
       question_ids: ids,
     };
     if (migrated) {
@@ -203,7 +211,7 @@ export async function POST(req: Request) {
       insert.sections = templateParts();
       const ordered = await normalizeFullMockIds(svc, ids);
       insert.question_ids = ordered;
-      if (insert.published) {
+      if (body.published === true) {
         const issues = await fullMockIssues(svc, ordered);
         if (issues.length > 0) {
           return NextResponse.json({ error: fullMockIssueText(issues) }, { status: 400 });
@@ -213,21 +221,72 @@ export async function POST(req: Request) {
 
     const { data, error } = await svc.from("tests").insert(insert).select("id").single();
     if (error) throw error;
+    const id = (data as { id: string }).id;
+
+    const requestedPublish = body.published === true;
+    const overrideReason = typeof body.qa_override_reason === "string" ? body.qa_override_reason.trim() : "";
+    let checked: Awaited<ReturnType<typeof evaluateTestForPublish>> = null;
+    try {
+      const extraFindings = template
+        ? compositionFindings(await fullMockIssues(svc, insert.question_ids as string[]))
+        : [];
+      checked = await evaluateTestForPublish(svc, id, {
+        extraFindings,
+        overrideReason: overrideReason || undefined,
+      });
+    } catch (e) {
+      await svc.from("tests").delete().eq("id", id);
+      throw e;
+    }
+
+    if (requestedPublish) {
+      if (!checked || !checked.result.eligible) {
+        await recordQaReview(svc, {
+          actorId: actor.id,
+          testId: id,
+          action: "publish_blocked",
+          reason: overrideReason || null,
+          findings: checked?.result.findings ?? [],
+        });
+        await svc.from("tests").delete().eq("id", id);
+        return NextResponse.json(
+          {
+            error: `Publishing blocked. ${qaBlockedMessage(checked?.result)}`,
+            qa: checked?.result ?? null,
+          },
+          { status: 400 }
+        );
+      }
+      const { error: publishErr } = await svc.from("tests").update({ published: true }).eq("id", id);
+      if (publishErr) {
+        await svc.from("tests").delete().eq("id", id);
+        throw publishErr;
+      }
+      if (overrideReason) {
+        await recordQaReview(svc, {
+          actorId: actor.id,
+          testId: id,
+          action: "override",
+          reason: overrideReason,
+          findings: checked.result.findings,
+        });
+      }
+    }
 
     await logAdminAction(svc, {
       actor,
       action: "test.create",
       entity: "test",
-      entityId: (data as { id: string }).id,
+      entityId: id,
       details: {
         title: s(body.title),
-        questions: (body.question_ids as string[] | undefined)?.length ?? 0,
-        published: insert.published as boolean,
+        questions: (insert.question_ids as string[] | undefined)?.length ?? 0,
+        published: requestedPublish,
         ...(template ? { template } : {}),
       },
     });
 
-    return NextResponse.json({ id: (data as { id: string }).id });
+    return NextResponse.json({ id, published: requestedPublish, qa: checked?.result ?? null });
   } catch (e) {
     const p = errorPayload(e, "Create failed.");
     return NextResponse.json({ error: p.error }, { status: p.status });

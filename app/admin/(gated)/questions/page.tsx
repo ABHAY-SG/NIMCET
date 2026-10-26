@@ -190,9 +190,19 @@ export default function AdminQuestions() {
         plus,
         minus,
       };
-      if (editor.id) await adminMutate(`/api/admin/questions/${editor.id}`, "PUT", payload);
-      else await adminMutate("/api/admin/questions", "POST", payload);
-      toast(editor.id ? "Question updated." : "Question added.");
+      const saved = await adminMutate<{
+        qa?: { status: string; counts?: { critical: number; review: number } } | null;
+        qaError?: string;
+      }>(editor.id ? `/api/admin/questions/${editor.id}` : "/api/admin/questions", editor.id ? "PUT" : "POST", payload);
+      if (saved.qa?.status === "FAILED") {
+        toast(`Saved, but QA found ${saved.qa.counts?.critical ?? 1} critical issue(s). Open Question QA for the exact fields.`, "error");
+      } else if (saved.qa?.status === "NEEDS_REVIEW") {
+        toast("Saved. QA needs review before this question can be used in a new publication.", "info");
+      } else if (saved.qa?.status) {
+        toast(`Saved. QA: ${saved.qa.status}.`);
+      } else {
+        toast(editor.id ? "Question updated." : "Question added.");
+      }
       setEditor(null);
       reload();
       facetsData.reload();

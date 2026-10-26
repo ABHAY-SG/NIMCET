@@ -13,6 +13,12 @@
 // so exposure cannot drift between the two routes.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  loadQaAccess,
+  qaQuestionAllowed,
+  qaTestAccess,
+  type QaAccessState,
+} from "@/lib/qa/server";
 
 export type AccessTestRow = {
   id?: string;
@@ -100,17 +106,29 @@ export async function loadTestAccess(svc: SupabaseClient): Promise<TestAccess> {
   return { rows: (res.data ?? []) as AccessTestRow[], hasTemplateColumn };
 }
 
-export function accessFromTests(access: TestAccess): QuestionAccess {
+export function accessFromTests(access: TestAccess, qa?: QaAccessState): QuestionAccess {
   const practice = new Set<string>();
   const timed = new Set<string>();
   for (const row of access.rows) {
     const ids = stringIds(row.question_ids);
+    const testId = typeof row.id === "string" ? row.id : "";
+    const testQa = qa && testId ? qaTestAccess(qa, testId) : { allowed: true, override: false, reason: null };
+    // A test that exists in QA but is not publishable must not expose any of
+    // its questions. This also covers a test that was published once and then
+    // failed a revalidation.
+    if (!testQa.allowed) continue;
     if (hasTemplate(row, access.hasTemplateColumn)) {
-      for (const id of ids) timed.add(id);
+      for (const id of ids) {
+        if (qa && !qaQuestionAllowed(qa, id, testQa.override)) continue;
+        timed.add(id);
+      }
       continue;
     }
     if (row.published === true) {
-      for (const id of ids) practice.add(id);
+      for (const id of ids) {
+        if (qa && !qaQuestionAllowed(qa, id, testQa.override)) continue;
+        practice.add(id);
+      }
     }
   }
   // A question reused in a timed paper must never become practice-readable,
@@ -120,7 +138,39 @@ export function accessFromTests(access: TestAccess): QuestionAccess {
 }
 
 export async function loadQuestionAccess(svc: SupabaseClient): Promise<QuestionAccess> {
-  return accessFromTests(await loadTestAccess(svc));
+  const [access, qa] = await Promise.all([loadTestAccess(svc), loadQaAccess(svc)]);
+  return accessFromTests(access, qa);
+}
+
+/**
+ * Used by the timed-exam routes: a new session may start only when the test
+ * itself is QA-eligible and none of its questions is stale/FAILED. Review-level
+ * questions are allowed only when the test carried an explicit admin override.
+ */
+export function qaAccessForTest(
+  qa: QaAccessState,
+  testId: string,
+  questionIds: string[]
+): { allowed: boolean; reason: string | null } {
+  if (!qa.available) return { allowed: true, reason: null };
+  const test = qaTestAccess(qa, testId);
+  if (!test.allowed) {
+    return {
+      allowed: false,
+      reason:
+        "This mock is temporarily unavailable: its question paper has not passed the current quality checks.",
+    };
+  }
+  for (const id of questionIds) {
+    if (!qaQuestionAllowed(qa, id, test.override)) {
+      return {
+        allowed: false,
+        reason:
+          "This mock is temporarily unavailable: at least one question is being corrected. Please try again later.",
+      };
+    }
+  }
+  return { allowed: true, reason: null };
 }
 
 /**
