@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
     // Every publish — single or bulk — goes through the same QA gate. Preflight
     // every selected test first so a batch never partially publishes.
-    let qaRows: Array<{
+    const qaRows: Array<{
       id: string;
       title: string;
       status: string;
