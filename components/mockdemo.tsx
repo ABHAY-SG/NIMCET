@@ -18,7 +18,7 @@ import {
   navCellStyle,
   navStatus,
   type NavLegendKey,
-} from "@/components/mock-instructions";
+} from "@/lib/cbt-nav";
 import { MathText } from "@/components/math-text";
 
 export type MockQuestion = {
@@ -120,6 +120,8 @@ export default function MockDemo({
   autoStart = false,
   onSubmit,
   parts: partSpec,
+  fullscreen = false,
+  onExit,
 }: {
   questions?: MockQuestion[];
   title?: string;
@@ -128,6 +130,9 @@ export default function MockDemo({
   autoStart?: boolean;
   onSubmit?: (picks: Record<number, number>) => Promise<SubmitResult>;
   parts?: ExamPart[];
+  /** Fill a dedicated full-viewport exam route instead of an inline card. */
+  fullscreen?: boolean;
+  onExit?: () => void;
 } = {}) {
   const list = questions && questions.length > 0 ? questions : QS;
   const MAX = list.reduce((a, q) => a + q.plus, 0);
@@ -531,6 +536,8 @@ export default function MockDemo({
                 <div key={i} className="rounded-xl p-3.5 text-sm" style={{ border: "1px solid var(--border)" }}>
                   <p className="font-bold">Q{i + 1}. <MathText>{d.stem}</MathText></p>
                   {d.image && (
+                    // Question images may live on any configured storage host.
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={d.image}
                       alt={`Figure for question ${i + 1}`}
@@ -579,19 +586,28 @@ export default function MockDemo({
     !!visited[i] || i === idx || answers[i] != null || !!marked[i];
   const visAnswered = paletteIdx.filter((i) => answers[i] != null).length;
   const counts: Record<NavLegendKey, number> = {
-    opened: paletteIdx.filter((i) => isVisited(i) && answers[i] == null && !marked[i]).length,
-    answered: paletteIdx.filter((i) => answers[i] != null && !marked[i]).length,
     unvisited: paletteIdx.filter((i) => !isVisited(i)).length,
-    marked: paletteIdx.filter((i) => !!marked[i]).length,
+    visited: paletteIdx.filter((i) => isVisited(i) && answers[i] == null && !marked[i]).length,
+    answered: paletteIdx.filter((i) => answers[i] != null && !marked[i]).length,
+    marked: paletteIdx.filter((i) => answers[i] == null && !!marked[i]).length,
+    both: paletteIdx.filter((i) => answers[i] != null && !!marked[i]).length,
   };
   const low = left <= 60;
   const cellStyle = (i: number): CSSProperties =>
     navCellStyle(navStatus(isVisited(i), answers[i] != null, !!marked[i]), i === idx);
   return (
-    <div className="overflow-hidden rounded-2xl backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
+    <div
+      className={fullscreen
+        ? "flex h-full min-h-0 flex-col overflow-hidden"
+        : "overflow-hidden rounded-2xl backdrop-blur-xl"}
+      style={fullscreen
+        ? { background: "var(--cbt-surface, #ffffff)" }
+        : { background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}
+    >
       {/* Exam top bar: identity, section state, clock, submit */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex min-w-0 items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset */}
           <img src="/logo.png" alt="" aria-hidden className="site-logo block h-6 w-auto" />
           <span className="truncate text-[13px] font-extrabold tracking-tight" style={{ color: "var(--text)" }} title={title}>
             {title}
@@ -621,6 +637,18 @@ export default function MockDemo({
           </div>
         )}
         <div className="ml-auto flex items-center gap-2">
+          {onExit && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("Leave the exam? Your in-progress run stays available on this device until the timer ends.")) onExit();
+              }}
+              className="cursor-pointer rounded-lg px-2.5 py-1.5 text-[12px] font-bold"
+              style={{ border: "1px solid var(--border)", color: "var(--muted)" }}
+            >
+              Exit
+            </button>
+          )}
           <span
             className="mono inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-extrabold"
             aria-label={`Time left ${fmt(left)}`}
@@ -656,17 +684,19 @@ export default function MockDemo({
             </span>
           )}
         </div>
-        <a href="/contact" target="_blank" rel="noopener" className="mono shrink-0 text-[11px] font-bold hover:underline" style={{ color: "#dc2626" }}>
-          ⚑ Report
+        <a href="/contact" target="_blank" rel="noopener" className="mono inline-flex shrink-0 items-center gap-1 text-[11px] font-bold hover:underline" style={{ color: "#dc2626" }}>
+          <FlagIcon className="h-3 w-3" /> Report
         </a>
       </div>
 
       {/* Question + navigator */}
-      <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_290px]">
+      <div className={`mockdemo-body grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_290px]${fullscreen ? " min-h-0 flex-1 overflow-y-auto" : ""}`}>
         <div className="min-w-0">
           <p className="mono text-[10px] font-bold uppercase" style={{ color: "var(--accent)", letterSpacing: "0.14em" }}>{q.tag}</p>
           <p className="mt-2 text-[15px] font-bold leading-7" style={{ color: "var(--text)" }}><MathText>{q.stem}</MathText></p>
           {q.image && (
+            // Question images may live on any configured storage host.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={q.image}
               alt="Question figure"
@@ -736,7 +766,8 @@ export default function MockDemo({
                 ? { background: "#dc2626", border: "1px solid #b91c1c", color: "#ffffff" }
                 : { border: "1px solid var(--border)", color: "var(--muted)" }}
             >
-              {marked[idx] ? "⚑ Marked for review" : "⚐ Mark for review"}
+              <FlagIcon filled={!!marked[idx]} />
+              {marked[idx] ? "Marked for review" : "Mark for review"}
             </button>
           </div>
         </div>
@@ -816,6 +847,22 @@ function partShort(label: string): string {
   if (l.includes("computer")) return "Computers";
   if (l.includes("english")) return "English";
   return label;
+}
+
+function FlagIcon({ filled = false, className = "h-3.5 w-3.5" }: { filled?: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden
+    >
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" strokeLinejoin="round" />
+      <path d="M4 22v-7" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 function DotIcon() {

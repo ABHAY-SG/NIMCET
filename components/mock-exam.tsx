@@ -12,13 +12,31 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Flag,
+  Info,
+  LayoutGrid,
+  Loader2,
+  Lock,
+  LogOut,
+  RotateCcw,
+  Send,
+  ShieldCheck,
+  X,
+} from "lucide-react";
+import {
   NAV_LEGEND,
   NAV_STATUS_LABEL,
   PALETTE,
-  navCellStyle,
   navStatus,
   type NavLegendKey,
-} from "./mock-instructions";
+} from "@/lib/cbt-nav";
+import { sectionLockReason, sectionPhase } from "@/lib/cbt-sections";
 import { MathText } from "./math-text";
 import {
   clearExamMarks,
@@ -41,7 +59,7 @@ type Section = {
   minutes: number;
   shared: boolean;
 };
-type Q = { id: string; section: string; stem: string; options: string[]; plus: number; minus: number };
+type Q = { id: string; section: string; stem: string; options: string[]; image?: string; plus: number; minus: number };
 type Pick = { id: string; answer: number | null };
 
 type Detail = {
@@ -188,6 +206,10 @@ export default function MockExam({
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [result, setResult] = useState<Result | null>(null);
   const [recorded, setRecorded] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [submitOpen, setSubmitOpen] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const [finishing, setFinishing] = useState(false);
 
   const mountedRef = useRef(true);
   const sessionRef = useRef("");
@@ -203,6 +225,7 @@ export default function MockExam({
   const saveInFlightRef = useRef<Promise<boolean> | null>(null);
   const transitioningRef = useRef(false);
   const endedRef = useRef(false);
+  const completingRef = useRef<Promise<boolean> | null>(null);
 
   useEffect(() => {
     questionsRef.current = questions;
@@ -262,27 +285,40 @@ export default function MockExam({
   }, [picksNow]);
 
   const complete = useCallback(async (): Promise<boolean> => {
+    // A timer tick and a "Finish now" click can fire together. Both share one
+    // in-flight completion request, so the client can never post twice; the
+    // server's finalize step is atomic as a second line of defence.
+    if (completingRef.current) return completingRef.current;
     const sid = sessionRef.current;
     if (!sid || endedRef.current) return true;
-    const j = await postJson<CompleteResponse>("/api/student/attempt/complete", { sessionId: sid });
-    if (!mountedRef.current) return true;
-    if (typeof j.serverNow === "number") offsetRef.current = j.serverNow - Date.now();
-    if (j.result) {
-      endedRef.current = true;
-      clearExamMarks(sid);
-      setResult(j.result);
-      setRecorded(Boolean(j.recorded));
-      setSaveState("saved");
-      setPhase("done");
-      return true;
+    const task = (async (): Promise<boolean> => {
+      const j = await postJson<CompleteResponse>("/api/student/attempt/complete", { sessionId: sid });
+      if (!mountedRef.current) return true;
+      if (typeof j.serverNow === "number") offsetRef.current = j.serverNow - Date.now();
+      if (j.result) {
+        endedRef.current = true;
+        clearExamMarks(sid);
+        setResult(j.result);
+        setRecorded(Boolean(j.recorded));
+        setSaveState("saved");
+        setFinishing(false);
+        setPhase("done");
+        return true;
+      }
+      if (typeof j.remainingSec === "number") {
+        // The server still sees time on the clock (rounding/skew) — realign.
+        deadlineRef.current = Date.now() + offsetRef.current + j.remainingSec * 1000;
+        setRemaining(j.remainingSec);
+      }
+      setNote(j.error ?? "Finishing up…");
+      return false;
+    })();
+    completingRef.current = task;
+    try {
+      return await task;
+    } finally {
+      completingRef.current = null;
     }
-    if (typeof j.remainingSec === "number") {
-      // The server still sees time on the clock (rounding/skew) — realign.
-      deadlineRef.current = Date.now() + offsetRef.current + j.remainingSec * 1000;
-      setRemaining(j.remainingSec);
-    }
-    setNote(j.error ?? "Finishing up…");
-    return false;
   }, []);
 
   const finishWithRetry = useCallback(async (): Promise<void> => {
@@ -295,6 +331,14 @@ export default function MockExam({
       setNote("Could not reach the server to finish. Your answers are saved — use “Finish now” to retry.");
     }
   }, [complete]);
+
+  const finishNow = useCallback((): void => {
+    setSubmitOpen(false);
+    setFinishing(true);
+    void finishWithRetry().finally(() => {
+      if (mountedRef.current && !endedRef.current) setFinishing(false);
+    });
+  }, [finishWithRetry]);
 
   const loadSection = useCallback(
     async (i: number, key?: string): Promise<"ok" | "expired" | "finished" | "error"> => {
@@ -346,11 +390,26 @@ export default function MockExam({
     [picksNow]
   );
 
+  // Give an in-flight answer snapshot a few chances to land before the part
+  // closes. The server keeps a 20-second grace window, so a short retry loop
+  // is enough to survive a transient network blip without extending the exam.
+  const flushBeforeTransition = useCallback(async (): Promise<boolean> => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (await saveNow()) return true;
+      await sleep(900);
+    }
+    return false;
+  }, [saveNow]);
+
   const goNext = useCallback(async (): Promise<void> => {
     if (transitioningRef.current || endedRef.current) return;
     transitioningRef.current = true;
+    setTransitioning(true);
     try {
-      await saveNow();
+      const saved = await flushBeforeTransition();
+      if (!saved && mountedRef.current) {
+        setNote("The section closed while the network was unavailable. Moving on — the server will keep the answers it already accepted.");
+      }
       let i = indexRef.current + 1;
       const ps = partsRef.current;
       while (i < ps.length) {
@@ -362,7 +421,9 @@ export default function MockExam({
         }
         if (r === "ok") return;
         if (r === "finished") {
+          setFinishing(true);
           await finishWithRetry();
+          if (!endedRef.current) setFinishing(false);
           return;
         }
         if (r === "error") {
@@ -371,11 +432,14 @@ export default function MockExam({
         }
         i += 1; // "expired": that section closed before it could open — skip on
       }
+      setFinishing(true);
       await finishWithRetry();
+      if (!endedRef.current) setFinishing(false);
     } finally {
       transitioningRef.current = false;
+      if (mountedRef.current) setTransitioning(false);
     }
-  }, [finishWithRetry, loadSection, saveNow]);
+  }, [finishWithRetry, flushBeforeTransition, loadSection]);
 
   // Subject switch inside the active timed part (only Part III has two
   // subjects). The part clock keeps running; answers are flushed first.
@@ -385,8 +449,10 @@ export default function MockExam({
       const target = sectionsRef.current.find((s) => s.key === key);
       if (!target || target.part !== indexRef.current || target.key === sectionRef.current) return;
       transitioningRef.current = true;
+      setTransitioning(true);
+      setNavOpen(false);
       try {
-        const saved = await saveNow();
+        const saved = await flushBeforeTransition();
         if (!saved) {
           setNote("Could not save this subject — staying here so your answers are not lost. Retrying in the background.");
           return;
@@ -396,15 +462,18 @@ export default function MockExam({
           transitioningRef.current = false;
           await goNext();
         } else if (r === "finished") {
+          setFinishing(true);
           await finishWithRetry();
+          if (!endedRef.current) setFinishing(false);
         } else if (r === "error") {
           setNote("Could not open that subject — please retry.");
         }
       } finally {
         transitioningRef.current = false;
+        if (mountedRef.current) setTransitioning(false);
       }
     },
-    [finishWithRetry, goNext, loadSection, saveNow]
+    [finishWithRetry, flushBeforeTransition, goNext, loadSection]
   );
 
   // Kick the whole flow off exactly once per mount.
@@ -521,6 +590,24 @@ export default function MockExam({
     };
   }, [phase, picksNow]);
 
+  // The CBT is a fixed viewport; prevent the document behind it from
+  // scrolling. Also close the mobile navigator / submit dialog on Escape.
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setNavOpen(false);
+        setSubmitOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
   // ---- actions ----
   const q = questions[pos] as Q | undefined;
   const choose = (optIdx: number) => {
@@ -557,32 +644,31 @@ export default function MockExam({
 
   if (phase === "starting") {
     return (
-      <div className="flex items-center justify-center gap-3 rounded-2xl p-10" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-        <div className="h-6 w-6 animate-spin rounded-full" style={{ border: "3px solid var(--border)", borderTopColor: "var(--accent)" }} />
-        <p className="text-sm font-bold" style={{ color: "var(--muted)" }}>
-          Starting the server clock…
-        </p>
+      <div className="cbt cbt-state-screen" data-cbt-root>
+        <div className="cbt-state-card" role="status">
+          <div className="cbt-state-icon" aria-hidden>
+            <Loader2 size={22} className="cbt-spin" />
+          </div>
+          <h1>Starting the server clock</h1>
+          <p>Securing your session and loading the active NIMCET part.</p>
+        </div>
       </div>
     );
   }
 
   if (phase === "error") {
     return (
-      <div className="rounded-2xl p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-        <p className="text-sm font-extrabold" style={{ color: "#dc2626" }}>
-          Could not start the test
-        </p>
-        <p className="mt-1 text-[13px] leading-5" style={{ color: "var(--muted)" }}>
-          {fatal}
-        </p>
-        <button
-          type="button"
-          onClick={onExit}
-          className="mt-4 cursor-pointer rounded-xl px-4 py-2 text-sm font-bold text-white"
-          style={{ background: "var(--accent)" }}
-        >
-          Back to mocks
-        </button>
+      <div className="cbt cbt-state-screen" data-cbt-root>
+        <div className="cbt-state-card" role="alert">
+          <div className="cbt-state-icon" aria-hidden>
+            <AlertTriangle size={22} />
+          </div>
+          <h1>Could not start the test</h1>
+          <p>{fatal}</p>
+          <button type="button" onClick={onExit} className="cbt-btn cbt-btn-primary">
+            <ArrowLeft size={16} /> Back to mocks
+          </button>
+        </div>
       </div>
     );
   }
@@ -590,7 +676,22 @@ export default function MockExam({
   if (phase === "done" && result) {
     const p = percent(result.score, result.maxMarks || 1000);
     return (
-      <div className="space-y-4">
+      <div className="cbt cbt-result" data-cbt-root>
+        <header className="cbt-result-header">
+          <div className="cbt-brand">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset */}
+            <img src="/logo.png" alt="" aria-hidden className="cbt-logo" />
+            <div>
+              <p className="cbt-eyebrow">NIMCET 2026 · SERVER-SCORED</p>
+              <h1 className="cbt-title">{result.testName || title}</h1>
+            </div>
+          </div>
+          <button type="button" onClick={onExit} className="cbt-btn cbt-btn-light">
+            <ArrowLeft size={16} /> Back to mocks
+          </button>
+        </header>
+        <main className="cbt-result-scroll">
+          <div className="cbt-result-inner space-y-4">
         <div className="rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
           <p className="mono text-[10px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.16em" }}>
             FULL MOCK · RESULT
@@ -745,11 +846,12 @@ export default function MockExam({
         <button
           type="button"
           onClick={onExit}
-          className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white"
-          style={{ background: "var(--accent)" }}
+          className="cbt-btn cbt-btn-primary"
         >
-          Back to mocks
+          <ArrowLeft size={16} /> Back to mocks
         </button>
+          </div>
+        </main>
       </div>
     );
   }
@@ -760,263 +862,420 @@ export default function MockExam({
   const isVisited = (id: string) =>
     !!visited[id] || questions[pos]?.id === id || answers[id] != null || !!marked[id];
   const counts: Record<NavLegendKey, number> = {
-    opened: questions.filter((x) => isVisited(x.id) && answers[x.id] == null && !marked[x.id]).length,
-    answered: questions.filter((x) => answers[x.id] != null && !marked[x.id]).length,
     unvisited: questions.filter((x) => !isVisited(x.id)).length,
-    marked: questions.filter((x) => !!marked[x.id]).length,
+    visited: questions.filter((x) => isVisited(x.id) && answers[x.id] == null && !marked[x.id]).length,
+    answered: questions.filter((x) => answers[x.id] != null && !marked[x.id]).length,
+    marked: questions.filter((x) => answers[x.id] == null && !!marked[x.id]).length,
+    both: questions.filter((x) => answers[x.id] != null && !!marked[x.id]).length,
   };
-  const low = remaining !== null && remaining <= 60;
+  const answeredCount = questions.filter((x) => answers[x.id] != null).length;
+  const markedCount = questions.filter((x) => !!marked[x.id]).length;
+  const low = remaining !== null && remaining <= 300;
+  const critical = remaining !== null && remaining <= 60;
+  const timerLevel = critical ? "critical" : low ? "warn" : "normal";
 
-  return (
-    <div className="overflow-hidden rounded-2xl backdrop-blur-xl" style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)" }}>
-      {/* exam top bar */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
-        <div className="min-w-0 flex-1">
-          <p className="mono text-[10px] font-bold" style={{ color: "var(--accent)", letterSpacing: "0.14em" }}>
-            FULL MOCK · SERVER-TIMED
-          </p>
-          <h2 className="truncate text-[15px] font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
-            {title}
-          </h2>
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] font-semibold" style={{ color: "var(--muted)" }}>
-            <span className="mono rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--accent)", color: "var(--accent-fg)" }}>
-              {partShort(partIndex)}
-            </span>
-            <span>{sectionName}</span>
-            <span aria-hidden>·</span>
-            <span>{questions.length || activeSection?.count || 0} questions</span>
-            {activeSection?.shared && (
-              <span>· shares the official {activeSection.minutes}-minute clock</span>
-            )}
-          </p>
+  const navigator = (
+    <div className="cbt-nav-inner">
+      <div className="cbt-nav-head">
+        <div>
+          <p className="cbt-eyebrow">Question navigator</p>
+          <h2>{activeSection?.short ?? partShort(partIndex)}</h2>
         </div>
-        <span className="mono rounded-xl px-3 py-1.5 text-lg font-extrabold tabular-nums" style={{ background: low ? "color-mix(in srgb, #dc2626 12%, transparent)" : "var(--pill)", color: low ? "#dc2626" : "var(--text)" }}>
-          {fmtClock(remaining)}
-        </span>
-        <button type="button" onClick={exitExam} className="cursor-pointer text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>
-          Exit
-        </button>
+        <span className="cbt-nav-count">{questions.length} Q</span>
       </div>
 
-      {sections.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
-          {sections.map((s) => {
-            const current = s.part === partIndex && s.key === sectionKey;
-            const done = s.part < partIndex;
-            const open = s.part === partIndex;
-            return (
-              <button
-                key={s.key}
-                type="button"
-                disabled={!open || current}
-                onClick={() => void switchSection(s.key)}
-                aria-current={current ? "step" : undefined}
-                title={`${s.label} · ${s.count}Q · ${s.minutes} min${s.shared ? " shared" : ""}`}
-                className="mono inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-[10.5px] font-bold disabled:cursor-default"
-                style={
-                  current
-                    ? { background: "var(--accent)", color: "var(--accent-fg)" }
-                    : done
-                      ? { background: "var(--pill)", color: "var(--muted)", textDecoration: "line-through" }
-                      : open
-                        ? { background: "var(--pill)", color: "var(--text)", border: "1px solid var(--accent)" }
-                        : { background: "var(--pill)", color: "var(--muted)", opacity: 0.65 }
-                }
-              >
-                <span>{s.short}</span>
-                <span className="opacity-75">{s.count}</span>
-              </button>
-            );
-          })}
-          <span className="ml-auto text-[10.5px] font-semibold" style={{ color: "var(--muted)" }}>
-            {activeSection?.shared
-              ? `Part III: both subjects share the official ${activeSection.minutes}-minute clock.`
-              : `${partShort(partIndex)} of ${parts.length}`}
-          </span>
+      <div className="cbt-legend" aria-label="Question status legend">
+        <div className="cbt-legend-item">
+          <span aria-hidden className="cbt-swatch cbt-swatch-current" />
+          <span className="cbt-legend-label">Current</span>
         </div>
-      )}
+        {NAV_LEGEND.map((r) => (
+          <div key={r.key} className="cbt-legend-item" title={r.help}>
+            <span aria-hidden className="cbt-swatch" style={PALETTE[r.key]} />
+            <span className="cbt-legend-label">{r.label}</span>
+            <span className="cbt-legend-count">{counts[r.key]}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="cbt-nav-grid" role="group" aria-label={`${sectionName} questions`}>
+        {questions.map((qq, i) => {
+          const status = navStatus(isVisited(qq.id), answers[qq.id] != null, !!marked[qq.id]);
+          return (
+            <button
+              key={qq.id}
+              type="button"
+              onClick={() => {
+                setPos(i);
+                setNavOpen(false);
+              }}
+              aria-label={`Question ${i + 1}, ${NAV_STATUS_LABEL[status]}${i === pos ? ", current question" : ""}`}
+              aria-current={i === pos ? "true" : undefined}
+              data-state={status}
+              data-current={i === pos ? "true" : undefined}
+              data-answered={answers[qq.id] != null ? "true" : undefined}
+              data-marked={marked[qq.id] ? "true" : undefined}
+              className="cbt-qbtn"
+            >
+              {i + 1}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="cbt-nav-foot">
+        <p className="cbt-save" data-state={saveState}>
+          {saveState === "saving"
+            ? "Saving your answers…"
+            : saveState === "saved"
+              ? "All answers saved on the server"
+              : saveState === "error"
+                ? "Save failed — retrying automatically"
+                : "Answers save automatically"}
+        </p>
+        <p className="cbt-hint">
+          {activeSection?.shared
+            ? `This part submits itself at 0:00. ${activeSection.label} shares the official ${activeSection.minutes}-minute clock with the other Part III subject.`
+            : "This part submits itself at 0:00. A finished part cannot be reopened."}
+        </p>
+        {remaining !== null && remaining <= 0 && (
+          <button type="button" onClick={finishNow} className="cbt-btn cbt-btn-primary cbt-nav-finish">
+            Finish now
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="cbt" data-cbt-root>
+      <header className="cbt-header">
+        <div className="cbt-header-top">
+          <div className="cbt-brand">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset */}
+            <img src="/logo.png" alt="" aria-hidden className="cbt-logo" />
+            <div className="cbt-brand-copy">
+              <p className="cbt-eyebrow">NIMCET 2026 · FULL MOCK</p>
+              <h1 className="cbt-title" title={title}>{title}</h1>
+            </div>
+          </div>
+
+          <div className="cbt-header-actions">
+            <div
+              className="cbt-timer"
+              data-level={timerLevel}
+              role="timer"
+              aria-label={`Time remaining in ${sectionName}: ${fmtClock(remaining)}`}
+            >
+              <Clock3 size={17} aria-hidden />
+              <span className="cbt-timer-value">{fmtClock(remaining)}</span>
+              <span className="cbt-timer-label">
+                {critical ? "Final minute" : low ? "Time left" : "Remaining"}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSubmitOpen(true)}
+              className="cbt-btn cbt-btn-submit"
+              aria-label="Submit test"
+            >
+              <Send size={15} aria-hidden />
+              <span>Submit</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setNavOpen(true)}
+              className="cbt-icon-btn cbt-mobile-only"
+              aria-label="Open question navigator"
+              title="Question navigator"
+            >
+              <LayoutGrid size={18} />
+            </button>
+
+            <button
+              type="button"
+              onClick={exitExam}
+              className="cbt-icon-btn cbt-exit"
+              aria-label="Exit exam"
+              title="Exit exam"
+            >
+              <LogOut size={17} />
+            </button>
+          </div>
+        </div>
+
+        {sections.length > 0 && (
+          <div className="cbt-section-rail" aria-label="Exam sections">
+            {sections.map((s) => {
+              const phase = sectionPhase(s.part, partIndex);
+              const current = phase === "active" && s.key === sectionKey;
+              const lockText = sectionLockReason(phase);
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  disabled={phase !== "active" || current}
+                  onClick={() => void switchSection(s.key)}
+                  aria-current={current ? "step" : undefined}
+                  aria-label={`${s.label}: ${s.count} questions, ${s.minutes} minutes, ${
+                    current
+                      ? "current section"
+                      : phase === "active"
+                        ? "open in this part"
+                        : phase === "completed"
+                          ? "completed and locked"
+                          : "locked until the previous part ends"
+                  }`}
+                  title={lockText || `${s.label} · ${s.count}Q · ${s.minutes} min${s.shared ? " shared" : ""}`}
+                  data-state={phase}
+                  data-current={current ? "true" : undefined}
+                  className="cbt-section-chip"
+                >
+                  {phase === "locked" ? (
+                    <Lock size={12} aria-hidden />
+                  ) : phase === "completed" ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <span aria-hidden className="cbt-section-dot" />
+                  )}
+                  <span className="cbt-section-name">{s.short}</span>
+                  <span className="cbt-section-count">{s.count}</span>
+                </button>
+              );
+            })}
+            <span className="cbt-section-note">
+              {activeSection?.shared
+                ? `Part III · both subjects share the ${activeSection.minutes}-minute clock`
+                : `${partShort(partIndex)} of ${parts.length}`}
+            </span>
+          </div>
+        )}
+      </header>
 
       {note && (
-        <div className="flex items-start gap-2 px-4 py-2.5 text-[12.5px] leading-5" style={{ borderBottom: "1px solid var(--border)", background: "color-mix(in srgb, var(--accent) 6%, transparent)", color: "var(--text)" }}>
-          <span className="flex-1">{note}</span>
-          <button type="button" onClick={() => setNote("")} aria-label="Dismiss" className="cursor-pointer font-bold" style={{ color: "var(--muted)" }}>
-            ✕
+        <div className="cbt-note" role="status">
+          <Info size={15} aria-hidden />
+          <span>{note}</span>
+          <button type="button" onClick={() => setNote("")} aria-label="Dismiss message" className="cbt-note-close">
+            <X size={15} />
           </button>
         </div>
       )}
 
-      <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_270px]">
-        {/* question card */}
-        <div>
+      <main className="cbt-body">
+        <section className="cbt-question-pane" aria-label={`Question ${pos + 1}`}>
           {q ? (
-            <div className="rounded-2xl p-4" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
-              <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                <span className="mono font-bold" style={{ color: "var(--muted)" }}>
-                  Q{pos + 1} / {questions.length}
+            <div className="cbt-question">
+              <div className="cbt-qmeta">
+                <span className="cbt-qnum">
+                  Q{pos + 1}<span>/{questions.length}</span>
                 </span>
-                <span className="mono rounded px-2 py-0.5 font-bold" style={{ background: "var(--pill)", color: "var(--accent)" }}>
-                  {sectionName}
-                </span>
-                <span className="mono rounded px-2 py-0.5" style={{ background: "var(--pill)", color: "var(--muted)" }}>
-                  {activeSection?.count ?? questions.length}Q section
-                </span>
-                <span className="mono rounded px-2 py-0.5" style={{ background: "var(--pill)", color: "var(--muted)" }}>
+                <span className="cbt-chip">{sectionName}</span>
+                <span className="cbt-chip">{activeSection?.count ?? questions.length}Q section</span>
+                <span className="cbt-chip">
                   +{fmtMarks(q.plus)} / {fmtMarks(q.minus)}
                 </span>
                 {marked[q.id] && (
-                  <span className="rounded px-2 py-0.5 font-bold text-white" style={{ background: "#dc2626" }}>
-                    Marked for review
+                  <span className="cbt-chip cbt-chip-marked">
+                    <Flag size={12} aria-hidden /> Marked for review
                   </span>
                 )}
+                <a href="/contact" target="_blank" rel="noopener" className="cbt-report">
+                  <Flag size={13} aria-hidden /> Report question
+                </a>
               </div>
-              <p className="mt-3 text-[15px] font-semibold leading-7" style={{ color: "var(--text)" }}>
+
+              <div className="cbt-stem">
                 <MathText>{q.stem}</MathText>
-              </p>
-              <div className="mt-4 space-y-2">
+              </div>
+
+              {q.image && (
+                // Question images come from the question bank and may be hosted
+                // on any configured storage domain, so they use a plain img.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={q.image}
+                  alt={`Figure for question ${pos + 1}`}
+                  loading="lazy"
+                  className="cbt-question-image"
+                />
+              )}
+
+              <fieldset className="cbt-options">
+                <legend className="sr-only">Choose one answer for question {pos + 1}</legend>
                 {q.options.map((opt, i) => {
                   const sel = answers[q.id] === i;
                   return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => choose(i)}
-                      className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13.5px] transition-colors"
-                      style={
-                        sel
-                          ? { background: "color-mix(in srgb, var(--accent) 14%, transparent)", border: "1.5px solid var(--accent)", color: "var(--text)" }
-                          : { background: "var(--pill)", border: "1px solid var(--border)", color: "var(--text)" }
-                      }
-                    >
-                      <span
-                        className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold"
-                        style={sel ? { background: "var(--accent)", color: "var(--accent-fg)" } : { background: "var(--bg)", color: "var(--muted)", border: "1px solid var(--border)" }}
-                      >
-                        {LETTERS[i]}
-                      </span>
-                      <span className="flex-1"><MathText>{opt}</MathText></span>
-                    </button>
+                    <label key={i} className="cbt-option" data-selected={sel ? "true" : undefined}>
+                      <input
+                        type="radio"
+                        name={`cbt-answer-${q.id}`}
+                        value={i}
+                        checked={sel}
+                        onChange={() => choose(i)}
+                      />
+                      <span className="cbt-option-letter" aria-hidden>{LETTERS[i]}</span>
+                      <span className="cbt-option-text"><MathText>{opt}</MathText></span>
+                      <span className="cbt-radio" aria-hidden />
+                    </label>
                   );
                 })}
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  disabled={pos === 0}
-                  onClick={() => setPos((p) => Math.max(0, p - 1))}
-                  className="cursor-pointer rounded-xl px-3 py-2 text-[12.5px] font-bold disabled:cursor-default disabled:opacity-40"
-                  style={{ background: "var(--pill)", color: "var(--text)", border: "1px solid var(--border)" }}
-                >
-                  ← Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={clearAnswer}
-                  disabled={answers[q.id] === undefined}
-                  className="cursor-pointer rounded-xl px-3 py-2 text-[12.5px] font-bold disabled:cursor-default disabled:opacity-40"
-                  style={{ background: "var(--pill)", color: "var(--text)", border: "1px solid var(--border)" }}
-                >
-                  Clear response
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleMark}
-                  className="cursor-pointer rounded-xl px-3 py-2 text-[12.5px] font-bold"
-                  style={marked[q.id] ? { background: "#dc2626", color: "#ffffff", border: "1px solid #b91c1c" } : { background: "var(--pill)", color: "var(--text)", border: "1px solid var(--border)" }}
-                >
-                  {marked[q.id] ? "Unmark" : "Mark for review"}
-                </button>
-                <button
-                  type="button"
-                  disabled={pos === questions.length - 1}
-                  onClick={() => setPos((p) => Math.min(questions.length - 1, p + 1))}
-                  className="cursor-pointer rounded-xl px-3 py-2 text-[12.5px] font-bold disabled:cursor-default disabled:opacity-40"
-                  style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
-                >
-                  Next →
-                </button>
-              </div>
+              </fieldset>
             </div>
           ) : (
-            <div className="rounded-2xl p-6 text-center" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
-              <p className="text-sm font-bold" style={{ color: "var(--muted)" }}>
-                Loading this section…
-              </p>
+            <div className="cbt-loading-section" role="status">
+              <Loader2 size={22} className="cbt-spin" />
+              <p>Loading this section…</p>
               <button
                 type="button"
                 onClick={() => void loadSection(indexRef.current, sectionRef.current || undefined)}
-                className="mt-3 cursor-pointer rounded-xl px-4 py-2 text-[12.5px] font-bold"
-                style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+                className="cbt-btn cbt-btn-primary"
               >
                 Try again
               </button>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* navigator + status */}
-        <div>
-          <div className="rounded-2xl p-3" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
-            <p className="mono text-[10px] font-bold" style={{ color: "var(--muted)", letterSpacing: "0.14em" }}>
-              {(activeSection?.short ?? partShort(partIndex)).toUpperCase()} NAVIGATOR
-            </p>
-            <div className="mt-2 grid grid-cols-6 gap-1.5">
-              {questions.map((qq, i) => {
-                const status = navStatus(isVisited(qq.id), answers[qq.id] != null, !!marked[qq.id]);
-                return (
-                  <button
-                    key={qq.id}
-                    type="button"
-                    onClick={() => setPos(i)}
-                    aria-label={`Question ${i + 1}, ${NAV_STATUS_LABEL[status]}${i === pos ? ", current" : ""}`}
-                    aria-current={i === pos ? "true" : undefined}
-                    className="mono cursor-pointer rounded-md py-1.5 text-[11px] font-bold"
-                    style={navCellStyle(status, i === pos)}
-                  >
-                    {i + 1}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-3 space-y-1">
-              {NAV_LEGEND.map((r) => (
-                <div key={r.key} className="flex items-center gap-2 text-[11.5px]">
-                  <span aria-hidden className="shrink-0 rounded" style={{ ...PALETTE[r.key], width: 14, height: 14 }} />
-                  <span className="flex-1 font-semibold" style={{ color: "var(--muted)" }}>
-                    {r.label}
-                  </span>
-                  <span className="mono font-bold" style={{ color: "var(--text)" }}>
-                    {counts[r.key]}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <p className="mt-3 text-[11.5px] font-semibold" style={{ color: "var(--muted)" }}>
-              {saveState === "saving"
-                ? "Saving your answers…"
-                : saveState === "saved"
-                  ? "All answers saved on the server ✓"
-                  : saveState === "error"
-                    ? "Save failed — retrying automatically"
-                    : "Answers save automatically"}
-            </p>
-            <p className="mt-2 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>
-              {activeSection?.shared
-                ? `This part submits itself at 0:00. ${activeSection.label} shares its official ${activeSection.minutes}-minute clock with the other Part III subject.`
-                : "This part submits itself at 0:00, and a finished part cannot be reopened."}
-            </p>
-            {remaining !== null && remaining <= 0 && (
-              <button
-                type="button"
-                onClick={() => void finishWithRetry()}
-                className="mt-2 w-full cursor-pointer rounded-xl py-2 text-[12.5px] font-bold text-white"
-                style={{ background: "var(--accent)" }}
-              >
-                Finish now
+        <aside className="cbt-nav-pane" aria-label="Question navigator">
+          {navigator}
+        </aside>
+      </main>
+
+      <footer className="cbt-footer">
+        <div className="cbt-footer-summary">
+          <span className="cbt-footer-part">{partShort(partIndex)} · {sectionName}</span>
+          <span className="cbt-footer-stat">{answeredCount} answered · {markedCount} marked</span>
+        </div>
+        <div className="cbt-footer-actions">
+          <button
+            type="button"
+            disabled={pos === 0}
+            onClick={() => setPos((p) => Math.max(0, p - 1))}
+            className="cbt-btn cbt-btn-secondary"
+            aria-label="Previous question"
+          >
+            <ChevronLeft size={16} aria-hidden />
+            <span className="cbt-btn-label">Previous</span>
+          </button>
+          <button
+            type="button"
+            onClick={clearAnswer}
+            disabled={!q || answers[q.id] == null}
+            className="cbt-btn cbt-btn-ghost"
+            aria-label="Clear answer"
+          >
+            <RotateCcw size={15} aria-hidden />
+            <span className="cbt-btn-label">Clear</span>
+          </button>
+          <button
+            type="button"
+            onClick={toggleMark}
+            aria-pressed={q ? !!marked[q.id] : false}
+            aria-label={q && marked[q.id] ? "Unmark" : "Mark"}
+            className="cbt-btn cbt-btn-ghost cbt-mark-btn"
+            data-marked={q && marked[q.id] ? "true" : undefined}
+          >
+            <Flag size={15} aria-hidden />
+            <span className="cbt-btn-label">{q && marked[q.id] ? "Unmark" : "Mark"}</span>
+          </button>
+          <button
+            type="button"
+            disabled={pos === questions.length - 1}
+            onClick={() => setPos((p) => Math.min(questions.length - 1, p + 1))}
+            className="cbt-btn cbt-btn-primary"
+            aria-label="Next question"
+          >
+            <span className="cbt-btn-label">Next</span>
+            <ChevronRight size={16} aria-hidden />
+          </button>
+        </div>
+      </footer>
+
+      {navOpen && (
+        <div
+          className="cbt-drawer-backdrop"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setNavOpen(false);
+          }}
+        >
+          <div className="cbt-drawer" role="dialog" aria-modal="true" aria-label="Question navigator">
+            <div className="cbt-drawer-head">
+              <div>
+                <p className="cbt-eyebrow">Full-screen CBT</p>
+                <h2>Question navigator</h2>
+              </div>
+              <button type="button" onClick={() => setNavOpen(false)} className="cbt-icon-btn" aria-label="Close navigator">
+                <X size={18} />
               </button>
-            )}
+            </div>
+            {navigator}
           </div>
         </div>
-      </div>
+      )}
+
+      {submitOpen && (
+        <div
+          className="cbt-modal-backdrop"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setSubmitOpen(false);
+          }}
+        >
+          <div className="cbt-modal" role="dialog" aria-modal="true" aria-labelledby="cbt-submit-title">
+            <div className="cbt-modal-head">
+              <div>
+                <p className="cbt-eyebrow">Official NIMCET timing</p>
+                <h2 id="cbt-submit-title">Submit test</h2>
+              </div>
+              <button type="button" onClick={() => setSubmitOpen(false)} className="cbt-icon-btn" aria-label="Close submit dialog">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="cbt-modal-copy">
+              {remaining !== null && remaining <= 0
+                ? "The clock has ended. Your paper is being scored from the answers the server accepted during the live windows."
+                : "This paper follows the configured NIMCET 2026 locked-part rules. It submits itself when Part III ends; early submission is not enabled for this template. Use every minute you are given."}
+            </p>
+            <div className="cbt-modal-stats">
+              <div><span>Answered</span><strong>{answeredCount}/{questions.length}</strong></div>
+              <div><span>Marked</span><strong>{markedCount}</strong></div>
+              <div><span>Time left</span><strong>{fmtClock(remaining)}</strong></div>
+            </div>
+            <div className="cbt-modal-actions">
+              <button type="button" onClick={() => setSubmitOpen(false)} className="cbt-btn cbt-btn-secondary">
+                Continue exam
+              </button>
+              {remaining !== null && remaining <= 0 && (
+                <button type="button" onClick={finishNow} className="cbt-btn cbt-btn-primary">
+                  <ShieldCheck size={16} aria-hidden /> Finish now
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {transitioning && !finishing && (
+        <div className="cbt-overlay" role="status" aria-live="polite">
+          <div className="cbt-overlay-card">
+            <Loader2 size={24} className="cbt-spin" aria-hidden />
+            <h2>Section closed</h2>
+            <p>Opening the next timed part on the server clock…</p>
+          </div>
+        </div>
+      )}
+
+      {finishing && (
+        <div className="cbt-overlay" role="status" aria-live="polite">
+          <div className="cbt-overlay-card">
+            <Loader2 size={24} className="cbt-spin" aria-hidden />
+            <h2>Scoring your paper</h2>
+            <p>The server is finalizing your attempt. Keep this tab open.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
@@ -10,13 +11,11 @@ import {
   SearchX,
   Trophy,
 } from "lucide-react";
-import MockDemo, { type MockQuestion } from "@/components/mockdemo";
 import MockCard from "@/components/mock-card";
-import MockExam from "@/components/mock-exam";
 import MockInstructions, { type SchemeRow } from "@/components/mock-instructions";
 import { getSupabase } from "@/lib/supabase";
-import { parseParts, partRanges, RUN_KEY, LEGACY_RUN_KEY, type ExamPart } from "@/lib/exam-parts";
-import { groupRows, toMock, type BankRow } from "@/lib/question-bank";
+import { parseParts, partRanges } from "@/lib/exam-parts";
+import { groupRows, type BankRow } from "@/lib/question-bank";
 import {
   FULL_MOCK_MAX_MARKS,
   FULL_MOCK_MINUTES,
@@ -41,20 +40,9 @@ type Test = {
   template?: string;
 };
 
-type Run = {
-  qs: MockQuestion[];
-  title: string;
-  testName: string;
-  attemptName: string;
-  testId?: string;
-  minutes: number;
-  parts?: ExamPart[];
-  /** Server-enforced template exam (NIMCET full mock) — run by MockExam. */
-  serverExam?: boolean;
-};
-
-// Everything the pre-exam instructions page needs, plus the run it will
-// launch — resolved once, so Start Test is a pure state flip.
+// Start Test leaves the dashboard for the dedicated full-screen CBT route.
+// Only the published test id travels with the navigation; the route reloads
+// the test and its server-owned session, so a refresh or direct URL works.
 type Setup = {
   title: string;
   minutes: number;
@@ -63,7 +51,7 @@ type Setup = {
   scheme: SchemeRow[];
   timed: boolean;
   instructions: string;
-  run: Run;
+  testId: string;
   /** Server-enforced template exam — instructions switch to server wording. */
   serverMode?: boolean;
 };
@@ -183,11 +171,11 @@ export default function MockHub({
   collection?: HubSet;
 }) {
   const copy = HUB_COPY[exam ?? "nimcet"][collection];
+  const router = useRouter();
   const [tests, setTests] = useState<Test[]>([]);
   const [bank, setBank] = useState<BankRow[]>([]);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<(typeof KINDS)[number]>("All");
-  const [run, setRun] = useState<Run | null>(null);
   const [setup, setSetup] = useState<Setup | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -314,16 +302,7 @@ export default function MockHub({
         timed: true,
         instructions: t.instructions || "",
         serverMode: true,
-        run: {
-          qs: [],
-          title: t.title.toUpperCase(),
-          testName: `${t.title} (${FULL_MOCK_QUESTIONS}Q)`,
-          attemptName: t.title,
-          testId: t.id,
-          minutes: FULL_MOCK_MINUTES,
-          parts,
-          serverExam: true,
-        },
+        testId: t.id,
       });
       window.scrollTo({ top: 0 });
       return;
@@ -363,90 +342,9 @@ export default function MockHub({
       scheme,
       timed: !!parts,
       instructions: t.instructions || "",
-      run: {
-        qs: rows.map(toMock),
-        title: t.title.toUpperCase(),
-        testName: `${t.title} (${rows.length}Q)`,
-        // The plain title is what attempt history stores and what the
-        // dashboard matches tests against; the "(NQ)" form is display-only.
-        attemptName: t.title,
-        testId: t.id,
-        minutes,
-        parts,
-      },
+      testId: t.id,
     });
   };
-
-  const submitRun = async (qs: MockQuestion[], attemptName: string, testId: string | undefined, picks: Record<number, number>) => {
-    const r = await fetch("/api/student/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        test: attemptName,
-        testId,
-        answers: qs.map((q, i) => ({ id: q.qid ?? "", answer: picks[i] ?? null })),
-      }),
-    });
-    const j = await r.json();
-    if (!r.ok) throw new Error((j as { error?: string }).error || "Submit failed.");
-    return j as { score: number; correct: number; wrong: number; skipped: number; details: Array<{ stem: string; opts: string[]; picked: number | null; correct: number; exp: string; ok?: boolean }> };
-  };
-
-  const leaveRun = () => {
-    if (run && run.qs.length > 0) {
-      let inProgress = false;
-      try { inProgress = sessionStorage.getItem(RUN_KEY) !== null; } catch {}
-      if (inProgress && !window.confirm("Leave this test? Your in-progress run will be discarded.")) return;
-      try {
-        sessionStorage.removeItem(RUN_KEY);
-        sessionStorage.removeItem(LEGACY_RUN_KEY);
-      } catch {}
-    }
-    setRun(null);
-  };
-
-  if (run) {
-    if (run.serverExam && run.testId) {
-      return (
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm("Leave the exam? The server clock keeps running — you can resume before the section ends.")) leaveRun();
-            }}
-            className="dash-btn dash-btn-ghost dash-btn-sm mb-3"
-            style={{ color: "var(--muted)" }}
-          >
-            <ArrowLeft size={14} /> Back to mocks
-          </button>
-          <MockExam testId={run.testId} title={run.testName} onExit={leaveRun} />
-        </div>
-      );
-    }
-    return (
-      <div>
-        <button
-          type="button"
-          onClick={leaveRun}
-          className="dash-btn dash-btn-ghost dash-btn-sm mb-3"
-          style={{ color: "var(--muted)" }}
-        >
-          <ArrowLeft size={14} /> Back to mocks
-        </button>
-        <MockDemo
-          key={`${run.testName}-${run.qs.length}`}
-          questions={run.qs}
-          title={run.title}
-          minutes={run.minutes}
-          testName={run.testName}
-          autoStart
-          parts={run.parts}
-          onSubmit={run.qs.length > 0 ? (picks) => submitRun(run.qs, run.attemptName, run.testId, picks) : undefined}
-        />
-      </div>
-    );
-  }
 
   if (setup) {
     return (
@@ -469,9 +367,17 @@ export default function MockHub({
           instructions={setup.instructions}
           serverMode={setup.serverMode}
           onStart={() => {
-            setRun(setup.run);
-            setSetup(null);
-            window.scrollTo({ top: 0 });
+            const returnTo =
+              exam === "cuet"
+                ? collection === "pyq"
+                  ? "/dashboard?view=cuet-pyq"
+                  : "/dashboard?view=cuet-mock"
+                : collection === "pyq"
+                  ? "/dashboard?view=nimcet-pyq"
+                  : "/dashboard?view=mock";
+            router.push(
+              `/dashboard/exam/${encodeURIComponent(setup.testId)}?returnTo=${encodeURIComponent(returnTo)}`
+            );
           }}
         />
       </div>

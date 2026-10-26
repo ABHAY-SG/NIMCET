@@ -223,4 +223,55 @@ describe("server-enforced NIMCET subject sections", () => {
     });
     expect(res.status).toBe(409);
   });
+
+  it("does not serve Part II one second before its 70-minute window", async () => {
+    setup(70 * 60_000 - 1000);
+    const res = await postPart({ sessionId: SESSION_ID, index: 1, section: "reasoning" });
+    expect(res.status).toBe(409);
+  });
+
+  it("opens Part II at 70 minutes and accepts Reasoning answers", async () => {
+    const { getParts } = setup(70 * 60_000);
+    const part = await postPart({ sessionId: SESSION_ID, index: 1, section: "reasoning" });
+    expect(part.status).toBe(200);
+    const body = (await part.json()) as { questions: Array<{ id: string }>; remainingSec: number };
+    expect(body.questions[0].id).toBe(QUESTION_IDS[50]);
+    expect(body.questions).toHaveLength(40);
+    expect(body.remainingSec).toBeLessThanOrEqual(30 * 60);
+
+    const saved = await postAnswers({
+      sessionId: SESSION_ID,
+      index: 1,
+      section: "reasoning",
+      answers: [{ id: QUESTION_IDS[50], answer: 2 }],
+    });
+    expect(saved.status).toBe(200);
+    expect(getParts()[1].answers).toEqual([{ id: QUESTION_IDS[50], answer: 2 }]);
+  });
+
+  it("does not serve Part III one second before its 100-minute window", async () => {
+    setup(100 * 60_000 - 1000);
+    const res = await postPart({ sessionId: SESSION_ID, index: 2, section: "computer" });
+    expect(res.status).toBe(409);
+  });
+
+  it("rejects answers for a future part and for a finished part at the same boundary", async () => {
+    setup(100 * 60_000 - 1000);
+    const future = await postAnswers({
+      sessionId: SESSION_ID,
+      index: 2,
+      section: "computer",
+      answers: [{ id: QUESTION_IDS[90], answer: 1 }],
+    });
+    expect(future.status).toBe(409);
+
+    setup(100 * 60_000);
+    const finished = await postAnswers({
+      sessionId: SESSION_ID,
+      index: 1,
+      section: "reasoning",
+      answers: [{ id: QUESTION_IDS[50], answer: 1 }],
+    });
+    expect(finished.status).toBe(409);
+  });
 });

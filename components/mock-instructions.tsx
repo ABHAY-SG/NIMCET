@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { NAV_LEGEND, PALETTE } from "@/lib/cbt-nav";
 
 export type SchemeRow = {
   label: string;
@@ -15,74 +16,6 @@ export type SchemeRow = {
   shared?: boolean;
   /** Optional clarification shown under the row (e.g. Part III mixes two subjects). */
   note?: string;
-};
-
-// The four navigator meanings are intentionally fixed colours (not theme
-// tokens): a student must be able to recognise blue/green/white/red in every
-// test and in both light and dark themes. "both" is the same marked-for-review
-// red with a green inset, so an answered-and-marked question still reads as
-// marked first while preserving the answered signal.
-export type NavKey = "opened" | "unvisited" | "answered" | "marked" | "both";
-export type NavLegendKey = Exclude<NavKey, "both">;
-
-export const PALETTE: Record<NavKey, CSSProperties> = {
-  opened: { background: "#2563eb", color: "#ffffff", border: "1px solid #1d4ed8" },
-  unvisited: { background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1" },
-  answered: { background: "#16a34a", color: "#ffffff", border: "1px solid #15803d" },
-  marked: { background: "#dc2626", color: "#ffffff", border: "1px solid #b91c1c" },
-  both: {
-    background: "#dc2626",
-    color: "#ffffff",
-    border: "1px solid #b91c1c",
-    boxShadow: "inset 0 0 0 2px #16a34a",
-  },
-};
-
-export const NAV_LEGEND: Array<{ key: NavLegendKey; label: string }> = [
-  { key: "opened", label: "Opened" },
-  { key: "answered", label: "Answered" },
-  { key: "unvisited", label: "Not Visited" },
-  { key: "marked", label: "Marked for review" },
-];
-
-export const NAV_STATUS_LABEL: Record<NavKey, string> = {
-  opened: "opened",
-  unvisited: "not visited",
-  answered: "answered",
-  marked: "marked for review",
-  both: "answered and marked for review",
-};
-
-/** Marked wins over answered; visited-unanswered is "opened"; otherwise white. */
-export function navStatus(visited: boolean, answered: boolean, marked: boolean): NavKey {
-  if (marked) return answered ? "both" : "marked";
-  if (answered) return "answered";
-  if (visited) return "opened";
-  return "unvisited";
-}
-
-/** Status fill plus a current-question ring that stays visible on every fill. */
-export function navCellStyle(status: NavKey, current: boolean): CSSProperties {
-  const style: CSSProperties = { ...PALETTE[status] };
-  if (current) {
-    const ring = "0 0 0 2px #ffffff, 0 0 0 4px #2563eb";
-    style.boxShadow = style.boxShadow ? `${style.boxShadow}, ${ring}` : ring;
-  }
-  return style;
-}
-
-const NAV_TEXT: Record<NavLegendKey, string> = {
-  opened: "#1d4ed8",
-  answered: "#15803d",
-  unvisited: "#334155",
-  marked: "#b91c1c",
-};
-
-const NAV_WORD: Record<NavLegendKey, string> = {
-  opened: "BLUE",
-  answered: "GREEN",
-  unvisited: "WHITE",
-  marked: "RED",
 };
 
 const CARD: CSSProperties = {
@@ -158,8 +91,8 @@ export default function MockInstructions({
       : `The paper has ${count} questions to be answered in ${minutes} minutes.`,
     timed
       ? hasSharedPart
-        ? "Each timed part runs on its own clock. A part locks the moment its time ends and the next one opens automatically — you cannot return to a finished part. Subjects that share a part also share that part's clock."
-        : "Each timed part runs on its own clock. A part locks the moment its time ends and the next one opens automatically — you cannot return to a finished part."
+        ? "Mathematics opens first. Each timed part runs on its own clock; a future part stays locked until its official window begins. A part locks the moment its time ends and the next one opens automatically — you cannot return to a finished part. Subjects that share a part also share that part's clock."
+        : "Mathematics opens first. Each timed part runs on its own clock; a future part stays locked until its official window begins. A part locks the moment its time ends and the next one opens automatically — you cannot return to a finished part."
       : "The countdown starts as soon as you begin and never pauses, even if you switch tabs or refresh the page.",
     `Every question is a multiple-choice question with 4 options — exactly one option is correct.`,
     "Unattempted questions score 0. There is no negative marking for leaving a question blank.",
@@ -245,29 +178,37 @@ export default function MockInstructions({
               </h3>
               <ul
                 aria-labelledby="navigational-instructions"
-                className="mt-3 list-disc space-y-2.5 pl-5 text-[13px] leading-6 marker:text-slate-400"
+                className="mt-3 space-y-2.5 text-[13px] leading-6"
                 style={{ color: "#334155" }}
               >
+                <li className="flex gap-2.5">
+                  <span
+                    aria-hidden
+                    className="mt-1 h-4 w-4 shrink-0 rounded-[4px] bg-blue-700 ring-2 ring-blue-700 ring-offset-2"
+                  />
+                  <span>
+                    <strong className="font-extrabold" style={{ color: "#1e293b" }}>Current question</strong>{" "}
+                    always has the indigo fill and ring, even when it is answered or marked.
+                  </span>
+                </li>
                 {NAV_LEGEND.map((item) => (
-                  <li key={item.key}>
-                    Questions that are{" "}
-                    <strong className="font-extrabold" style={{ color: "#1e293b" }}>
-                      {item.label}
-                    </strong>{" "}
-                    are marked in{" "}
-                    {item.key === "unvisited" ? (
-                      <span className="mx-0.5 inline-flex items-center rounded-md border border-slate-300 bg-slate-100 px-1.5 py-0.5 align-baseline text-[10.5px] font-extrabold tracking-wide text-slate-700">
-                        WHITE
-                      </span>
-                    ) : (
-                      <strong className="font-extrabold" style={{ color: NAV_TEXT[item.key] }}>
-                        {NAV_WORD[item.key]}
-                      </strong>
-                    )}{" "}
-                    colour.
+                  <li key={item.key} className="flex gap-2.5">
+                    <span
+                      aria-hidden
+                      className="mt-1 h-4 w-4 shrink-0 rounded-[4px]"
+                      style={PALETTE[item.key]}
+                    />
+                    <span>
+                      <strong className="font-extrabold" style={{ color: "#1e293b" }}>{item.label}</strong>{" "}
+                      — {item.help}
+                    </span>
                   </li>
                 ))}
               </ul>
+              <p className="mt-3 rounded-lg px-3 py-2 text-[12px] leading-5" style={{ background: "#f1f5f9", color: "#475569" }}>
+                The current cell also carries small corner markers for answered (green) and
+                marked-for-review (amber) states, so the active question is never ambiguous.
+              </p>
             </div>
           </div>
         ) : (
