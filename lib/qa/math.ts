@@ -677,6 +677,16 @@ function targetVariable(stem: string): string | null {
   return null;
 }
 
+function usesCustomOperation(stem: string): boolean {
+  const text = stripMathDelimiters(String(stem ?? "")).toLowerCase();
+  return (
+    /\b(?:binary|custom|defined)\s+operation\b/.test(text) ||
+    /\boperation\s+(?:table|defined|\*)\b/.test(text) ||
+    /\btable\s+(?:defines|shows|gives)\s+(?:the\s+)?(?:operation|value\s+of\s+the\s+operation)\b/.test(text) ||
+    /\b(?:operation|operator)\s+['"`]?[*+\/−-]['"`]?\s+(?:is\s+)?defined\s+by\s+(?:the\s+)?table\b/.test(text)
+  );
+}
+
 export function verifyMathQuestion(
   stem: string,
   options: string[],
@@ -686,6 +696,26 @@ export function verifyMathQuestion(
   const findings: QaFinding[] = [];
   let computedAnswer: number | null = null;
   let verified = false;
+
+  // A symbol used in a custom operation table (for example, a ⊛ b) is not
+  // ordinary arithmetic. Do not reinterpret table-defined results as wrong
+  // multiplication/addition; leave the answer for manual review instead.
+  if (usesCustomOperation(stem)) {
+    findings.push(
+      finding({
+        code: "MATH_CUSTOM_OPERATION_UNVERIFIED",
+        category: "mathematics",
+        severity: "review",
+        field: "answer",
+        message: "This question defines an operation through a table or custom rule, which the arithmetic solver does not model.",
+        suggestion: "Verify the selected option against the stated operation/table. Do not interpret the custom operator as ordinary arithmetic.",
+        validator: "math",
+        confidence: "medium",
+        deterministic: false,
+      })
+    );
+    return { computedAnswer, deterministicVerified: false, findings };
+  }
 
   // 1. Direct arithmetic ("What is 12 × 15?").
   const direct = directArithmetic(stem);
