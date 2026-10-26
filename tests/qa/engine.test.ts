@@ -38,6 +38,21 @@ describe("Question QA engine — deterministic checks", () => {
     expect(r.findings.find((f) => f.code === "MATH_ANSWER_MISMATCH")?.field).toBe("answer");
   });
 
+  it("does not apply ordinary arithmetic to a table-defined custom operation", () => {
+    const r = validateQuestion(
+      q({
+        stem: "A binary operation * is defined by the table below. Find 2 * 3.",
+        options: ["1", "5", "6", "9"],
+        answer: 0,
+        explanation: "From the table, 2 * 3 = 1.",
+      })
+    );
+    expect(r.findings.some((f) => f.code === "MATH_EXPLANATION_ARITHMETIC")).toBe(false);
+    expect(r.findings.some((f) => f.code === "MATH_CUSTOM_OPERATION_UNVERIFIED")).toBe(true);
+    expect(r.status).not.toBe("FAILED");
+    expect(r.deterministicVerified).toBe(false);
+  });
+
   it("fails a pure-numeric explanation contradiction", () => {
     const r = validateQuestion(q({ explanation: "12 + 8 = 21." }));
     expect(r.status).toBe("FAILED");
