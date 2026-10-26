@@ -16,7 +16,6 @@ export type LogicCheck = {
   model: string | null;
 };
 
-const LETTERS = "ABCDEFGH";
 const MAX_PERMUTATIONS = 60000;
 
 function asText(stem: string): string {
@@ -472,9 +471,6 @@ type OrderingModel = {
   unparsed: string[];
 };
 
-const LEFT_WORDS = /\b(?:left|front|beginning|start)\b/i;
-const RIGHT_WORDS = /\b(?:right|back|end)\b/i;
-
 function parseOrderingModel(stem: string): OrderingModel | null {
   const text = asText(stem);
   if (!/\b(?:line|row|queue|order|ranking|positions?|sitting|seated|standing)\b/i.test(text)) return null;
@@ -815,20 +811,6 @@ function parseCategorical(sentence: string): Categorical | null {
   m = /\bsome\s+(.+?)\s+are\s+(?:a\s+|an\s+|the\s+)?(.+)$/i.exec(s);
   if (m) return { kind: "some", a: normalizeTerm(m[1]), b: normalizeTerm(m[2]) };
   return null;
-}
-
-function premiseHolds(c: Categorical, counts: number[], terms: string[], termIndex: Map<string, number>): boolean {
-  const ia = termIndex.get(c.a);
-  const ib = termIndex.get(c.b);
-  if (ia === undefined || ib === undefined) return false;
-  const sum = (pred: (mask: number) => boolean) =>
-    counts.reduce((acc, n, i) => (pred(i) ? acc + n : acc), 0);
-  const inA = (mask: number) => (mask & (1 << ia)) !== 0;
-  const inB = (mask: number) => (mask & (1 << ib)) !== 0;
-  if (c.kind === "all") return sum((mask) => inA(mask) && !inB(mask)) === 0;
-  if (c.kind === "no") return sum((mask) => inA(mask) && inB(mask)) === 0;
-  if (c.kind === "some") return sum((mask) => inA(mask) && inB(mask)) >= 1;
-  return sum((mask) => inA(mask) && !inB(mask)) >= 1;
 }
 
 function universeHolds(c: Categorical, model: number[], termIndex: Map<string, number>): boolean {

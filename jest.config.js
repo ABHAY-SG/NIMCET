@@ -10,7 +10,7 @@ module.exports = {
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
   },
   transform: {
-    "^.+\\.tsx?$": ["ts-jest", { isolatedModules: true, esModuleInterop: true }],
+    "^.+\\.tsx?$": ["ts-jest", { esModuleInterop: true }],
   },
   testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/.next/"],
 };

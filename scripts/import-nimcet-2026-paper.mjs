@@ -136,7 +136,7 @@ if (rows.length !== 120) fail(`loaded ${rows.length} questions, expected 120`);
 
 const stems = new Map();
 const perSubject = new Map();
-for (const [subject, scheme] of MARKS) perSubject.set(subject, { count: 0, marks: 0 });
+for (const subject of MARKS.keys()) perSubject.set(subject, { count: 0, marks: 0 });
 
 for (const q of rows) {
   const where = `#${q.seq} (${q.sourceId || "no id"})`;

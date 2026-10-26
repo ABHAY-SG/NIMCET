@@ -6,7 +6,7 @@
 // and the engine records that independent verification was not possible.
 
 import { finding, type QaFinding } from "./types";
-import { mathSpans, normalizeText, sentenceChunks, stripMathDelimiters } from "./text";
+import { mathSpans, sentenceChunks, stripMathDelimiters } from "./text";
 
 type Poly = number[]; // coefficient of x^0, x^1, ...
 
@@ -59,12 +59,6 @@ function isConst(a: Poly): boolean {
 
 function constValue(a: Poly): number {
   return a[0] ?? 0;
-}
-
-function evalPoly(a: Poly, x: number): number {
-  let out = 0;
-  for (let i = a.length - 1; i >= 0; i--) out = out * x + a[i];
-  return out;
 }
 
 function factorial(n: number): number | null {

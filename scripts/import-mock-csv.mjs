@@ -180,7 +180,6 @@ let totalMarks = 0;
 console.log(`Loaded ${rows.length} questions from ${csvPath}`);
 for (const [section, acc] of perSection) {
   const markKeys = [...acc.marks.keys()];
-  const sectionMarks = [...acc.marks.values()].reduce((a, b) => a + b, 0);
   if (markKeys.length > 1) warnings.push(`section "${section}" mixes marking schemes: ${markKeys.join(", ")}`);
   const scheme = markKeys.length === 1 ? markKeys[0].split("/") : null;
   totalMarks += scheme ? rows.filter((r) => r.section === section).reduce((a, r) => a + r.plus, 0) : 0;
