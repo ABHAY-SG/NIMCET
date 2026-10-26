@@ -15,4 +15,8 @@ revoke all on function public.qa_invalidate_question()
 revoke all on function public.qa_enforce_test_publish()
   from public, anon, authenticated;
 
+insert into public.schema_migrations (version)
+  values ('0012')
+  on conflict (version) do nothing;
+
 commit;
