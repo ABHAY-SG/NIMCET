@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -38,7 +38,6 @@ import DashSide, { type DashView } from "@/components/dash-side";
 import MockHub from "@/components/mock-hub";
 import MockBuilder from "@/components/mock-builder";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
-import { formatStreak } from "@/lib/streak";
 import {
   attemptFingerprint,
   calculateStats,
@@ -560,6 +559,8 @@ export default function DashboardPage() {
     best: derived?.bestStreak ?? 0,
     week: derived?.week ?? [],
   };
+  const firstName = displayName.trim().split(/\s+/)[0] || "";
+  const activeWeekDays = streakSummary.week.filter((d) => d.active).length;
 
   const viewMeta: Record<DashView, { title: string; subtitle: string }> = {
     home: { title: "Overview", subtitle: "Your preparation at a glance" },
@@ -610,98 +611,184 @@ export default function DashboardPage() {
           {view === "home" && (
             <div className="space-y-4">
               <Reveal>
-                <section className="dash-hero px-5 py-6 sm:px-7 sm:py-7 lg:px-8">
-                  <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10.5px] font-bold text-white/85">
-                          <CalendarDays size={12} />
-                          {todayLine || "Today"}
-                        </span>
-                        {!loading && (derived?.streak ?? 0) > 0 && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[10.5px] font-extrabold text-[#1b284d]">
-                            <Flame size={12} />
-                            {formatStreak(derived?.streak ?? 0)}
+                <section className="dash-hero px-5 py-6 sm:px-7 sm:py-8 lg:px-8 lg:py-8">
+                  <div className="dash-hero-grid">
+                    <div className="dash-hero-copy">
+                      <div className="dash-hero-meta dash-hero-el" style={{ animationDelay: "0.04s" }}>
+                        <span className="dash-hero-date">
+                          <span className="dash-hero-date-icon" aria-hidden="true">
+                            <CalendarDays size={13} />
                           </span>
-                        )}
+                          <span>{todayLine || "Today"}</span>
+                        </span>
+                        <span className="dash-hero-exam">
+                          <span className="dash-hero-exam-dot" aria-hidden="true" />
+                          NIMCET &amp; CUET PG
+                        </span>
                       </div>
-                      <h1 className="dash-display mt-3 max-w-xl text-[clamp(1.7rem,1.3rem+1.5vw,2.5rem)] font-bold leading-[1.1] tracking-[-0.035em] text-white">
-                        {loading
-                          ? "Preparing your workspace"
-                          : `${greeting}${displayName ? `, ${displayName.trim().split(/\s+/)[0]}` : ""}`}
+
+                      <h1 className="dash-hero-title dash-hero-el" style={{ animationDelay: "0.11s" }}>
+                        {loading ? (
+                          "Preparing your workspace"
+                        ) : (
+                          <>
+                            <span className="dash-hero-title-kicker">
+                              {greeting}
+                              {displayName ? "," : ""}
+                            </span>
+                            {firstName && <span className="dash-hero-title-name">{firstName}</span>}
+                          </>
+                        )}
                       </h1>
-                      <p className="mt-2.5 max-w-xl text-[13px] leading-6 text-white/70 sm:text-[13.5px]">
-                        {!loading && derived
-                          ? derived.streak > 0
-                            ? `${formatStreak(derived.streak)}. Your best score is ${derived.best} — build on it with a focused mock today.`
-                            : "Your preparation history starts with one attempt. Take a mock and your real progress will appear here."
-                          : "Mock tests, previous-year papers and honest performance tracking for NIMCET and CUET PG MCA."}
+
+                      <p className="dash-hero-desc dash-hero-el" style={{ animationDelay: "0.18s" }}>
+                        {loading
+                          ? "Mock tests, previous-year papers and honest performance tracking for NIMCET and CUET PG MCA."
+                          : derived
+                            ? derived.streak > 0
+                              ? `${derived.streak}-day streak. Your best score is ${derived.best}${derived.acc !== "—" ? ` at ${derived.acc} accuracy` : ""} — build on it with a focused mock today.`
+                              : `${derived.total} mock${derived.total === "1" ? "" : "s"} completed${derived.acc !== "—" ? ` at ${derived.acc} accuracy` : ""}. Your best is ${derived.best} — take another timed paper to keep the momentum.`
+                            : "Your preparation history starts with one attempt. Take a mock and your real progress will appear here."}
                       </p>
-                      <div className="mt-5 flex flex-wrap items-center gap-2.5">
+
+                      <div className="dash-hero-actions dash-hero-el" style={{ animationDelay: "0.25s" }}>
                         <button
                           type="button"
                           onClick={() => selectView("mock")}
-                          className="dash-btn bg-white text-[#111827] shadow-lg shadow-black/20 hover:bg-white/90"
+                          className="dash-btn dash-hero-cta dash-hero-cta-primary"
                         >
-                          <Play size={14} fill="currentColor" />
+                          <Play size={14} fill="currentColor" aria-hidden="true" />
                           Start a mock
-                          <ArrowRight size={14} />
+                          <ArrowRight className="dash-hero-cta-arrow" size={15} aria-hidden="true" />
                         </button>
-                        <a
-                          href="#series"
-                          className="dash-btn border-white/25 bg-white/10 text-white hover:bg-white/15"
-                          style={{ borderColor: "rgba(255,255,255,.24)" }}
-                        >
+                        <a href="#series" className="dash-btn dash-hero-cta dash-hero-cta-secondary">
                           Browse test series
                         </a>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 rounded-[var(--dash-radius)] border border-white/15 bg-white/[0.07] p-4 backdrop-blur-sm sm:min-w-[16rem]">
-                      <div className="relative h-[96px] w-[96px] shrink-0">
-                        <svg width="96" height="96" viewBox="0 0 120 120" role="img" aria-label={`Current streak ${streakSummary.current} days, best ${streakSummary.best} days`}>
-                          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="9" />
-                          <circle
-                            cx="60"
-                            cy="60"
-                            r="52"
-                            fill="none"
-                            stroke="#fff"
-                            strokeWidth="9"
-                            strokeLinecap="round"
-                            strokeDasharray={RING_C}
-                            strokeDashoffset={RING_C * (1 - streakPct)}
-                            transform="rotate(-90 60 60)"
-                            style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }}
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <Flame size={15} className="text-white/75" />
-                          <span className="mono mt-0.5 text-[15px] font-extrabold text-white">{loading ? "—" : `${derived?.streak ?? 0}d`}</span>
+                    <aside
+                      className="dash-hero-panel dash-hero-el"
+                      style={{ animationDelay: "0.21s" }}
+                      aria-label="Streak summary"
+                    >
+                      <div className="dash-hero-panel-head">
+                        <div className="dash-hero-ring-wrap">
+                          <svg
+                            className="dash-hero-ring"
+                            width="104"
+                            height="104"
+                            viewBox="0 0 120 120"
+                            role="img"
+                            aria-label={
+                              loading
+                                ? "Current streak is loading"
+                                : `Current streak ${streakSummary.current} ${streakSummary.current === 1 ? "day" : "days"}; best ${streakSummary.best} ${streakSummary.best === 1 ? "day" : "days"}.`
+                            }
+                          >
+                            <circle className="dash-hero-ring-track" cx="60" cy="60" r="52" />
+                            <circle
+                              className="dash-hero-ring-progress"
+                              cx="60"
+                              cy="60"
+                              r="52"
+                              strokeDasharray={RING_C}
+                              strokeDashoffset={RING_C * (1 - streakPct)}
+                              transform="rotate(-90 60 60)"
+                              style={{ "--dash-ring-c": `${RING_C}` } as CSSProperties}
+                            />
+                          </svg>
+                          <div className="dash-hero-ring-center" aria-hidden="true">
+                            <Flame size={14} className="dash-hero-ring-flame" />
+                            <span className="dash-hero-ring-value">
+                              {loading ? "—" : streakSummary.current}
+                            </span>
+                            <span className="dash-hero-ring-unit">
+                              {streakSummary.current === 1 ? "day" : "days"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="dash-hero-streak-copy">
+                          <span className="dash-hero-kicker">Current streak</span>
+                          <strong className="dash-hero-streak-status">
+                            {loading
+                              ? "Reading history"
+                              : streakSummary.current > 0
+                                ? `${streakSummary.current}-day streak`
+                                : "No streak yet"}
+                          </strong>
+                          <span className="dash-hero-streak-best">
+                            {loading
+                              ? "Syncing your activity"
+                              : streakSummary.best > 0
+                                ? `Best ${streakSummary.best} ${streakSummary.best === 1 ? "day" : "days"}`
+                                : "Attempt daily to begin"}
+                          </span>
                         </div>
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-[9.5px] font-bold uppercase text-white/55" style={{ letterSpacing: ".15em" }}>Current streak</div>
-                        <div className="mt-1 truncate text-[15px] font-extrabold text-white">{loading ? "Loading…" : formatStreak(derived?.streak ?? 0)}</div>
-                        <div className="mt-0.5 text-[11px] font-medium text-white/60">
-                          {loading ? "Reading your history" : derived?.bestStreak ? `Best ${derived.bestStreak} days` : "Attempt daily to begin"}
-                        </div>
-                        {!loading && streakSummary.week.length > 0 && (
-                          <div className="mt-2 flex gap-1.5" aria-hidden>
+
+                      {!loading && streakSummary.week.length > 0 && (
+                        <div className="dash-hero-week-block">
+                          <div className="dash-hero-week-head">
+                            <span>Last 7 days</span>
+                            <span className="dash-hero-week-count">
+                              {activeWeekDays} active {activeWeekDays === 1 ? "day" : "days"}
+                            </span>
+                          </div>
+                          <div
+                            className="dash-hero-week"
+                            role="group"
+                            aria-label={`${activeWeekDays} active ${activeWeekDays === 1 ? "day" : "days"} in the last seven days`}
+                          >
                             {streakSummary.week.map((d, i) => (
                               <span
                                 key={i}
-                                title={d.active ? "Mock attempted" : "Rest day"}
-                                className="h-2 w-2 rounded-full"
-                                style={d.active
-                                  ? { background: "#fff" }
-                                  : { background: "rgba(255,255,255,0.22)", outline: d.isToday ? "1.5px solid rgba(255,255,255,.85)" : "none" }}
-                              />
+                                className={`dash-hero-day${d.active ? " is-active" : ""}${d.isToday ? " is-today" : ""}`}
+                                title={`${d.label}: ${d.active ? "mock attempted" : "no attempt"}${d.isToday ? " (today)" : ""}`}
+                                style={{ animationDelay: `${0.45 + i * 0.04}s` }}
+                                aria-hidden="true"
+                              >
+                                <span className="dash-hero-day-dot" />
+                                <span className="dash-hero-day-label">{d.label}</span>
+                              </span>
                             ))}
                           </div>
-                        )}
+                        </div>
+                      )}
+
+                      {!loading && streakSummary.week.length === 0 && (
+                        <div className="dash-hero-week-block dash-hero-week-empty">
+                          <div className="dash-hero-week-head">
+                            <span>Last 7 days</span>
+                            <span className="dash-hero-week-count">0 active days</span>
+                          </div>
+                          <p>Take a mock today to start your week&apos;s activity.</p>
+                        </div>
+                      )}
+
+                      {loading && (
+                        <div className="dash-hero-week-block" aria-hidden="true">
+                          <div className="dash-hero-week-head">
+                            <span>Last 7 days</span>
+                            <span className="dash-hero-week-count">Syncing</span>
+                          </div>
+                          <div className="dash-hero-loading-line" />
+                        </div>
+                      )}
+
+                      <div className="dash-hero-panel-foot">
+                        <span className="dash-hero-foot-label">Next best step</span>
+                        <button
+                          type="button"
+                          onClick={() => selectView("builder")}
+                          className="dash-hero-foot-link"
+                        >
+                          Build a custom mock
+                          <ArrowUpRight size={13} aria-hidden="true" />
+                        </button>
                       </div>
-                    </div>
+                    </aside>
                   </div>
                 </section>
               </Reveal>
