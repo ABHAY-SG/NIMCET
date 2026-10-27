@@ -610,98 +610,98 @@ export default function DashboardPage() {
           {view === "home" && (
             <div className="space-y-4">
               <Reveal>
-                <section className="dash-hero px-5 py-6 sm:px-7 sm:py-7 lg:px-8">
-                  <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                    <div className="min-w-0">
+                <section className="dash-hero welcome-hero px-5 py-6 sm:px-7 sm:py-7 lg:px-9 lg:py-9">
+                  <div className="welcome-hero-grid relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(250px,300px)] lg:items-center">
+                    <div className="welcome-copy min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10.5px] font-bold text-white/85">
+                        <span className="welcome-date inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10.5px] font-semibold">
                           <CalendarDays size={12} />
                           {todayLine || "Today"}
                         </span>
                         {!loading && (derived?.streak ?? 0) > 0 && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[10.5px] font-extrabold text-[#1b284d]">
+                          <span className="welcome-streak inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10.5px] font-bold">
                             <Flame size={12} />
                             {formatStreak(derived?.streak ?? 0)}
                           </span>
                         )}
                       </div>
-                      <h1 className="dash-display mt-3 max-w-xl text-[clamp(1.7rem,1.3rem+1.5vw,2.5rem)] font-bold leading-[1.1] tracking-[-0.035em] text-white">
-                        {loading
-                          ? "Preparing your workspace"
-                          : `${greeting}${displayName ? `, ${displayName.trim().split(/\s+/)[0]}` : ""}`}
+                      <p className="welcome-kicker mt-7 text-[10px] font-bold uppercase">Your preparation, in focus</p>
+                      <h1 className="welcome-title mt-3 max-w-2xl text-[clamp(2.2rem,1.55rem+2.5vw,3.65rem)] leading-[1.02]">
+                        {loading ? (
+                          <>Preparing your <em>workspace.</em></>
+                        ) : (
+                          <>Welcome back{displayName ? "," : ""} <em>{displayName ? displayName.trim().split(/\s+/)[0] : "learner"}.</em></>
+                        )}
                       </h1>
-                      <p className="mt-2.5 max-w-xl text-[13px] leading-6 text-white/70 sm:text-[13.5px]">
+                      <p className="welcome-description mt-4 max-w-xl text-[13px] leading-6 sm:text-[14px]">
                         {!loading && derived
                           ? derived.streak > 0
                             ? `${formatStreak(derived.streak)}. Your best score is ${derived.best} — build on it with a focused mock today.`
                             : "Your preparation history starts with one attempt. Take a mock and your real progress will appear here."
                           : "Mock tests, previous-year papers and honest performance tracking for NIMCET and CUET PG MCA."}
                       </p>
-                      <div className="mt-5 flex flex-wrap items-center gap-2.5">
+                      <div className="mt-6 flex flex-wrap items-center gap-3">
                         <button
                           type="button"
                           onClick={() => selectView("mock")}
-                          className="dash-btn bg-white text-[#111827] shadow-lg shadow-black/20 hover:bg-white/90"
+                          className="welcome-primary dash-btn"
                         >
                           <Play size={14} fill="currentColor" />
                           Start a mock
                           <ArrowRight size={14} />
                         </button>
-                        <a
-                          href="#series"
-                          className="dash-btn border-white/25 bg-white/10 text-white hover:bg-white/15"
-                          style={{ borderColor: "rgba(255,255,255,.24)" }}
-                        >
+                        <a href="#series" className="welcome-secondary dash-btn">
                           Browse test series
+                          <ArrowUpRight size={14} />
                         </a>
+                      </div>
+                      <div className="welcome-footnote mt-6 flex items-center gap-2 text-[10.5px]">
+                        <span className="welcome-live-dot" />
+                        Built around your NIMCET &amp; CUET PG MCA goals
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 rounded-[var(--dash-radius)] border border-white/15 bg-white/[0.07] p-4 backdrop-blur-sm sm:min-w-[16rem]">
-                      <div className="relative h-[96px] w-[96px] shrink-0">
-                        <svg width="96" height="96" viewBox="0 0 120 120" role="img" aria-label={`Current streak ${streakSummary.current} days, best ${streakSummary.best} days`}>
-                          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="9" />
+                    <aside className="welcome-streak-panel" aria-label="Study streak summary">
+                      <div className="welcome-panel-top flex items-start justify-between gap-3">
+                        <div>
+                          <p className="welcome-panel-label">Consistency</p>
+                          <p className="welcome-panel-caption mt-1">Small sessions add up.</p>
+                        </div>
+                        <span className="welcome-flame"><Flame size={17} /></span>
+                      </div>
+                      <div className="welcome-ring-wrap mt-6">
+                        <svg width="124" height="124" viewBox="0 0 120 120" role="img" aria-label={`Current streak ${streakSummary.current} days, best ${streakSummary.best} days`}>
+                          <circle cx="60" cy="60" r="51" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="7" />
                           <circle
-                            cx="60"
-                            cy="60"
-                            r="52"
-                            fill="none"
-                            stroke="#fff"
-                            strokeWidth="9"
-                            strokeLinecap="round"
-                            strokeDasharray={RING_C}
-                            strokeDashoffset={RING_C * (1 - streakPct)}
+                            cx="60" cy="60" r="51" fill="none"
+                            stroke="var(--accent-2)" strokeWidth="7" strokeLinecap="round"
+                            strokeDasharray={2 * Math.PI * 51}
+                            strokeDashoffset={2 * Math.PI * 51 * (1 - streakPct)}
                             transform="rotate(-90 60 60)"
                             style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }}
                           />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <Flame size={15} className="text-white/75" />
-                          <span className="mono mt-0.5 text-[15px] font-extrabold text-white">{loading ? "—" : `${derived?.streak ?? 0}d`}</span>
+                          <span className="welcome-ring-number mono">{loading ? "—" : (derived?.streak ?? 0)}</span>
+                          <span className="welcome-ring-unit">day streak</span>
                         </div>
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-[9.5px] font-bold uppercase text-white/55" style={{ letterSpacing: ".15em" }}>Current streak</div>
-                        <div className="mt-1 truncate text-[15px] font-extrabold text-white">{loading ? "Loading…" : formatStreak(derived?.streak ?? 0)}</div>
-                        <div className="mt-0.5 text-[11px] font-medium text-white/60">
-                          {loading ? "Reading your history" : derived?.bestStreak ? `Best ${derived.bestStreak} days` : "Attempt daily to begin"}
+                      <div className="welcome-panel-bottom mt-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="welcome-panel-label">Weekly rhythm</span>
+                          <span className="welcome-panel-caption">{streakSummary.week.filter((d) => d.active).length} of 7 days</span>
                         </div>
-                        {!loading && streakSummary.week.length > 0 && (
-                          <div className="mt-2 flex gap-1.5" aria-hidden>
-                            {streakSummary.week.map((d, i) => (
-                              <span
-                                key={i}
-                                title={d.active ? "Mock attempted" : "Rest day"}
-                                className="h-2 w-2 rounded-full"
-                                style={d.active
-                                  ? { background: "#fff" }
-                                  : { background: "rgba(255,255,255,0.22)", outline: d.isToday ? "1.5px solid rgba(255,255,255,.85)" : "none" }}
-                              />
-                            ))}
-                          </div>
-                        )}
+                        <div className="welcome-week mt-3" aria-label="Weekly activity">
+                          {streakSummary.week.map((d, i) => (
+                            <span key={i} className={d.active ? "is-active" : d.isToday ? "is-today" : ""} title={d.active ? "Mock attempted" : d.isToday ? "Today" : "No attempt"} />
+                          ))}
+                        </div>
+                        <div className="welcome-best mt-4 flex items-center justify-between gap-3">
+                          <span>Personal best</span>
+                          <strong>{loading ? "—" : `${derived?.bestStreak ?? 0} days`}</strong>
+                        </div>
                       </div>
-                    </div>
+                    </aside>
                   </div>
                 </section>
               </Reveal>
