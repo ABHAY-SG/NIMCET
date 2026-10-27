@@ -223,9 +223,6 @@ export default function AndroidAppModal({
         </div>
       </div>
     </div>,
-    // Keep the dialog inside the dashboard brand scope when it is opened from
-    // the workspace so its tokens match the teal surface; fall back to <body>
-    // on the marketing pages.
-    (document.querySelector(".dash-app") as HTMLElement | null) ?? document.body
+    document.body
   );
 }

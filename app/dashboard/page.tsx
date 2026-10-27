@@ -14,9 +14,7 @@ import {
   ClipboardList,
   Clock3,
   FileText,
-  FlaskConical,
   Flame,
-  Gem,
   HelpCircle,
   History,
   Info,
@@ -30,7 +28,6 @@ import {
   RefreshCw,
   Sparkles,
   Target,
-  TrendingUp,
   Trophy,
   XCircle,
 } from "lucide-react";
@@ -38,7 +35,6 @@ import Reveal from "@/components/reveal";
 import CountUp from "@/components/count-up";
 import DashNav from "@/components/dash-nav";
 import DashSide, { type DashView } from "@/components/dash-side";
-import MockCard from "@/components/mock-card";
 import MockHub from "@/components/mock-hub";
 import MockBuilder from "@/components/mock-builder";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
@@ -86,14 +82,14 @@ function AttemptRow({ a, cloud = false, best = 0, rank = 0 }: { a: Attempt; clou
   const pct = best > 0 ? Math.min(100, Math.round(((Number(a.score) || 0) / best) * 100)) : 0;
   return (
     <div
-      className="dash-card dash-card-hover flex items-center gap-3 p-3.5 sm:px-4"
+      className="dash-card dash-card-hover flex items-center gap-3 px-3.5 py-3 sm:px-4"
       style={{ boxShadow: "var(--dash-shadow-xs)" }}
     >
       {rank > 0 && rank <= 3 ? (
         <span
           title={`Top ${rank} by score`}
-          className="dash-num flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold text-white"
-          style={{ background: MEDALS[rank - 1], boxShadow: "0 6px 14px -8px rgba(0,0,0,.5)" }}
+          className="mono flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold text-white"
+          style={{ background: MEDALS[rank - 1] }}
         >
           {MEDAL_LABEL[rank - 1]}
         </span>
@@ -108,8 +104,8 @@ function AttemptRow({ a, cloud = false, best = 0, rank = 0 }: { a: Attempt; clou
           {!cloud && <span className="dash-chip !px-1.5 !py-0.5 !text-[9px]">THIS DEVICE</span>}
           {rank > 0 && rank <= 3 && <span className="dash-chip dash-chip-warning !px-1.5 !py-0.5 !text-[9px]">TOP {rank}</span>}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10.5px]" style={{ color: "var(--muted)" }}>
-          <span className="dash-num">{new Date(a.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10.5px]" style={{ color: "var(--muted)" }}>
+          <span className="mono">{new Date(a.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span>
           <span aria-hidden>·</span>
           <span className="inline-flex items-center gap-1" style={{ color: "var(--dash-success)" }}><Check size={11} strokeWidth={2.5} />{a.correct}</span>
           <span className="inline-flex items-center gap-1" style={{ color: "var(--dash-danger)" }}><XCircle size={11} />{a.wrong}</span>
@@ -118,29 +114,29 @@ function AttemptRow({ a, cloud = false, best = 0, rank = 0 }: { a: Attempt; clou
         {best > 0 && (
           <div className="mt-2 flex items-center gap-2">
             <div className="dash-progress flex-1"><span style={{ width: `${pct}%` }} /></div>
-            <span className="dash-num text-[9.5px] font-bold" style={{ color: "var(--muted)" }}>{pct}%</span>
+            <span className="mono text-[9.5px] font-bold" style={{ color: "var(--muted)" }}>{pct}% of best</span>
           </div>
         )}
       </div>
       <div className="shrink-0 text-right">
-        <div className="dash-num text-[19px] font-extrabold leading-none" style={{ color: "var(--text)" }}>{a.score}</div>
+        <div className="mono text-[19px] font-extrabold leading-none" style={{ color: "var(--text)" }}>{a.score}</div>
         <div className="mt-1 text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".1em" }}>score</div>
       </div>
     </div>
   );
 }
 
-function TrendChart({ data, stats }: { data: Attempt[]; stats?: AttemptStats | null }) {
+function TrendChart({ data }: { data: Attempt[] }) {
   // Oldest → newest, last 10.
   const pts = data.slice(0, 10).reverse();
   if (pts.length === 0) return null;
   const values = pts.map((a) => Number(a.score) || 0);
   const max = Math.max(...values, 1);
   const W = 580;
-  const H = 176;
+  const H = 190;
   const padX = 34;
-  const padTop = 16;
-  const padBottom = 24;
+  const padTop = 18;
+  const padBottom = 28;
   const plotH = H - padTop - padBottom;
   const step = pts.length > 1 ? (W - padX * 2) / (pts.length - 1) : 0;
   const coords = values.map((v, i) => ({
@@ -154,55 +150,34 @@ function TrendChart({ data, stats }: { data: Attempt[]; stats?: AttemptStats | n
   const earlier = values[0];
   const change = latest - earlier;
 
-  const answered = stats ? stats.correct + stats.wrong : 0;
-  const totalQ = answered + (stats?.skipped ?? 0);
-  const pctOf = (n: number) => (totalQ > 0 ? Math.round((n / totalQ) * 100) : 0);
-  const answerRows = [
-    { label: "Correct", value: stats?.correct ?? 0, pct: pctOf(stats?.correct ?? 0), color: "var(--dash-success)", soft: "var(--dash-success-soft)" },
-    { label: "Wrong", value: stats?.wrong ?? 0, pct: pctOf(stats?.wrong ?? 0), color: "var(--dash-danger)", soft: "var(--dash-danger-soft)" },
-    { label: "Skipped", value: stats?.skipped ?? 0, pct: pctOf(stats?.skipped ?? 0), color: "var(--muted)", soft: "var(--dash-surface-muted)" },
-  ];
-
-  const papers = stats
-    ? Object.entries(stats.byTest)
-        .sort((a, b) => b[1].count - a[1].count || b[1].best - a[1].best)
-        .slice(0, 4)
-    : [];
-  const bestOverall = stats?.best ?? max;
-
   return (
-    <section className="dash-card overflow-hidden">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b px-4 py-4 sm:px-5" style={{ borderColor: "var(--dash-line)" }}>
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="dash-icon-tile dash-icon-tile-sm" style={{ background: "var(--dash-info-soft)", borderColor: "rgba(31,95,191,.16)", color: "var(--dash-info)" }}>
-            <TrendingUp size={15} />
-          </span>
-          <div>
-            <h2 className="dash-title-sm">Performance analytics</h2>
-            <p className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
-              Last {pts.length} mock{pts.length === 1 ? "" : "s"} · oldest to newest
-            </p>
+    <div className="dash-card overflow-hidden">
+      <div className="flex flex-wrap items-start justify-between gap-3 px-4 pb-2 pt-4 sm:px-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="dash-icon-tile dash-icon-tile-sm"><BarChart3 size={15} /></span>
+            <h2 className="dash-title-sm">Performance trend</h2>
           </div>
+          <p className="mt-1 text-[11.5px]" style={{ color: "var(--muted)" }}>Last {pts.length} mock{pts.length === 1 ? "" : "s"} · oldest to newest</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="dash-num text-[18px] font-extrabold leading-none" style={{ color: "var(--text)" }}>{latest}</div>
-            <div className="mt-1 text-[9px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".1em" }}>latest</div>
+            <div className="mono text-[18px] font-extrabold leading-none" style={{ color: "var(--text)" }}>{latest}</div>
+            <div className="mt-1 text-[9.5px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".1em" }}>latest</div>
           </div>
           <span
             className="dash-chip"
             style={change > 0
-              ? { color: "var(--dash-success)", background: "var(--dash-success-soft)", borderColor: "rgba(15,122,68,.18)" }
+              ? { color: "var(--dash-success)", background: "var(--dash-success-soft)", borderColor: "rgba(21,128,61,.18)" }
               : change < 0
-                ? { color: "var(--dash-danger)", background: "var(--dash-danger-soft)", borderColor: "rgba(197,48,48,.18)" }
+                ? { color: "var(--dash-danger)", background: "var(--dash-danger-soft)", borderColor: "rgba(220,38,38,.18)" }
                 : undefined}
           >
             {change > 0 ? `+${change}` : change === 0 ? "level" : change} pts
           </span>
         </div>
       </div>
-
-      <div className="px-2 pb-1 pt-2 sm:px-3">
+      <div className="px-2 pb-2 sm:px-3">
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="h-auto w-full"
@@ -211,7 +186,7 @@ function TrendChart({ data, stats }: { data: Attempt[]; stats?: AttemptStats | n
         >
           <defs>
             <linearGradient id="dash-trend-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.24" />
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
               <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
             </linearGradient>
           </defs>
@@ -219,7 +194,7 @@ function TrendChart({ data, stats }: { data: Attempt[]; stats?: AttemptStats | n
             const y = padTop + plotH * f;
             return (
               <g key={f}>
-                <line x1={padX} x2={W - padX} y1={y} y2={y} stroke="var(--dash-line)" strokeWidth="1" strokeDasharray={f === 0 || f === 1 ? undefined : "3 5"} />
+                <line x1={padX} x2={W - padX} y1={y} y2={y} stroke="var(--dash-line)" strokeWidth="1" />
                 <text x={padX - 7} y={y + 3.5} textAnchor="end" fontSize="8.5" fill="var(--muted)">
                   {Math.round(max * (1 - f))}
                 </text>
@@ -239,53 +214,7 @@ function TrendChart({ data, stats }: { data: Attempt[]; stats?: AttemptStats | n
           ))}
         </svg>
       </div>
-
-      {stats && totalQ > 0 && (
-        <div className="grid gap-px border-t sm:grid-cols-3" style={{ borderColor: "var(--dash-line)", background: "var(--dash-line)" }}>
-          {answerRows.map((row) => (
-            <div key={row.label} className="px-4 py-3" style={{ background: "var(--dash-surface)" }}>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".08em" }}>{row.label}</span>
-                <span className="dash-num text-[12.5px] font-bold" style={{ color: row.color }}>{row.value}</span>
-              </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full" style={{ background: row.soft }}>
-                <span
-                  className="block h-full rounded-full"
-                  style={{ width: `${row.pct}%`, background: row.color, transition: "width .8s var(--ease)" }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {papers.length > 0 && (
-        <div className="border-t px-4 py-4 sm:px-5" style={{ borderColor: "var(--dash-line)" }}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".12em" }}>Paper-wise best</h3>
-            <span className="text-[10px]" style={{ color: "var(--muted)" }}>Top {papers.length} by attempts</span>
-          </div>
-          <ul className="mt-2.5 grid gap-x-5 gap-y-2.5 sm:grid-cols-2">
-            {papers.map(([name, value]) => {
-              const pct = bestOverall > 0 ? Math.min(100, Math.round((value.best / bestOverall) * 100)) : 0;
-              return (
-                <li key={name} className="min-w-0">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="truncate text-[11.5px] font-semibold" style={{ color: "var(--text)" }} title={name}>{name}</span>
-                    <span className="dash-num shrink-0 text-[10.5px] font-bold" style={{ color: "var(--muted)" }}>
-                      {value.best} <span className="font-medium">· {value.count}×</span>
-                    </span>
-                  </div>
-                  <div className="mt-1 h-1 overflow-hidden rounded-full" style={{ background: "var(--dash-surface-strong)" }}>
-                    <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: "var(--accent)", opacity: .75 }} />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-    </section>
+    </div>
   );
 }
 
@@ -649,7 +578,7 @@ export default function DashboardPage() {
   const streakPct = derived?.bestStreak ? Math.min(1, (derived.streak ?? 0) / derived.bestStreak) : 0;
 
   return (
-    <div className="dash-app">
+    <>
       {!loading && email && (
         <DashNav
           email={email}
@@ -660,7 +589,6 @@ export default function DashboardPage() {
           onMenuClick={() => setSideOpen(true)}
           title={currentMeta.title}
           subtitle={currentMeta.subtitle}
-          notices={notices}
         />
       )}
       <main className="dash-main mx-auto w-full max-w-[1560px] px-3 pb-20 pt-20 sm:px-5 lg:px-7">
@@ -683,34 +611,29 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <Reveal>
                 <section className="dash-hero px-5 py-6 sm:px-7 sm:py-7 lg:px-8">
-                  <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-stretch">
-                    <div className="flex min-w-0 flex-col justify-center">
+                  <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10.5px] font-semibold text-white/85">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10.5px] font-bold text-white/85">
                           <CalendarDays size={12} />
                           {todayLine || "Today"}
                         </span>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[10.5px] font-semibold text-white/75">
-                          NIMCET &amp; CUET PG
-                        </span>
                         {!loading && (derived?.streak ?? 0) > 0 && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[10.5px] font-extrabold text-[#083b3a]">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[10.5px] font-extrabold text-[#1b284d]">
                             <Flame size={12} />
                             {formatStreak(derived?.streak ?? 0)}
                           </span>
                         )}
                       </div>
-                      <h1 className="dash-display mt-3.5 max-w-xl text-[clamp(1.75rem,1.3rem+1.6vw,2.65rem)] font-bold leading-[1.08] tracking-[-0.035em] text-white">
+                      <h1 className="dash-display mt-3 max-w-xl text-[clamp(1.7rem,1.3rem+1.5vw,2.5rem)] font-bold leading-[1.1] tracking-[-0.035em] text-white">
                         {loading
                           ? "Preparing your workspace"
                           : `${greeting}${displayName ? `, ${displayName.trim().split(/\s+/)[0]}` : ""}`}
                       </h1>
-                      <p className="mt-3 max-w-xl text-[13px] leading-6 text-white/80 sm:text-[13.5px]">
+                      <p className="mt-2.5 max-w-xl text-[13px] leading-6 text-white/70 sm:text-[13.5px]">
                         {!loading && derived
-                          ? derived.total !== "0"
-                            ? derived.streak > 0
-                              ? `${formatStreak(derived.streak)}. Your best score is ${derived.best}${derived.acc !== "—" ? ` at ${derived.acc} accuracy` : ""} — build on it with a focused mock today.`
-                              : `${derived.total} mock${derived.total === "1" ? "" : "s"} completed${derived.acc !== "—" ? ` at ${derived.acc} accuracy` : ""}. Your best is ${derived.best} — take another timed paper to keep the momentum.`
+                          ? derived.streak > 0
+                            ? `${formatStreak(derived.streak)}. Your best score is ${derived.best} — build on it with a focused mock today.`
                             : "Your preparation history starts with one attempt. Take a mock and your real progress will appear here."
                           : "Mock tests, previous-year papers and honest performance tracking for NIMCET and CUET PG MCA."}
                       </p>
@@ -718,7 +641,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => selectView("mock")}
-                          className="dash-btn bg-white text-[#08302f] shadow-lg shadow-black/25 hover:bg-white/92"
+                          className="dash-btn bg-white text-[#111827] shadow-lg shadow-black/20 hover:bg-white/90"
                         >
                           <Play size={14} fill="currentColor" />
                           Start a mock
@@ -726,7 +649,7 @@ export default function DashboardPage() {
                         </button>
                         <a
                           href="#series"
-                          className="dash-btn border-white/25 bg-white/10 text-white hover:bg-white/16"
+                          className="dash-btn border-white/25 bg-white/10 text-white hover:bg-white/15"
                           style={{ borderColor: "rgba(255,255,255,.24)" }}
                         >
                           Browse test series
@@ -734,71 +657,49 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="dash-hero-panel flex flex-col justify-between gap-4 p-4 sm:p-5">
-                      <div className="flex items-center gap-4">
-                        <div className="relative h-[86px] w-[86px] shrink-0">
-                          <svg width="86" height="86" viewBox="0 0 120 120" role="img" aria-label={`Current streak ${streakSummary.current} days, best ${streakSummary.best} days`}>
-                            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="9" />
-                            <circle
-                              cx="60"
-                              cy="60"
-                              r="52"
-                              fill="none"
-                              stroke="#fff"
-                              strokeWidth="9"
-                              strokeLinecap="round"
-                              strokeDasharray={RING_C}
-                              strokeDashoffset={RING_C * (1 - streakPct)}
-                              transform="rotate(-90 60 60)"
-                              style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }}
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <Flame size={14} className="text-white/80" />
-                            <span className="dash-num mt-0.5 text-[15px] font-extrabold text-white">{loading ? "—" : `${derived?.streak ?? 0}d`}</span>
-                          </div>
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[9.5px] font-bold uppercase text-white/80" style={{ letterSpacing: ".15em" }}>Current streak</div>
-                          <div className="mt-1 truncate text-[15px] font-extrabold text-white">{loading ? "Loading…" : formatStreak(derived?.streak ?? 0)}</div>
-                          <div className="mt-0.5 text-[11px] font-medium text-white/80">
-                            {loading ? "Reading your history" : derived?.bestStreak ? `Best ${derived.bestStreak} days` : "Attempt daily to begin"}
-                          </div>
+                    <div className="flex items-center gap-4 rounded-[var(--dash-radius)] border border-white/15 bg-white/[0.07] p-4 backdrop-blur-sm sm:min-w-[16rem]">
+                      <div className="relative h-[96px] w-[96px] shrink-0">
+                        <svg width="96" height="96" viewBox="0 0 120 120" role="img" aria-label={`Current streak ${streakSummary.current} days, best ${streakSummary.best} days`}>
+                          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="9" />
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="52"
+                            fill="none"
+                            stroke="#fff"
+                            strokeWidth="9"
+                            strokeLinecap="round"
+                            strokeDasharray={RING_C}
+                            strokeDashoffset={RING_C * (1 - streakPct)}
+                            transform="rotate(-90 60 60)"
+                            style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <Flame size={15} className="text-white/75" />
+                          <span className="mono mt-0.5 text-[15px] font-extrabold text-white">{loading ? "—" : `${derived?.streak ?? 0}d`}</span>
                         </div>
                       </div>
-
-                      {!loading && streakSummary.week.length > 0 && (
-                        <div className="flex gap-1.5" aria-hidden>
-                          {streakSummary.week.map((d, i) => (
-                            <span
-                              key={i}
-                              title={d.active ? "Mock attempted" : "Rest day"}
-                              className="flex h-7 flex-1 items-center justify-center rounded-[7px] text-[9px] font-bold"
-                              style={d.active
-                                ? { background: "#fff", color: "#083b3a" }
-                                : {
-                                    background: "rgba(255,255,255,0.08)",
-                                    color: "rgba(255,255,255,.9)",
-                                    outline: d.isToday ? "1.5px solid rgba(255,255,255,.8)" : "1px solid rgba(255,255,255,.1)",
-                                  }}
-                            >
-                              {d.label}
-                            </span>
-                          ))}
+                      <div className="min-w-0">
+                        <div className="text-[9.5px] font-bold uppercase text-white/55" style={{ letterSpacing: ".15em" }}>Current streak</div>
+                        <div className="mt-1 truncate text-[15px] font-extrabold text-white">{loading ? "Loading…" : formatStreak(derived?.streak ?? 0)}</div>
+                        <div className="mt-0.5 text-[11px] font-medium text-white/60">
+                          {loading ? "Reading your history" : derived?.bestStreak ? `Best ${derived.bestStreak} days` : "Attempt daily to begin"}
                         </div>
-                      )}
-
-                      <div className="border-t pt-3.5" style={{ borderColor: "rgba(255,255,255,.14)" }}>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[9.5px] font-bold uppercase text-white/80" style={{ letterSpacing: ".15em" }}>Next best step</span>
-                          <button
-                            type="button"
-                            onClick={() => selectView("builder")}
-                            className="inline-flex items-center gap-1 text-[11.5px] font-bold text-white transition-opacity hover:opacity-80"
-                          >
-                            Build a custom mock <ArrowUpRight size={13} />
-                          </button>
-                        </div>
+                        {!loading && streakSummary.week.length > 0 && (
+                          <div className="mt-2 flex gap-1.5" aria-hidden>
+                            {streakSummary.week.map((d, i) => (
+                              <span
+                                key={i}
+                                title={d.active ? "Mock attempted" : "Rest day"}
+                                className="h-2 w-2 rounded-full"
+                                style={d.active
+                                  ? { background: "#fff" }
+                                  : { background: "rgba(255,255,255,0.22)", outline: d.isToday ? "1.5px solid rgba(255,255,255,.85)" : "none" }}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -824,15 +725,12 @@ export default function DashboardPage() {
 
               <Reveal>
                 <section className="dash-card overflow-hidden">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-4 sm:px-5" style={{ borderColor: "var(--dash-line)" }}>
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="dash-icon-tile dash-icon-tile-sm"><BarChart3 size={15} /></span>
-                      <div className="min-w-0">
-                        <h2 className="dash-title-sm">Performance snapshot</h2>
-                        <p className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
-                          Exact totals from {statsLabel === "saved to cloud" ? "your cloud history" : "this device"}.
-                        </p>
-                      </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3.5 sm:px-5" style={{ borderColor: "var(--dash-line)" }}>
+                    <div>
+                      <h2 className="dash-title-sm">Performance snapshot</h2>
+                      <p className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
+                        Exact totals from {statsLabel === "saved to cloud" ? "your cloud history" : "this device"}.
+                      </p>
                     </div>
                     <span className="dash-chip">
                       {loading ? <RefreshCw size={11} className="animate-spin" /> : <Sparkles size={11} />}
@@ -878,13 +776,13 @@ export default function DashboardPage() {
                         </div>
                         <div className="dash-skeleton mt-5 h-40 w-full" />
                       </div>
-                    ) : attempts.length > 0 || localAttempts.length > 0 ? (
-                      <TrendChart data={attempts.length > 0 ? attempts : localAttempts} stats={displayStats} />
+                    ) : attempts.length > 0 ? (
+                      <TrendChart data={attempts} />
                     ) : (
                       <section className="dash-card p-5">
                         <div className="flex items-center gap-2">
-                          <span className="dash-icon-tile dash-icon-tile-sm"><TrendingUp size={15} /></span>
-                          <h2 className="dash-title-sm">Performance analytics</h2>
+                          <span className="dash-icon-tile dash-icon-tile-sm"><BarChart3 size={15} /></span>
+                          <h2 className="dash-title-sm">Performance trend</h2>
                         </div>
                         <div className="dash-empty mt-3">
                           <span className="dash-empty-icon"><BarChart3 size={18} /></span>
@@ -902,20 +800,20 @@ export default function DashboardPage() {
                     <section id="series" className="scroll-mt-24">
                       <div className="flex flex-wrap items-end justify-between gap-3">
                         <div>
-                          <div className="dash-eyebrow">Practice catalogue</div>
-                          <h2 className="dash-title-sm mt-1">Recommended tests</h2>
-                          <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--muted)" }}>
-                            Published by the NimCuet team — real papers, real timing.
-                          </p>
+                          <h2 className="dash-title-sm">Recommended tests</h2>
+                          <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--muted)" }}>Published by the NimCuet team.</p>
                         </div>
                         {series.length > 0 && (
-                          <div className="dash-segmented noscroll max-w-full overflow-x-auto" role="group" aria-label="Filter tests by exam">
+                          <div className="flex flex-wrap gap-1">
                             {exams.map((e) => (
                               <button
                                 key={e}
                                 type="button"
                                 onClick={() => setExamFilter(e)}
-                                data-active={examFilter === e ? "true" : "false"}
+                                className="dash-chip transition-colors"
+                                style={examFilter === e
+                                  ? { background: "var(--dash-accent-soft)", borderColor: "var(--dash-accent-line)", color: "var(--accent)" }
+                                  : undefined}
                                 aria-pressed={examFilter === e}
                               >
                                 {e === "all" ? "All exams" : examLabel(e)}
@@ -926,39 +824,49 @@ export default function DashboardPage() {
                       </div>
 
                       {!seriesReady ? (
-                        <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
-                          {[0, 1, 2, 3].map((i) => <div key={i} className="dash-skeleton h-[300px]" />)}
+                        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                          {[0, 1, 2, 3].map((i) => <div key={i} className="dash-skeleton h-[148px]" />)}
                         </div>
                       ) : series.length === 0 ? (
-                        <div className="dash-empty mt-3.5">
+                        <div className="dash-empty mt-3">
                           <span className="dash-empty-icon"><BookOpen size={18} /></span>
                           <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>No test series published yet</p>
                           <p className="max-w-[24rem] text-[11.5px] leading-5">The catalogue is empty right now. Published mock tests and previous-year papers will appear here.</p>
                         </div>
                       ) : visibleSeries.length === 0 ? (
-                        <div className="dash-empty mt-3.5">
+                        <div className="dash-empty mt-3">
                           <span className="dash-empty-icon"><BookOpen size={18} /></span>
                           <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>No tests in this exam</p>
                           <button type="button" onClick={() => setExamFilter("all")} className="dash-btn dash-btn-secondary dash-btn-sm mt-1">Show all exams</button>
                         </div>
                       ) : (
-                        <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
+                        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
                           {visibleSeries.map((t) => {
                             const done = attemptsForTitle(t.title);
                             const qcount = Array.isArray(t.question_ids) ? t.question_ids.length : 0;
                             return (
-                              <MockCard
-                                key={t.id}
-                                title={t.title}
-                                exam={examLabel(t.exam)}
-                                typeLabel={t.tag || undefined}
-                                questions={qcount}
-                                minutes={t.minutes}
-                                free={t.free}
-                                attempted={done}
-                                onStart={() => selectView("mock")}
-                                statusLabel={done > 0 ? "Attempted · open the mock hub" : "Not attempted yet"}
-                              />
+                              <article key={t.id} className="dash-card dash-card-hover flex flex-col p-4">
+                                <div className="flex items-start justify-between gap-2">
+                                  <span className="dash-icon-tile dash-icon-tile-sm"><BookOpen size={15} /></span>
+                                  <div className="flex flex-wrap justify-end gap-1">
+                                    <span className="dash-chip dash-chip-accent !px-2 !py-0.5 !text-[9.5px]">{examLabel(t.exam)}</span>
+                                    {t.free && <span className="dash-chip dash-chip-success !px-2 !py-0.5 !text-[9.5px]">Free</span>}
+                                    {done > 0 && <span className="dash-chip !px-2 !py-0.5 !text-[9.5px]">Taken {done}×</span>}
+                                  </div>
+                                </div>
+                                <h3 className="mt-3 line-clamp-2 text-[13.5px] font-bold leading-5" style={{ color: "var(--text)" }} title={t.title}>{t.title}</h3>
+                                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px]" style={{ color: "var(--muted)" }}>
+                                  <span className="inline-flex items-center gap-1"><ListChecks size={12} /> {qcount} questions</span>
+                                  <span className="inline-flex items-center gap-1"><Clock3 size={12} /> {t.minutes} min</span>
+                                  {t.tag && <span className="truncate">{t.tag}</span>}
+                                </div>
+                                <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+                                  <span className="text-[10px] font-semibold" style={{ color: "var(--muted)" }}>{done > 0 ? "Ready to revisit" : "Not attempted yet"}</span>
+                                  <button type="button" onClick={() => selectView("mock")} className="dash-btn dash-btn-secondary dash-btn-sm">
+                                    Practice <ArrowUpRight size={13} />
+                                  </button>
+                                </div>
+                              </article>
                             );
                           })}
                         </div>
@@ -1023,42 +931,30 @@ export default function DashboardPage() {
 
                 <aside className="min-w-0 space-y-4">
                   <Reveal>
-                    <section className="dash-card overflow-hidden">
-                      <div className="flex items-center justify-between gap-2 border-b px-4 py-3.5" style={{ borderColor: "var(--dash-line)" }}>
-                        <div className="flex items-center gap-2">
-                          <span className="dash-icon-tile dash-icon-tile-sm"><CalendarDays size={15} /></span>
-                          <h2 className="dash-title-sm">Preparation overview</h2>
-                        </div>
-                        <span className="dash-chip !px-2 !py-0.5 !text-[9px]">2027</span>
+                    <section className="dash-card p-4">
+                      <div className="flex items-center gap-2">
+                        <span className="dash-icon-tile dash-icon-tile-sm"><CalendarDays size={15} /></span>
+                        <h2 className="dash-title-sm">Exam snapshot</h2>
                       </div>
-                      <div className="p-4">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[13.5px] font-bold" style={{ color: "var(--text)" }}>NIMCET 2027</span>
-                          <span className="dash-chip !px-2 !py-0.5 !text-[9px]">Date TBA</span>
-                        </div>
-                        <p className="mt-1 text-[11px] leading-5" style={{ color: "var(--muted)" }}>
-                          June 2027 cycle. Official date awaited — the countdown starts when it is announced.
-                        </p>
-                        <div className="mt-3 grid grid-cols-3 gap-1.5">
-                          {[
-                            { value: "120", label: "Questions", icon: <ListChecks size={13} /> },
-                            { value: "1000", label: "Marks", icon: <Trophy size={13} /> },
-                            { value: "120m", label: "Duration", icon: <Clock3 size={13} /> },
-                          ].map((item) => (
-                            <div key={item.label} className="rounded-[10px] border px-2 py-2.5 text-center" style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}>
-                              <span className="mx-auto flex items-center justify-center" style={{ color: "var(--accent)" }}>{item.icon}</span>
-                              <div className="dash-num mt-1 text-[12.5px] font-extrabold" style={{ color: "var(--text)" }}>{item.value}</div>
-                              <div className="text-[8px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".08em" }}>{item.label}</div>
-                            </div>
-                          ))}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => selectView("mock")}
-                          className="dash-btn dash-btn-primary dash-btn-sm mt-3.5 w-full"
-                        >
-                          <Play size={13} fill="currentColor" /> Practise NIMCET pattern
-                        </button>
+                      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[13px] font-bold" style={{ color: "var(--text)" }}>NIMCET 2027</span>
+                        <span className="dash-chip !px-2 !py-0.5 !text-[9px]">Date TBA</span>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-5" style={{ color: "var(--muted)" }}>
+                        June 2027 cycle. Official date awaited — the countdown starts when it is announced.
+                      </p>
+                      <div className="mt-3 grid grid-cols-3 gap-1.5">
+                        {[
+                          { value: "120", label: "Questions", icon: <ListChecks size={13} /> },
+                          { value: "1000", label: "Marks", icon: <Trophy size={13} /> },
+                          { value: "120m", label: "Duration", icon: <Clock3 size={13} /> },
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-[10px] border px-2 py-2 text-center" style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}>
+                            <span className="mx-auto flex items-center justify-center" style={{ color: "var(--muted)" }}>{item.icon}</span>
+                            <div className="mono mt-1 text-[12px] font-extrabold" style={{ color: "var(--text)" }}>{item.value}</div>
+                            <div className="text-[8.5px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: ".08em" }}>{item.label}</div>
+                          </div>
+                        ))}
                       </div>
                     </section>
                   </Reveal>
@@ -1068,7 +964,7 @@ export default function DashboardPage() {
                       <section className="dash-card p-4">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="dash-icon-tile dash-icon-tile-sm" style={{ background: "var(--dash-warning-soft)", borderColor: "rgba(163,90,7,.16)", color: "var(--dash-warning)" }}><Megaphone size={15} /></span>
+                            <span className="dash-icon-tile dash-icon-tile-sm" style={{ background: "var(--dash-warning-soft)", borderColor: "rgba(180,83,9,.16)", color: "var(--dash-warning)" }}><Megaphone size={15} /></span>
                             <h2 className="dash-title-sm">Notices</h2>
                           </div>
                           {notices.length > 2 && (
@@ -1082,7 +978,7 @@ export default function DashboardPage() {
                             <div key={n.id} className="rounded-[10px] border px-3 py-2.5" style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}>
                               <div className="flex flex-wrap items-baseline justify-between gap-1.5">
                                 <span className="text-[11.5px] font-bold" style={{ color: "var(--text)" }}>{n.title}</span>
-                                <span className="dash-num text-[9.5px]" style={{ color: "var(--muted)" }}>
+                                <span className="mono text-[9.5px]" style={{ color: "var(--muted)" }}>
                                   {new Date(n.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                                 </span>
                               </div>
@@ -1098,35 +994,19 @@ export default function DashboardPage() {
                     <section className="dash-card p-4">
                       <div className="flex items-center gap-2">
                         <span className="dash-icon-tile dash-icon-tile-sm"><Sparkles size={15} /></span>
-                        <h2 className="dash-title-sm">Quick actions</h2>
+                        <h2 className="dash-title-sm">Study tools</h2>
                       </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        {[
-                          { label: "Previous years", icon: <BookOpen size={15} />, onClick: () => selectView("nimcet-pyq") },
-                          { label: "Custom mock", icon: <FlaskConical size={15} />, onClick: () => selectView("builder") },
-                          { label: "Test history", icon: <History size={15} />, onClick: () => selectView("history") },
-                          { label: "Plans", icon: <Gem size={15} />, onClick: () => selectView("pricing") },
-                        ].map((action) => (
-                          <button
-                            key={action.label}
-                            type="button"
-                            onClick={action.onClick}
-                            className="group flex flex-col items-start gap-2 rounded-[12px] border p-3 text-left transition-colors hover:border-[var(--dash-brand-line)] hover:bg-[var(--dash-brand-soft)]"
-                            style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}
-                          >
-                            <span className="grid h-8 w-8 place-items-center rounded-[9px]" style={{ background: "var(--dash-surface)", border: "1px solid var(--dash-line)", color: "var(--accent)" }}>
-                              {action.icon}
-                            </span>
-                            <span className="flex w-full items-center justify-between gap-1 text-[11.5px] font-semibold" style={{ color: "var(--text)" }}>
-                              {action.label}
-                              <ArrowUpRight size={12} className="opacity-0 transition-opacity group-hover:opacity-100" />
-                            </span>
-                          </button>
-                        ))}
+                      <div className="mt-3 grid gap-1.5">
+                        <button type="button" onClick={() => selectView("nimcet-pyq")} className="dash-btn dash-btn-secondary !justify-start">
+                          <BookOpen size={15} /> Previous-year papers <ChevronRight size={13} className="ml-auto" />
+                        </button>
+                        <button type="button" onClick={() => selectView("builder")} className="dash-btn dash-btn-secondary !justify-start">
+                          <SlidersIcon /> Build a custom mock <ChevronRight size={13} className="ml-auto" />
+                        </button>
+                        <button type="button" onClick={() => selectView("feedback")} className="dash-btn dash-btn-secondary !justify-start">
+                          <MessageSquare size={15} /> Send feedback <ChevronRight size={13} className="ml-auto" />
+                        </button>
                       </div>
-                      <a href="#support" onClick={(e) => { e.preventDefault(); selectView("contact"); }} className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--accent)" }}>
-                        Need help? Contact support <ChevronRight size={12} />
-                      </a>
                     </section>
                   </Reveal>
                 </aside>
@@ -1417,8 +1297,12 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
-    </div>
+    </>
   );
+}
+
+function SlidersIcon() {
+  return <ListChecks size={15} />;
 }
 
 function CloudIcon() {

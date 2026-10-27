@@ -9,12 +9,12 @@ import {
   Download,
   FlaskConical,
   Flame,
-  Gem,
   History,
-  LayoutDashboard,
+  Home,
   Mail,
   MessageSquare,
   PlayCircle,
+  Tag,
   UserRound,
   X,
 } from "lucide-react";
@@ -40,8 +40,6 @@ type Item = {
   href?: string;
 };
 
-const STROKE = 1.8;
-
 function NavIcon({ children }: { children: React.ReactNode }) {
   return <span className="dash-nav-icon">{children}</span>;
 }
@@ -49,7 +47,7 @@ function NavIcon({ children }: { children: React.ReactNode }) {
 const HOME_ITEM: Item = {
   label: "Overview",
   description: "Your preparation at a glance",
-  icon: <NavIcon><LayoutDashboard size={17} strokeWidth={STROKE} /></NavIcon>,
+  icon: <NavIcon><Home size={17} strokeWidth={1.9} /></NavIcon>,
   view: "home",
 };
 
@@ -57,31 +55,31 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
   {
     title: "Practice",
     items: [
-      { label: "NIMCET mocks", icon: <NavIcon><PlayCircle size={17} strokeWidth={STROKE} /></NavIcon>, view: "mock" },
-      { label: "NIMCET previous years", icon: <NavIcon><BookOpen size={17} strokeWidth={STROKE} /></NavIcon>, view: "nimcet-pyq" },
-      { label: "CUET PG mocks", icon: <NavIcon><PlayCircle size={17} strokeWidth={STROKE} /></NavIcon>, view: "cuet-mock" },
-      { label: "CUET PG previous years", icon: <NavIcon><BookOpen size={17} strokeWidth={STROKE} /></NavIcon>, view: "cuet-pyq" },
+      { label: "NIMCET mocks", icon: <NavIcon><PlayCircle size={17} strokeWidth={1.9} /></NavIcon>, view: "mock" },
+      { label: "NIMCET previous years", icon: <NavIcon><BookOpen size={17} strokeWidth={1.9} /></NavIcon>, view: "nimcet-pyq" },
+      { label: "CUET PG mocks", icon: <NavIcon><PlayCircle size={17} strokeWidth={1.9} /></NavIcon>, view: "cuet-mock" },
+      { label: "CUET PG previous years", icon: <NavIcon><BookOpen size={17} strokeWidth={1.9} /></NavIcon>, view: "cuet-pyq" },
     ],
   },
   {
     title: "Workspace",
     items: [
-      { label: "Custom mock", icon: <NavIcon><FlaskConical size={17} strokeWidth={STROKE} /></NavIcon>, view: "builder" },
-      { label: "Test history", icon: <NavIcon><History size={17} strokeWidth={STROKE} /></NavIcon>, view: "history" },
+      { label: "Custom mock", icon: <NavIcon><FlaskConical size={17} strokeWidth={1.9} /></NavIcon>, view: "builder" },
+      { label: "Test history", icon: <NavIcon><History size={17} strokeWidth={1.9} /></NavIcon>, view: "history" },
     ],
   },
   {
     title: "Account",
     items: [
-      { label: "Profile & settings", icon: <NavIcon><UserRound size={17} strokeWidth={STROKE} /></NavIcon>, href: "/dashboard/profile" },
-      { label: "Plans", icon: <NavIcon><Gem size={17} strokeWidth={STROKE} /></NavIcon>, view: "pricing" },
+      { label: "Profile & settings", icon: <NavIcon><UserRound size={17} strokeWidth={1.9} /></NavIcon>, href: "/dashboard/profile" },
+      { label: "Plans", icon: <NavIcon><Tag size={17} strokeWidth={1.9} /></NavIcon>, view: "pricing" },
     ],
   },
   {
     title: "Support",
     items: [
-      { label: "Contact", icon: <NavIcon><Mail size={17} strokeWidth={STROKE} /></NavIcon>, view: "contact" },
-      { label: "Feedback", icon: <NavIcon><MessageSquare size={17} strokeWidth={STROKE} /></NavIcon>, view: "feedback" },
+      { label: "Contact", icon: <NavIcon><Mail size={17} strokeWidth={1.9} /></NavIcon>, view: "contact" },
+      { label: "Feedback", icon: <NavIcon><MessageSquare size={17} strokeWidth={1.9} /></NavIcon>, view: "feedback" },
     ],
   },
 ];
@@ -102,7 +100,6 @@ function Row({
   const shared = {
     className: `dash-nav-item ${collapsed ? "justify-center !px-0" : ""}`,
     "data-active": active ? "true" : "false",
-    "aria-current": active ? ("page" as const) : undefined,
     title: collapsed ? item.label : undefined,
     "aria-label": collapsed ? item.label : undefined,
   };
@@ -110,9 +107,7 @@ function Row({
     <>
       {item.icon}
       {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
-      {!collapsed && active && (
-        <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--accent)" }} />
-      )}
+      {!collapsed && active && <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--accent)" }} />}
     </>
   );
 
@@ -155,14 +150,11 @@ function SideBody({
   onSelect: (v: DashView) => void;
   onClose: () => void;
   onOpenApp: () => void;
-  streak?: { current: number; best: number; week?: { label: string; active: boolean; isToday: boolean }[] };
+  streak?: { current: number; best: number };
 }) {
   return (
     <>
-      <nav
-        aria-label="Workspace sections"
-        className="dash-side-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain px-2.5 pb-2.5 pt-2.5"
-      >
+      <div className="noscroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-3 pb-3 pt-2">
         <Row
           item={HOME_ITEM}
           active={!profileActive && view === "home"}
@@ -176,8 +168,8 @@ function SideBody({
             {collapsed ? (
               <div className="mx-auto mb-2 h-px w-7" style={{ background: "var(--dash-line)" }} />
             ) : (
-              <div className="mb-1 flex items-center gap-2 px-2">
-                <span className="dash-eyebrow" style={{ fontSize: 9.5, letterSpacing: ".17em" }}>{group.title}</span>
+              <div className="mb-1.5 flex items-center gap-2 px-2">
+                <span className="dash-eyebrow" style={{ fontSize: 9.5, letterSpacing: ".16em" }}>{group.title}</span>
                 <span className="h-px flex-1" style={{ background: "var(--dash-line)" }} />
               </div>
             )}
@@ -199,53 +191,27 @@ function SideBody({
             </div>
           </div>
         ))}
-      </nav>
+      </div>
 
-      <div
-        className="shrink-0 space-y-2 border-t px-2.5 py-2.5"
-        style={{ borderColor: "var(--dash-line)", background: "linear-gradient(180deg, transparent, var(--dash-surface-muted))" }}
-      >
+      <div className={`shrink-0 border-t px-3 py-3 ${collapsed ? "space-y-2" : "space-y-2.5"}`} style={{ borderColor: "var(--dash-line)" }}>
         {streak && (
           <div
-            className={`rounded-[var(--dash-radius-sm)] border ${collapsed ? "flex justify-center px-2 py-2.5" : "px-3 py-2.5"}`}
-            style={{ borderColor: "var(--dash-brand-line)", background: "var(--dash-brand-soft)" }}
+            className={`rounded-[var(--dash-radius-sm)] border px-2.5 py-2 ${collapsed ? "flex justify-center" : "flex items-center gap-2.5"}`}
+            style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}
             title={collapsed ? `${streak.current} day streak` : undefined}
           >
-            <div className={`flex items-center gap-2.5 ${collapsed ? "justify-center" : ""}`}>
-              <span
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px]"
-                style={{ background: "var(--dash-surface)", color: "var(--dash-warning)", boxShadow: "var(--dash-shadow-xs)" }}
-              >
-                <Flame size={16} strokeWidth={2} />
-              </span>
-              {!collapsed && (
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[11.5px] font-bold" style={{ color: "var(--text)" }}>
-                    {streak.current > 0 ? `${streak.current} day streak` : "Start a streak"}
-                  </span>
-                  <span className="block truncate text-[10px]" style={{ color: "var(--muted)" }}>
-                    {streak.best > 0 ? `Best ${streak.best} days` : "Attempt a mock today"}
-                  </span>
-                </span>
-              )}
-            </div>
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg" style={{ background: "var(--dash-warning-soft)", color: "var(--dash-warning)" }}>
+              <Flame size={15} strokeWidth={2} />
+            </span>
             {!collapsed && (
-              <div className="mt-2.5 flex gap-1">
-                {(streak.week ?? []).map((d, i) => (
-                  <span
-                    key={i}
-                    aria-hidden
-                    className="h-1.5 flex-1 rounded-full"
-                    style={{
-                      background: d.active
-                        ? "linear-gradient(90deg, var(--accent), var(--accent-2))"
-                        : "color-mix(in srgb, var(--text) 10%, transparent)",
-                      outline: d.isToday ? "1.5px solid var(--accent)" : "none",
-                      outlineOffset: 1,
-                    }}
-                  />
-                ))}
-              </div>
+              <span className="min-w-0">
+                <span className="block truncate text-[11.5px] font-bold" style={{ color: "var(--text)" }}>
+                  {streak.current > 0 ? `${streak.current} day streak` : "Start a streak"}
+                </span>
+                <span className="block truncate text-[10px]" style={{ color: "var(--muted)" }}>
+                  {streak.best > 0 ? `Best ${streak.best} days` : "Attempt a mock today"}
+                </span>
+              </span>
             )}
           </div>
         )}
@@ -262,11 +228,10 @@ function SideBody({
           title={collapsed ? "Get the Android app" : undefined}
           aria-label="Get the NimCuet Android app"
           aria-haspopup="dialog"
-          style={{ minHeight: 34 }}
+          style={{ minHeight: 38 }}
         >
-          <NavIcon><Download size={16} strokeWidth={STROKE} /></NavIcon>
+          <NavIcon><Download size={16} strokeWidth={1.9} /></NavIcon>
           {!collapsed && <span className="flex-1 truncate">Get the app</span>}
-          {!collapsed && <span className="dash-chip !px-1.5 !py-0 !text-[9px]">APK</span>}
         </button>
       </div>
     </>
@@ -357,10 +322,9 @@ export default function DashSide({
             className="site-logo block h-7 w-auto max-w-[10.5rem] object-contain object-left"
           />
           <span
-            className="flex items-center gap-1.5 pl-px text-[9px] font-semibold leading-none"
+            className="block pl-px text-[9px] font-semibold leading-none"
             style={{ color: "var(--muted)", letterSpacing: ".19em" }}
           >
-            <span aria-hidden className="h-1 w-1 rounded-full" style={{ background: "var(--accent)" }} />
             EXAM WORKSPACE
           </span>
         </span>
@@ -371,20 +335,17 @@ export default function DashSide({
   return (
     <>
       <aside
-        className={`fixed bottom-4 left-4 top-20 z-40 hidden flex-col overflow-hidden rounded-[var(--dash-radius-lg)] transition-[width] duration-300 ease-out lg:flex ${
+        className={`fixed bottom-4 left-4 top-20 z-40 hidden flex-col overflow-hidden rounded-[var(--dash-radius)] transition-[width] duration-300 ease-out lg:flex ${
           collapsed ? "w-[4.75rem]" : "w-[16.5rem]"
         }`}
         style={{
-          background: "linear-gradient(180deg, color-mix(in srgb, var(--dash-brand-soft) 62%, var(--card)) 0%, var(--card) 22%)",
+          background: "var(--dash-surface)",
           border: "1px solid var(--dash-line)",
-          boxShadow: "var(--dash-shadow-lg)",
+          boxShadow: "var(--dash-shadow)",
         }}
         aria-label="Dashboard navigation"
       >
-        <div
-          className={`flex shrink-0 items-center border-b px-3 py-3 ${collapsed ? "flex-col gap-2" : "justify-between gap-2"}`}
-          style={{ borderColor: "var(--dash-line)" }}
-        >
+        <div className={`flex shrink-0 items-center border-b px-3 py-3 ${collapsed ? "flex-col gap-2" : "justify-between gap-2"}`} style={{ borderColor: "var(--dash-line)" }}>
           {brand(collapsed)}
           {onToggleCollapsed && (
             <button
@@ -394,7 +355,7 @@ export default function DashSide({
               aria-expanded={!collapsed}
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               className="dash-btn dash-btn-ghost dash-btn-icon"
-              style={{ width: 32, minWidth: 32, minHeight: 32, border: "1px solid var(--dash-line)" }}
+              style={{ width: 32, minWidth: 32, minHeight: 32, borderColor: "var(--dash-line)", border: "1px solid var(--dash-line)" }}
             >
               {collapsed ? <ChevronsRight size={15} /> : <ChevronsLeft size={15} />}
             </button>
@@ -418,7 +379,7 @@ export default function DashSide({
             aria-label="Close menu"
             onClick={onClose}
             className="absolute inset-0 cursor-default"
-            style={{ background: "rgba(4, 22, 24, 0.56)", backdropFilter: "blur(4px)" }}
+            style={{ background: "rgba(7, 11, 24, 0.52)", backdropFilter: "blur(3px)" }}
           />
           <aside
             ref={panelRef}
@@ -426,11 +387,7 @@ export default function DashSide({
             aria-modal="true"
             aria-label="Dashboard navigation"
             className="absolute bottom-0 left-0 top-0 flex w-[18rem] max-w-[88vw] flex-col overflow-hidden"
-            style={{
-              background: "linear-gradient(180deg, color-mix(in srgb, var(--dash-brand-soft) 62%, var(--card)) 0%, var(--card) 22%)",
-              borderRight: "1px solid var(--dash-line)",
-              boxShadow: "24px 0 70px -30px rgba(4, 22, 24, .6)",
-            }}
+            style={{ background: "var(--dash-surface)", borderRight: "1px solid var(--dash-line)", boxShadow: "24px 0 70px -30px rgba(2,6,23,.55)" }}
           >
             <div className="flex shrink-0 items-center justify-between gap-2 border-b px-4 pb-3 pt-4" style={{ borderColor: "var(--dash-line)" }}>
               {brand(false)}

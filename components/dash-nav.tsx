@@ -26,8 +26,6 @@ export type StreakSummary = {
   week: Array<{ label: string; active: boolean; isToday: boolean }>;
 };
 
-type Notice = { id: string; title: string; body: string; created_at: string };
-
 function initialsOf(name: string, email: string): string {
   const src = (name || "").trim() || email.split("@")[0].replace(/[._-]+/g, " ");
   const parts = src.split(/\s+/).filter(Boolean).slice(0, 2);
@@ -36,7 +34,7 @@ function initialsOf(name: string, email: string): string {
 }
 
 const iconBtn =
-  "relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] border transition-colors hover:bg-[var(--dash-brand-soft)]";
+  "relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] border transition-colors";
 
 export default function DashNav({
   email,
@@ -47,7 +45,6 @@ export default function DashNav({
   onMenuClick,
   title,
   subtitle,
-  notices = [],
 }: {
   email: string;
   displayName?: string;
@@ -57,7 +54,6 @@ export default function DashNav({
   onMenuClick?: () => void;
   title?: string;
   subtitle?: string;
-  notices?: Notice[];
 }) {
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell" | "theme">(null);
@@ -97,17 +93,16 @@ export default function DashNav({
   const panelStyle: React.CSSProperties = {
     background: "var(--dash-surface)",
     border: "1px solid var(--dash-line)",
-    boxShadow: "0 28px 80px -28px rgba(4, 22, 24, 0.42)",
+    boxShadow: "0 24px 70px -24px rgba(2, 6, 23, 0.45)",
   };
   const currentTheme = THEMES.find((t) => t.id === theme);
   const firstName = (displayName || "").trim().split(/\s+/)[0] || email.split("@")[0];
-  const noticeCount = notices.length;
 
   return (
     <header
       className="fixed inset-x-0 top-0 z-50 backdrop-blur-xl backdrop-saturate-150"
       style={{
-        background: "color-mix(in srgb, var(--nav-bg) 94%, transparent)",
+        background: "color-mix(in srgb, var(--nav-bg) 92%, transparent)",
         borderBottom: "1px solid var(--dash-line)",
       }}
     >
@@ -123,7 +118,6 @@ export default function DashNav({
                   onMenuClick();
                 }}
                 aria-label="Open navigation"
-                aria-haspopup="dialog"
                 className="dash-btn dash-btn-ghost dash-btn-icon"
                 style={{ width: 38, minWidth: 38, minHeight: 38, border: "1px solid var(--dash-line)" }}
               >
@@ -131,21 +125,21 @@ export default function DashNav({
               </button>
             </span>
           )}
-          <a href="/dashboard" className="hidden shrink-0 items-center sm:flex lg:hidden" aria-label="NimCuet dashboard home">
+          <a href="/dashboard" className="hidden shrink-0 items-center sm:flex" aria-label="NimCuet dashboard home">
             <span className="flex min-w-0 flex-col items-start gap-1">
               <img src="/logo.png" alt="" aria-hidden className="site-logo block h-6 w-auto" />
               <span
                 aria-hidden
                 className="hidden whitespace-nowrap text-[9.5px] font-semibold leading-none md:block"
-                style={{ color: "var(--muted)", letterSpacing: ".09em" }}
+                style={{ color: "var(--muted)", letterSpacing: ".075em" }}
               >
                 Prepare Smart. Perform Better.
               </span>
             </span>
           </a>
-          <span aria-hidden className="hidden h-6 w-px sm:block lg:hidden" style={{ background: "var(--dash-line)" }} />
+          <span aria-hidden className="hidden h-5 w-px sm:block" style={{ background: "var(--dash-line)" }} />
           <div className="min-w-0">
-            <div className="truncate text-[13.5px] font-semibold leading-[1.25] tracking-[-0.012em]" style={{ color: "var(--text)" }}>
+            <div className="truncate text-[13px] font-semibold leading-[1.25] tracking-[-0.01em]" style={{ color: "var(--text)" }}>
               {title || "Dashboard"}
             </div>
             <div className="hidden truncate text-[10.5px] font-medium leading-[1.35] sm:block" style={{ color: "var(--muted)" }}>
@@ -161,13 +155,12 @@ export default function DashNav({
               onClick={() => setOpenMenu((m) => (m === "streak" ? null : "streak"))}
               aria-label={`Daily streak: ${streak.current} days. View activity.`}
               aria-expanded={openMenu === "streak"}
-              aria-haspopup="dialog"
               title="Daily streak"
               className={`${iconBtn} hidden items-center gap-1.5 px-2.5 sm:flex`}
               style={{ borderColor: "var(--dash-line)", color: "var(--text)", background: "transparent" }}
             >
               <Flame size={15} style={{ color: streak.current > 0 ? "var(--dash-warning)" : "var(--muted)" }} />
-              <span className="dash-num text-[11.5px] font-extrabold">{streak.current}</span>
+              <span className="mono text-[11.5px] font-extrabold">{streak.current}</span>
             </button>
           )}
 
@@ -176,10 +169,9 @@ export default function DashNav({
             onClick={() => setOpenMenu((m) => (m === "theme" ? null : "theme"))}
             aria-label={`Change theme. Current theme: ${currentTheme?.name ?? theme}.`}
             aria-expanded={openMenu === "theme"}
-            aria-haspopup="dialog"
             title="Theme"
             className={iconBtn}
-            style={{ borderColor: "var(--dash-line)", color: "var(--text)", background: "transparent" }}
+            style={{ borderColor: "var(--dash-line)", color: currentTheme?.icon ?? "var(--text)", background: "transparent" }}
           >
             <ThemeIcon id={theme} />
           </button>
@@ -187,23 +179,13 @@ export default function DashNav({
           <button
             type="button"
             onClick={() => setOpenMenu((m) => (m === "bell" ? null : "bell"))}
-            aria-label={noticeCount > 0 ? `Notifications: ${noticeCount} notice${noticeCount === 1 ? "" : "s"}` : "Notifications"}
+            aria-label="Notifications"
             aria-expanded={openMenu === "bell"}
-            aria-haspopup="dialog"
             title="Notifications"
             className={iconBtn}
             style={{ borderColor: "var(--dash-line)", color: "var(--text)", background: "transparent" }}
           >
             <Bell size={16} strokeWidth={1.9} />
-            {noticeCount > 0 && (
-              <span
-                aria-hidden
-                className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-extrabold text-white"
-                style={{ background: "var(--accent)", boxShadow: "0 0 0 2px var(--nav-bg)" }}
-              >
-                {noticeCount > 9 ? "9+" : noticeCount}
-              </span>
-            )}
           </button>
 
           <span aria-hidden className="mx-0.5 hidden h-6 w-px sm:block" style={{ background: "var(--dash-line)" }} />
@@ -213,9 +195,8 @@ export default function DashNav({
             onClick={() => setOpenMenu((m) => (m === "profile" ? null : "profile"))}
             aria-label="Account menu"
             aria-expanded={openMenu === "profile"}
-            aria-haspopup="dialog"
             title={displayName || email}
-            className="flex h-10 cursor-pointer items-center gap-2 rounded-[10px] pl-0.5 pr-1 transition-colors hover:bg-[var(--dash-brand-soft)]"
+            className="flex h-10 cursor-pointer items-center gap-2 rounded-[10px] pl-0.5 pr-1 transition-colors hover:bg-[var(--dash-surface-muted)]"
           >
             <span
               className="block h-8 w-8 overflow-hidden rounded-full border"
@@ -278,34 +259,18 @@ export default function DashNav({
           )}
 
           {openMenu === "bell" && (
-            <div className="menu-in absolute right-0 top-12 z-50 w-[20rem] rounded-[var(--dash-radius)] p-4" style={panelStyle} role="dialog" aria-label="Notifications">
+            <div className="menu-in absolute right-0 top-12 z-50 w-[19rem] rounded-[var(--dash-radius)] p-4" style={panelStyle} role="dialog" aria-label="Notifications">
               <div className="flex items-center justify-between">
                 <div className="dash-eyebrow">Notifications</div>
-                <span className="dash-chip">{noticeCount} notice{noticeCount === 1 ? "" : "s"}</span>
+                <span className="dash-chip">0 new</span>
               </div>
-              {noticeCount === 0 ? (
-                <div className="dash-empty mt-3 !px-4 !py-6">
-                  <span className="dash-empty-icon"><BellOff size={18} /></span>
-                  <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>Nothing new</p>
-                  <p className="max-w-[15rem] text-[11px] leading-5" style={{ color: "var(--muted)" }}>
-                    Announcements from the NimCuet team will appear here.
-                  </p>
-                </div>
-              ) : (
-                <div className="noscroll mt-3 grid max-h-[19rem] gap-2 overflow-y-auto">
-                  {notices.slice(0, 6).map((n) => (
-                    <div key={n.id} className="rounded-[10px] border px-3 py-2.5" style={{ borderColor: "var(--dash-line)", background: "var(--dash-surface-muted)" }}>
-                      <div className="flex flex-wrap items-baseline justify-between gap-1.5">
-                        <span className="text-[11.5px] font-bold" style={{ color: "var(--text)" }}>{n.title}</span>
-                        <span className="dash-num text-[9.5px]" style={{ color: "var(--muted)" }}>
-                          {new Date(n.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                        </span>
-                      </div>
-                      <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-[10.5px] leading-5" style={{ color: "var(--muted)" }}>{n.body}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="dash-empty mt-3 !px-4 !py-6">
+                <span className="dash-empty-icon"><BellOff size={18} /></span>
+                <p className="text-[12.5px] font-bold" style={{ color: "var(--text)" }}>No updates yet</p>
+                <p className="max-w-[15rem] text-[11px] leading-5" style={{ color: "var(--muted)" }}>
+                  There is no announcements feed connected, so nothing is listed here rather than made-up news.
+                </p>
+              </div>
             </div>
           )}
 
@@ -321,7 +286,7 @@ export default function DashNav({
                   style={t.id === theme ? { background: "var(--dash-surface-muted)", color: "var(--text)" } : undefined}
                 >
                   <span className="tdot inline-block h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: t.dot, border: "1px solid var(--dash-line)" }} />
-                  <span className="flex items-center gap-2" style={{ color: "var(--text)" }}>
+                  <span className="flex items-center gap-2" style={{ color: t.icon }}>
                     <ThemeIcon id={t.id} />
                   </span>
                   <span className="flex-1">{t.name}</span>
