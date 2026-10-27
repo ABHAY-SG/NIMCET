@@ -386,7 +386,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <>
+    <div className="dash-app">
       {!loading && email && (
         <DashNav
           email={email}
@@ -740,6 +740,6 @@ export default function ProfilePage() {
           onConfirm={(blob) => { closeCropper(); changePhoto(blob); }}
         />
       )}
-    </>
+    </div>
   );
 }

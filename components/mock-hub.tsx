@@ -396,19 +396,20 @@ export default function MockHub({
 
   return (
     <div className="space-y-4">
-      <section className="dash-card p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <section className="dash-card overflow-hidden">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b px-5 py-5 sm:px-6" style={{ borderColor: "var(--dash-line)" }}>
           <div className="flex min-w-0 items-start gap-3.5">
-            <span className="dash-icon-tile" style={{ width: 44, height: 44 }}><Trophy size={20} strokeWidth={1.8} /></span>
+            <span className="dash-icon-tile dash-icon-tile-brand" style={{ width: 44, height: 44 }}><Trophy size={20} strokeWidth={1.8} /></span>
             <div className="min-w-0">
               <div className="dash-eyebrow">{copy.meta}</div>
               <h1 className="dash-title mt-1">{copy.heading}</h1>
               <p className="dash-subtitle mt-1 max-w-xl">{copy.blurb}</p>
             </div>
           </div>
+          <span className="dash-chip"><BookOpen size={11} /> Published catalogue</span>
         </div>
 
-        <div className="mt-5 grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem]">
+        <div className="grid gap-2 p-4 sm:grid-cols-[minmax(0,1fr)_12rem] sm:p-5">
           <div className="relative min-w-0">
             <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }} />
             <input
@@ -460,7 +461,7 @@ export default function MockHub({
         </div>
       ) : loading ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="dash-skeleton h-[258px]" />)}
+          {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="dash-skeleton h-[300px]" />)}
         </div>
       ) : visibleTests.length === 0 ? (
         <div className="dash-empty">
