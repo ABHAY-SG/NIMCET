@@ -365,28 +365,32 @@ export default function DashboardPage() {
   };
 
   const selectView = (next: DashView) => {
-    setView(next);
     setSideOpen(false);
     try {
       const url = new URL(window.location.href);
       if (next === "home") url.searchParams.delete("view");
       else url.searchParams.set("view", next);
-      window.history.replaceState(null, "", url);
+      const target = `${url.pathname}${url.search}${url.hash}`;
+      const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (target !== current) window.history.pushState(window.history.state, "", target);
     } catch {}
+    setView(next);
   };
 
-  // Deep links from the header and profile sidebar: /dashboard?view=history.
-  // Reading location on mount keeps the page prerender-safe.
+  // Keep the rendered section aligned with direct links and browser Back/Forward.
   useEffect(() => {
-    try {
+    const syncViewFromUrl = () => {
       const requested = new URLSearchParams(window.location.search).get("view");
       const allowed: DashView[] = [
         "home", "mock", "nimcet-pyq", "cuet-mock", "cuet-pyq",
         "builder", "history", "contact", "pricing", "feedback",
       ];
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- browser-only URL state, unavailable while prerendering.
-      if (requested && allowed.includes(requested as DashView)) setView(requested as DashView);
-    } catch {}
+      setView(requested && allowed.includes(requested as DashView) ? requested as DashView : "home");
+    };
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initialize from browser URL after hydration.
+    syncViewFromUrl();
+    window.addEventListener("popstate", syncViewFromUrl);
+    return () => window.removeEventListener("popstate", syncViewFromUrl);
   }, []);
 
   // Published notices from the admin panel. Drafts never reach this endpoint.
