@@ -610,98 +610,43 @@ export default function DashboardPage() {
           {view === "home" && (
             <div className="space-y-4">
               <Reveal>
-                <section className="dash-hero welcome-hero px-5 py-6 sm:px-7 sm:py-7 lg:px-9 lg:py-9">
-                  <div className="welcome-hero-grid relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(250px,300px)] lg:items-center">
-                    <div className="welcome-copy min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="welcome-date inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10.5px] font-semibold">
-                          <CalendarDays size={12} />
-                          {todayLine || "Today"}
-                        </span>
-                        {!loading && (derived?.streak ?? 0) > 0 && (
-                          <span className="welcome-streak inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10.5px] font-bold">
-                            <Flame size={12} />
-                            {formatStreak(derived?.streak ?? 0)}
-                          </span>
-                        )}
-                      </div>
-                      <p className="welcome-kicker mt-7 text-[10px] font-bold uppercase">Your preparation, in focus</p>
-                      <h1 className="welcome-title mt-3 max-w-2xl text-[clamp(2.2rem,1.55rem+2.5vw,3.65rem)] leading-[1.02]">
-                        {loading ? (
-                          <>Preparing your <em>workspace.</em></>
-                        ) : (
-                          <>Welcome back{displayName ? <> <em>{displayName.trim().split(/\s+/)[0]}.</em></> : "."}</>
-                        )}
-                      </h1>
-                      <p className="welcome-description mt-4 max-w-xl text-[13px] leading-6 sm:text-[14px]">
-                        {!loading && derived
-                          ? derived.streak > 0
-                            ? `${formatStreak(derived.streak)}. Your best score is ${derived.best} — build on it with a focused mock today.`
-                            : "Your preparation history starts with one attempt. Take a mock and your real progress will appear here."
-                          : "Mock tests, previous-year papers and honest performance tracking for NIMCET and CUET PG MCA."}
+                <section className="dash-hero welcome-hero">
+                  <div className="welcome-hero-top">
+                    <div className="welcome-greeting">
+                      <p className="welcome-salutation">{getGreeting?.() ?? "Good evening,"}</p>
+                      <h1 className="welcome-title">{loading ? "WELCOME!" : <>{(displayName?.trim().split(/\\s+/)[0] || "STUDENT").toUpperCase()}! <span className="welcome-wave" aria-hidden="true">👋</span></>}</h1>
+                      <p className="welcome-description">
+                        {!loading && derived?.streak
+                          ? "Great start! Keep taking tests to see your improvement!"
+                          : "Great start! Keep taking tests to see your improvement!"}
                       </p>
-                      <div className="mt-6 flex flex-wrap items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={() => selectView("mock")}
-                          className="welcome-primary dash-btn"
-                        >
-                          <Play size={14} fill="currentColor" />
-                          Start a mock
-                          <ArrowRight size={14} />
-                        </button>
-                        <a href="#series" className="welcome-secondary dash-btn">
-                          Browse test series
-                          <ArrowUpRight size={14} />
-                        </a>
+                    </div>
+                    <div className="welcome-mini-stats">
+                      <div className="welcome-mini-stat">
+                        <span className="welcome-mini-icon"><Flame size={19} fill="currentColor" /></span>
+                        <strong>{loading ? "—" : `${derived?.streak ?? 0} Day${(derived?.streak ?? 0) === 1 ? "" : "s"}`}</strong>
+                        <span>Streak</span>
                       </div>
-                      <div className="welcome-footnote mt-6 flex items-center gap-2 text-[10.5px]">
-                        <span className="welcome-live-dot" />
-                        Built around your NIMCET &amp; CUET PG MCA goals
+                      <div className="welcome-mini-stat">
+                        <span className="welcome-mini-icon"><Trophy size={19} /></span>
+                        <strong>PREMIUM</strong>
+                        <span>Plan</span>
                       </div>
                     </div>
-
-                    <aside className="welcome-streak-panel" aria-label="Study streak summary">
-                      <div className="welcome-panel-top flex items-start justify-between gap-3">
-                        <div>
-                          <p className="welcome-panel-label">Consistency</p>
-                          <p className="welcome-panel-caption mt-1">Small sessions add up.</p>
-                        </div>
-                        <span className="welcome-flame"><Flame size={17} /></span>
-                      </div>
-                      <div className="welcome-ring-wrap mt-6">
-                        <svg width="124" height="124" viewBox="0 0 120 120" role="img" aria-label={`Current streak ${streakSummary.current} days, best ${streakSummary.best} days`}>
-                          <circle cx="60" cy="60" r="51" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="7" />
-                          <circle
-                            cx="60" cy="60" r="51" fill="none"
-                            stroke="var(--accent-2)" strokeWidth="7" strokeLinecap="round"
-                            strokeDasharray={2 * Math.PI * 51}
-                            strokeDashoffset={2 * Math.PI * 51 * (1 - streakPct)}
-                            transform="rotate(-90 60 60)"
-                            style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }}
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="welcome-ring-number mono">{loading ? "—" : (derived?.streak ?? 0)}</span>
-                          <span className="welcome-ring-unit">day streak</span>
-                        </div>
-                      </div>
-                      <div className="welcome-panel-bottom mt-5">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="welcome-panel-label">Weekly rhythm</span>
-                          <span className="welcome-panel-caption">{streakSummary.week.filter((d) => d.active).length} of 7 days</span>
-                        </div>
-                        <div className="welcome-week mt-3" aria-label="Weekly activity">
-                          {streakSummary.week.map((d, i) => (
-                            <span key={i} className={d.active ? "is-active" : d.isToday ? "is-today" : ""} title={d.active ? "Mock attempted" : d.isToday ? "Today" : "No attempt"} />
-                          ))}
-                        </div>
-                        <div className="welcome-best mt-4 flex items-center justify-between gap-3">
-                          <span>Personal best</span>
-                          <strong>{loading ? "—" : `${derived?.bestStreak ?? 0} days`}</strong>
-                        </div>
-                      </div>
-                    </aside>
+                  </div>
+                  <div className="welcome-quick-links">
+                    <button type="button" className="welcome-quick-link" onClick={() => selectView("history")}>
+                      <History size={21} />
+                      <span><small>History</small><strong>Test History</strong></span>
+                    </button>
+                    <a href="#series" className="welcome-quick-link">
+                      <BookOpen size={22} />
+                      <span><small>NIMCET</small><strong>NIMCET PYQ</strong></span>
+                    </a>
+                    <a href="#series" className="welcome-quick-link">
+                      <BarChart3 size={21} />
+                      <span><small>Other PYQ</small><strong>MCA-CUET 2024, MCA-C...</strong></span>
+                    </a>
                   </div>
                 </section>
               </Reveal>
