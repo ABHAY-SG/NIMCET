@@ -48,10 +48,11 @@ export async function proxy(req: NextRequest) {
   }
 
   const admin = isAdminPath(path);
+  const rootPath = path === "/";
   if (path === "/admin/login") return NextResponse.next();
 
   const studentGate = path === "/dashboard" || path.startsWith("/dashboard/");
-  if (!admin && !studentGate) {
+  if (!admin && !studentGate && !rootPath) {
     // Supabase normally returns OAuth codes to /auth/callback. If this project
     // is ever configured to fall back to the Site URL, the code lands on a
     // public page and @supabase/ssr consumes it client-side — the navbar
@@ -76,7 +77,7 @@ export async function proxy(req: NextRequest) {
     const u = req.nextUrl.clone();
     u.pathname = admin ? "/admin/login" : "/login";
     u.search = "";
-    u.searchParams.set("next", path);
+    u.searchParams.set("next", `${path}${req.nextUrl.search}`);
     return u;
   };
 
@@ -127,7 +128,11 @@ export async function proxy(req: NextRequest) {
     }
   }
 
-  if (!user) return NextResponse.redirect(loginUrl());
+  if (!user) {
+    // The public homepage remains available to signed-out visitors.
+    if (rootPath) return res;
+    return NextResponse.redirect(loginUrl());
+  }
 
   // Verified-email gate for the student area. The dashboard/profile pages
   // also enforce this client-side, but the proxy stops the shell and any
@@ -139,6 +144,23 @@ export async function proxy(req: NextRequest) {
     u.searchParams.set("verify-required", "1");
     u.searchParams.set("next", path);
     return NextResponse.redirect(u);
+  }
+
+  if (rootPath) {
+    const email = (user.email || "").trim().toLowerCase();
+    const adminEmails = (process.env.ADMIN_EMAILS || "")
+      .split(",")
+      .map((value) => value.trim().replace(/^["']+|["']+$/g, "").trim().toLowerCase())
+      .filter(Boolean);
+    const destination = adminEmails.includes(email) ? "/admin" : "/dashboard";
+    const target = req.nextUrl.clone();
+    target.pathname = destination;
+    const redirect = NextResponse.redirect(target);
+    redirect.headers.set("Cache-Control", "private, no-store");
+    res.cookies.getAll().forEach((cookie) => {
+      redirect.cookies.set(cookie.name, cookie.value);
+    });
+    return redirect;
   }
 
   return res;
