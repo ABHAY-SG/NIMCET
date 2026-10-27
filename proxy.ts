@@ -157,8 +157,9 @@ export async function proxy(req: NextRequest) {
     target.pathname = destination;
     const redirect = NextResponse.redirect(target);
     redirect.headers.set("Cache-Control", "private, no-store");
-    res.cookies.getAll().forEach((cookie) => {
-      redirect.cookies.set(cookie.name, cookie.value);
+    // Preserve refreshed Supabase cookie attributes on the redirect response.
+    res.headers.getSetCookie().forEach((cookie) => {
+      redirect.headers.append("Set-Cookie", cookie);
     });
     return redirect;
   }
