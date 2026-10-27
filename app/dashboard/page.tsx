@@ -38,12 +38,12 @@ import DashSide, { type DashView } from "@/components/dash-side";
 import MockHub from "@/components/mock-hub";
 import MockBuilder from "@/components/mock-builder";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
-import { formatStreak } from "@/lib/streak";
 import {
   attemptFingerprint,
   calculateStats,
   type AttemptStats,
 } from "@/lib/attempt-stats";
+import { dayKey } from "@/lib/streak";
 
 type Attempt = {
   id: string;
@@ -55,8 +55,13 @@ type Attempt = {
   created_at: string;
 };
 
-const RING_C = 2 * Math.PI * 52;
 const MEDALS = ["#f59e0b", "#94a3b8", "#b45309"];
+
+// Auth metadata occasionally carries a trailing period or extra whitespace.
+// Keep the full name, but render it as a name rather than a sentence.
+function cleanDisplayName(value: string): string {
+  return value.replace(/\s+/g, " ").trim().replace(/\.+$/, "");
+}
 
 type SeriesTest = {
   id: string;
@@ -233,6 +238,7 @@ export default function DashboardPage() {
   const [serverStats, setServerStats] = useState<AttemptStats | null>(null);
   const [statsTruncated, setStatsTruncated] = useState(false);
   const [todayLine, setTodayLine] = useState("");
+  const [todayKey, setTodayKey] = useState("");
   const [sideOpen, setSideOpen] = useState(false);
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [view, setView] = useState<DashView>("home");
@@ -288,16 +294,49 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const updateDate = () => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let lastKey = "";
+    let mounted = true;
+
+    const syncClock = (refreshStats: boolean) => {
+      if (timer) clearTimeout(timer);
+      const now = new Date();
+      const key = dayKey(now);
+      let line = "";
       try {
-        setTodayLine(new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }));
+        line = now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
       } catch {}
+
+      // If a tab was asleep across midnight (or the clock corrected itself),
+      // refresh the server aggregate so the streak window and today's marker
+      // are based on the new local day.
+      if (lastKey && lastKey !== key && refreshStats) {
+        void loadCloudStats(true);
+      }
+      lastKey = key;
+
+      setTodayLine(line);
+      setTodayKey(key);
+
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 250);
+      if (!mounted) return;
+      timer = setTimeout(() => {
+        if (mounted) syncClock(true);
+      }, Math.max(1000, nextMidnight.getTime() - now.getTime()));
     };
-    updateDate();
-    // Refresh the displayed weekday/date while the dashboard remains open.
-    const timer = window.setInterval(updateDate, 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
+
+    syncClock(false);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") syncClock(true);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      mounted = false;
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [loadCloudStats]);
 
   useEffect(() => {
     try {
@@ -410,7 +449,7 @@ export default function DashboardPage() {
         setEmail(user.email ?? "");
         const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string; full_name?: string; name?: string };
         const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";
-        setDisplayName(full.trim() || (user.email ?? "").split("@")[0]);
+        setDisplayName(cleanDisplayName(full || (user.email ?? "").split("@")[0]));
         setAvatarUrl(resolveAvatarUrl(user.user_metadata));
         await loadCloudStats();
         // Published test series for the catalog. Failure hides the section —
@@ -437,9 +476,9 @@ export default function DashboardPage() {
   const localStats = useMemo(
     () =>
       localAttempts.length > 0
-        ? calculateStats(localAttempts, new Date().getTimezoneOffset())
+        ? calculateStats(localAttempts, new Date().getTimezoneOffset(), todayKey || undefined)
         : null,
-    [localAttempts]
+    [localAttempts, todayKey]
   );
   const displayStats =
     serverStats && serverStats.total > 0 ? serverStats : localStats;
@@ -579,8 +618,6 @@ export default function DashboardPage() {
     feedback: { title: "Send feedback", subtitle: "Help improve the question bank" },
   };
   const currentMeta = viewMeta[view];
-  const greeting = "Welcome back";
-  const streakPct = derived?.bestStreak ? Math.min(1, (derived.streak ?? 0) / derived.bestStreak) : 0;
 
   return (
     <>
@@ -620,20 +657,20 @@ export default function DashboardPage() {
                   <span className="welcome-orbit welcome-orbit-two" aria-hidden="true" />
                   <div className="welcome-hero-top">
                     <div className="welcome-greeting">
-                      <div className="welcome-eyebrow"><span className="welcome-live-dot" /> YOUR STUDY SPACE <span className="welcome-eyebrow-line" /><span className="welcome-date"><CalendarDays size={11} />{todayLine || "Today"}</span></div>
+                      <div className="welcome-eyebrow"><span className="welcome-live-dot" /> YOUR STUDY SPACE <span className="welcome-eyebrow-line" /><span className="welcome-date"><CalendarDays size={11} /><time dateTime={todayKey || undefined}>{todayLine || "Today"}</time></span></div>
                       <p className="welcome-salutation">Good evening,</p>
-                      <h1 className="welcome-title"><span className="welcome-title-label">Welcome back,</span><span className="welcome-name">{loading ? "Student" : (displayName?.trim() || "Student")}</span><span className="welcome-wave" aria-hidden="true">👋</span></h1>
+                      <h1 className="welcome-title"><span className="welcome-title-label">Welcome back,</span><span className="welcome-name">{loading ? "Student" : (cleanDisplayName(displayName) || "Student")}</span><span className="welcome-wave" aria-hidden="true">👋</span></h1>
                       <p className="welcome-description">Every focused attempt gets you closer. Let’s make today count.</p>
                     </div>
                     <div className="welcome-mini-stats">
                       <div className="welcome-mini-stat welcome-stat-streak"><span className="welcome-mini-icon"><Flame size={18} fill="currentColor" /></span><strong>{loading ? "—" : `${derived?.streak ?? 0} Day${(derived?.streak ?? 0) === 1 ? "" : "s"}`}</strong><span>Current streak</span><i className="welcome-stat-glint" aria-hidden="true" /></div>
-                      <div className="welcome-mini-stat welcome-stat-plan"><span className="welcome-mini-icon"><Trophy size={18} /></span><strong>PREMIUM</strong><span>Your plan</span><i className="welcome-stat-glint" aria-hidden="true" /></div>
+                      <div className="welcome-mini-stat welcome-stat-plan"><span className="welcome-mini-icon"><Trophy size={18} /></span><strong>{loading ? "—" : (derived?.best ?? "—")}</strong><span>Best score</span><i className="welcome-stat-glint" aria-hidden="true" /></div>
                     </div>
                   </div>
                   <div className="welcome-quick-links">
                     <button type="button" className="welcome-quick-link" onClick={() => selectView("history")}><span className="welcome-link-icon"><History size={19} /></span><span><small>YOUR PROGRESS</small><strong>Test History</strong></span><ArrowUpRight className="welcome-link-arrow" size={14} /></button>
-                    <a href="#series" className="welcome-quick-link"><span className="welcome-link-icon"><BookOpen size={19} /></span><span><small>PREVIOUS PAPERS</small><strong>NIMCET PYQ</strong></span><ArrowUpRight className="welcome-link-arrow" size={14} /></a>
-                    <a href="#series" className="welcome-quick-link"><span className="welcome-link-icon"><BarChart3 size={19} /></span><span><small>MORE PRACTICE</small><strong>CUET PG MCA PYQ</strong></span><ArrowUpRight className="welcome-link-arrow" size={14} /></a>
+                    <button type="button" className="welcome-quick-link" onClick={() => selectView("nimcet-pyq")}><span className="welcome-link-icon"><BookOpen size={19} /></span><span><small>PREVIOUS PAPERS</small><strong>NIMCET PYQ</strong></span><ArrowUpRight className="welcome-link-arrow" size={14} /></button>
+                    <button type="button" className="welcome-quick-link" onClick={() => selectView("cuet-pyq")}><span className="welcome-link-icon"><BarChart3 size={19} /></span><span><small>MORE PRACTICE</small><strong>CUET PG MCA PYQ</strong></span><ArrowUpRight className="welcome-link-arrow" size={14} /></button>
                   </div>
                 </section>
               </Reveal>

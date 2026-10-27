@@ -2279,7 +2279,7 @@ body:has(.cbt) { overflow: hidden; }
 .welcome-live-dot { width:6px;height:6px;flex:0 0 auto;border-radius:50%;background:var(--welcome-mint);box-shadow:0 0 0 3px rgba(167,243,208,.12),0 0 12px rgba(167,243,208,.7);animation:welcome-pulse 2.8s ease-in-out infinite; }
 .welcome-eyebrow-line { display:inline-block;width:28px;height:1px;margin-left:.15rem;background:linear-gradient(90deg,rgba(167,243,208,.6),transparent); }
 .welcome-salutation { margin:0 0 .18rem;color:rgba(255,255,255,.77);font-size:13px;font-weight:500;letter-spacing:.005em; }
-.welcome-title { display:flex;flex-wrap:wrap;align-items:baseline;gap:.08em .28em;margin:0;color:#fff;font-family:var(--font-display),var(--font-sans),sans-serif;font-size:clamp(1.6rem,1.35rem + 1vw,2.15rem);font-weight:700;line-height:1.12;letter-spacing:-.045em;text-shadow:0 3px 22px rgba(0,0,0,.12);overflow-wrap:anywhere; }
+.welcome-hero .welcome-title { display:flex;flex-wrap:wrap;align-items:baseline;gap:.08em .28em;margin:0;color:#fff;font-family:var(--font-display),var(--font-sans),sans-serif;font-size:clamp(1.6rem,1.35rem + 1vw,2.15rem);font-weight:700;line-height:1.12;letter-spacing:-.045em;text-shadow:0 3px 22px rgba(0,0,0,.12);overflow-wrap:anywhere; }
 .welcome-title-label { color:rgba(255,255,255,.86);font-family:var(--font-heading),var(--font-sans),sans-serif;font-size:.72em;font-weight:500;letter-spacing:-.025em; }
 .welcome-name { color:#fff;font-family:var(--font-serif),Georgia,serif;font-size:1.08em;font-weight:650;font-style:italic;letter-spacing:-.035em;line-height:1.15;text-wrap:pretty;overflow-wrap:anywhere;text-shadow:0 2px 20px rgba(167,243,208,.12); }
 
@@ -2297,6 +2297,7 @@ body:has(.cbt) { overflow: hidden; }
 .welcome-stat-plan .welcome-stat-glint { animation-delay:1.8s; }
 .welcome-quick-links { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.65rem;padding-top:.9rem;border-top:1px solid var(--welcome-line); }
 .welcome-quick-link { display:flex;min-width:0;min-height:58px;align-items:center;gap:.65rem;padding:.55rem .65rem;border:1px solid rgba(255,255,255,.075);border-radius:11px;color:#fff;text-align:left;text-decoration:none;background:linear-gradient(115deg,rgba(255,255,255,.105),rgba(255,255,255,.065));box-shadow:inset 0 1px 0 rgba(255,255,255,.045);transition:transform .22s cubic-bezier(.2,.8,.2,1),background .22s ease,border-color .22s ease,box-shadow .22s ease; }
+.welcome-hero :is(a, button):focus-visible { outline-color:var(--welcome-mint);outline-offset:3px; }
 .welcome-quick-link:hover { transform:translateY(-2px);border-color:rgba(167,243,208,.35);background:linear-gradient(115deg,rgba(167,243,208,.16),rgba(255,255,255,.09));box-shadow:0 9px 20px -16px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.1); }
 .welcome-link-icon { display:grid;width:34px;height:34px;flex:0 0 auto;place-items:center;border:1px solid rgba(255,255,255,.11);border-radius:9px;color:#d4fff1;background:rgba(167,243,208,.09);transition:transform .22s ease,background .22s ease; }
 .welcome-quick-link:hover .welcome-link-icon { transform:scale(1.06) rotate(-3deg);background:rgba(167,243,208,.16); }
@@ -2313,7 +2314,7 @@ body:has(.cbt) { overflow: hidden; }
 @keyframes welcome-glint { 0%,65%,100%{left:-95px}82%{left:130%} }
 @media(max-width:640px) {
  .dash-hero.welcome-hero{padding:1.1rem}.welcome-hero-top{align-items:flex-start;gap:1rem;padding-bottom:.9rem}
- .welcome-title{font-size:clamp(1.45rem,5.5vw,1.9rem)}.welcome-description{max-width:25rem;font-size:11.5px}
+ .welcome-hero .welcome-title{font-size:clamp(1.45rem,5.5vw,1.9rem)}.welcome-description{max-width:25rem;font-size:11.5px}
  .welcome-mini-stats{grid-template-columns:repeat(2,minmax(66px,78px));gap:.45rem}.welcome-mini-stat{min-height:80px;padding:.5rem .25rem;border-radius:10px}
  .welcome-mini-icon svg{width:16px;height:16px}.welcome-mini-stat strong{font-size:9.5px}.welcome-mini-stat>span:not(.welcome-mini-icon){font-size:9px}
  .welcome-quick-links{grid-template-columns:1fr;gap:.45rem;padding-top:.7rem}.welcome-quick-link{min-height:48px;padding:.5rem .6rem}.welcome-link-icon{width:30px;height:30px}

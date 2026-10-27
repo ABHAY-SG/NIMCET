@@ -69,14 +69,15 @@ export function mergeAttempts(cloud: AttemptRow[], local: AttemptRow[]): Attempt
   return out.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
 }
 
-export function calculateStats(rows: AttemptRow[], tzOffsetMinutes = 0): AttemptStats {
+export function calculateStats(rows: AttemptRow[], tzOffsetMinutes = 0, todayKey?: string): AttemptStats {
   const days = new Set<string>();
   for (const row of rows) {
     const key = dayKeyFromIso(row.created_at, tzOffsetMinutes);
     if (key) days.add(key);
   }
-  const todayKey =
-    dayKeyFromIso(new Date().toISOString(), tzOffsetMinutes) ??
+  const resolvedTodayKey =
+    todayKey ||
+    dayKeyFromIso(new Date().toISOString(), tzOffsetMinutes) ||
     new Date().toISOString().slice(0, 10);
 
   const total = rows.length;
@@ -93,7 +94,7 @@ export function calculateStats(rows: AttemptRow[], tzOffsetMinutes = 0): Attempt
       accuracy: null,
       streak: 0,
       bestStreak: 0,
-      week: lastWeekActivityFromDays(days, todayKey),
+      week: lastWeekActivityFromDays(days, resolvedTodayKey),
       byTest: {},
     };
   }
@@ -136,9 +137,9 @@ export function calculateStats(rows: AttemptRow[], tzOffsetMinutes = 0): Attempt
     questions: correct + wrong + skipped,
     answered,
     accuracy: answered === 0 ? null : Math.round((correct / answered) * 100),
-    streak: calcStreakFromDays(days, todayKey),
+    streak: calcStreakFromDays(days, resolvedTodayKey),
     bestStreak: calcBestStreakFromDays(days),
-    week: lastWeekActivityFromDays(days, todayKey),
+    week: lastWeekActivityFromDays(days, resolvedTodayKey),
     byTest,
   };
 }
