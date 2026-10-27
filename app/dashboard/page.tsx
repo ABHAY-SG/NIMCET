@@ -288,10 +288,15 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only clock text; rendering it during prerender would bake the build date into HTML.
-      setTodayLine(new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }));
-    } catch {}
+    const updateDate = () => {
+      try {
+        setTodayLine(new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }));
+      } catch {}
+    };
+    updateDate();
+    // Refresh the displayed weekday/date while the dashboard remains open.
+    const timer = window.setInterval(updateDate, 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -615,9 +620,9 @@ export default function DashboardPage() {
                   <span className="welcome-orbit welcome-orbit-two" aria-hidden="true" />
                   <div className="welcome-hero-top">
                     <div className="welcome-greeting">
-                      <div className="welcome-eyebrow"><span className="welcome-live-dot" /> YOUR STUDY SPACE <span className="welcome-eyebrow-line" /></div>
+                      <div className="welcome-eyebrow"><span className="welcome-live-dot" /> YOUR STUDY SPACE <span className="welcome-eyebrow-line" /><span className="welcome-date"><CalendarDays size={11} />{todayLine || "Today"}</span></div>
                       <p className="welcome-salutation">Good evening,</p>
-                      <h1 className="welcome-title">{loading ? "WELCOME!" : <>{(displayName?.trim().split(/\s+/)[0] || "STUDENT").toUpperCase()}<span className="welcome-title-period">.</span> <span className="welcome-wave" aria-hidden="true">👋</span></>}</h1>
+                      <h1 className="welcome-title">{loading ? "Welcome" : (displayName?.trim() || "Student")} <span className="welcome-wave" aria-hidden="true">👋</span></h1>
                       <p className="welcome-description">Every focused attempt gets you closer. Let’s make today count.</p>
                     </div>
                     <div className="welcome-mini-stats">
