@@ -611,42 +611,24 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <Reveal>
                 <section className="dash-hero welcome-hero">
+                  <span className="welcome-orbit welcome-orbit-one" aria-hidden="true" />
+                  <span className="welcome-orbit welcome-orbit-two" aria-hidden="true" />
                   <div className="welcome-hero-top">
                     <div className="welcome-greeting">
+                      <div className="welcome-eyebrow"><span className="welcome-live-dot" /> YOUR STUDY SPACE <span className="welcome-eyebrow-line" /></div>
                       <p className="welcome-salutation">Good evening,</p>
-                      <h1 className="welcome-title">{loading ? "WELCOME!" : <>{(displayName?.trim().split(/\\s+/)[0] || "STUDENT").toUpperCase()}! <span className="welcome-wave" aria-hidden="true">👋</span></>}</h1>
-                      <p className="welcome-description">
-                        {!loading && derived?.streak
-                          ? "Great start! Keep taking tests to see your improvement!"
-                          : "Great start! Keep taking tests to see your improvement!"}
-                      </p>
+                      <h1 className="welcome-title">{loading ? "WELCOME!" : <>{(displayName?.trim().split(/\s+/)[0] || "STUDENT").toUpperCase()}<span className="welcome-title-period">.</span> <span className="welcome-wave" aria-hidden="true">👋</span></>}</h1>
+                      <p className="welcome-description">Every focused attempt gets you closer. Let’s make today count.</p>
                     </div>
                     <div className="welcome-mini-stats">
-                      <div className="welcome-mini-stat">
-                        <span className="welcome-mini-icon"><Flame size={19} fill="currentColor" /></span>
-                        <strong>{loading ? "—" : `${derived?.streak ?? 0} Day${(derived?.streak ?? 0) === 1 ? "" : "s"}`}</strong>
-                        <span>Streak</span>
-                      </div>
-                      <div className="welcome-mini-stat">
-                        <span className="welcome-mini-icon"><Trophy size={19} /></span>
-                        <strong>PREMIUM</strong>
-                        <span>Plan</span>
-                      </div>
+                      <div className="welcome-mini-stat welcome-stat-streak"><span className="welcome-mini-icon"><Flame size={18} fill="currentColor" /></span><strong>{loading ? "—" : `${derived?.streak ?? 0} Day${(derived?.streak ?? 0) === 1 ? "" : "s"}`}</strong><span>Current streak</span><i className="welcome-stat-glint" aria-hidden="true" /></div>
+                      <div className="welcome-mini-stat welcome-stat-plan"><span className="welcome-mini-icon"><Trophy size={18} /></span><strong>PREMIUM</strong><span>Your plan</span><i className="welcome-stat-glint" aria-hidden="true" /></div>
                     </div>
                   </div>
                   <div className="welcome-quick-links">
-                    <button type="button" className="welcome-quick-link" onClick={() => selectView("history")}>
-                      <History size={21} />
-                      <span><small>History</small><strong>Test History</strong></span>
-                    </button>
-                    <a href="#series" className="welcome-quick-link">
-                      <BookOpen size={22} />
-                      <span><small>NIMCET</small><strong>NIMCET PYQ</strong></span>
-                    </a>
-                    <a href="#series" className="welcome-quick-link">
-                      <BarChart3 size={21} />
-                      <span><small>Other PYQ</small><strong>MCA-CUET 2024, MCA-C...</strong></span>
-                    </a>
+                    <button type="button" className="welcome-quick-link" onClick={() => selectView("history")}><span className="welcome-link-icon"><History size={19} /></span><span><small>YOUR PROGRESS</small><strong>Test History</strong></span><ArrowUpRight className="welcome-link-arrow" size={14} /></button>
+                    <a href="#series" className="welcome-quick-link"><span className="welcome-link-icon"><BookOpen size={19} /></span><span><small>PREVIOUS PAPERS</small><strong>NIMCET PYQ</strong></span><ArrowUpRight className="welcome-link-arrow" size={14} /></a>
+                    <a href="#series" className="welcome-quick-link"><span className="welcome-link-icon"><BarChart3 size={19} /></span><span><small>MORE PRACTICE</small><strong>CUET PG MCA PYQ</strong></span><ArrowUpRight className="welcome-link-arrow" size={14} /></a>
                   </div>
                 </section>
               </Reveal>
