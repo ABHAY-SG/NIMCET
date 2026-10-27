@@ -622,7 +622,7 @@ export default function DashboardPage() {
                     <div className="welcome-greeting">
                       <div className="welcome-eyebrow"><span className="welcome-live-dot" /> YOUR STUDY SPACE <span className="welcome-eyebrow-line" /><span className="welcome-date"><CalendarDays size={11} />{todayLine || "Today"}</span></div>
                       <p className="welcome-salutation">Good evening,</p>
-                      <h1 className="welcome-title">{loading ? "Welcome" : (displayName?.trim() || "Student")} <span className="welcome-wave" aria-hidden="true">👋</span></h1>
+                      <h1 className="welcome-title"><span className="welcome-title-label">Welcome back,</span><span className="welcome-name">{loading ? "Student" : (displayName?.trim() || "Student")}</span><span className="welcome-wave" aria-hidden="true">👋</span></h1>
                       <p className="welcome-description">Every focused attempt gets you closer. Let’s make today count.</p>
                     </div>
                     <div className="welcome-mini-stats">
