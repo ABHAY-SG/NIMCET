@@ -613,7 +613,7 @@ export default function DashboardPage() {
                 <section className="dash-hero welcome-hero">
                   <div className="welcome-hero-top">
                     <div className="welcome-greeting">
-                      <p className="welcome-salutation">{getGreeting?.() ?? "Good evening,"}</p>
+                      <p className="welcome-salutation">Good evening,</p>
                       <h1 className="welcome-title">{loading ? "WELCOME!" : <>{(displayName?.trim().split(/\\s+/)[0] || "STUDENT").toUpperCase()}! <span className="welcome-wave" aria-hidden="true">👋</span></>}</h1>
                       <p className="welcome-description">
                         {!loading && derived?.streak
