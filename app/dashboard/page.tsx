@@ -630,7 +630,7 @@ export default function DashboardPage() {
                         {loading ? (
                           <>Preparing your <em>workspace.</em></>
                         ) : (
-                          <>Welcome back{displayName ? "," : ""} <em>{displayName ? displayName.trim().split(/\s+/)[0] : "learner"}.</em></>
+                          <>Welcome back{displayName ? <> <em>{displayName.trim().split(/\s+/)[0]}.</em></> : "."}</>
                         )}
                       </h1>
                       <p className="welcome-description mt-4 max-w-xl text-[13px] leading-6 sm:text-[14px]">
