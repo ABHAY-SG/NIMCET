@@ -2474,3 +2474,7 @@ body::before { background:radial-gradient(640px 340px at 12% -4%,var(--glow-1),t
   background-size: auto, auto, 220% 100%;
   background-position: center, center, 0 0;
 }
+
+
+/* User-requested cleanup: remove the homepage dot sheet entirely. */
+.hero-dots { display: none !important; background-image: none !important; }
