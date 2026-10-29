@@ -1,6 +1,6 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   ArrowRight,
@@ -34,7 +34,12 @@ import {
 import Reveal from "@/components/reveal";
 import CountUp from "@/components/count-up";
 import DashNav from "@/components/dash-nav";
-import DashSide, { type DashView } from "@/components/dash-side";
+import DashSide from "@/components/dash-side";
+import {
+  dashboardViewFromSearch,
+  dashboardViewHref,
+  type DashView,
+} from "@/lib/dashboard-view";
 import MockHub from "@/components/mock-hub";
 import MockBuilder from "@/components/mock-builder";
 import { getAuthClient, resolveAvatarUrl, signOutAll } from "@/lib/supabase";
@@ -223,6 +228,18 @@ function TrendChart({ data }: { data: Attempt[] }) {
   );
 }
 
+// Native pushState/replaceState are routed through the App Router, so this
+// hook sees both menu clicks and browser Back/Forward. It keeps the rendered
+// section in sync with the URL; pushing here would duplicate history entries.
+function DashboardViewSync({ onChange }: { onChange: (view: DashView) => void }) {
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  useEffect(() => {
+    onChange(dashboardViewFromSearch(query));
+  }, [query, onChange]);
+  return null;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
@@ -374,32 +391,35 @@ export default function DashboardPage() {
   };
 
   const selectView = (next: DashView) => {
+    setView(next);
     setSideOpen(false);
     try {
-      const url = new URL(window.location.href);
-      if (next === "home") url.searchParams.delete("view");
-      else url.searchParams.set("view", next);
-      const target = `${url.pathname}${url.search}${url.hash}`;
-      const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-      if (target !== current) window.history.pushState(window.history.state, "", target);
+      const current = new URLSearchParams(window.location.search).get("view");
+      const alreadyThere =
+        next === "home"
+          ? !current || current === "home"
+          : current === next;
+      if (alreadyThere) return;
+
+      // Each dashboard section is its own history entry. The App Router
+      // observes this pushState (see DashboardViewSync), so Back returns to
+      // the previous section and Forward restores this one. replaceState
+      // would edit the current entry and make Back leave the dashboard.
+      window.history.pushState(
+        { dashboardView: next },
+        "",
+        dashboardViewHref(next),
+      );
     } catch {}
-    setView(next);
   };
 
-  // Keep the rendered section aligned with direct links and browser Back/Forward.
+  // Browser Back/Forward is the one navigation path that does not run a
+  // dashboard onClick handler. Read the restored URL and render its section
+  // in place, without pushing another history entry.
   useEffect(() => {
-    const syncViewFromUrl = () => {
-      const requested = new URLSearchParams(window.location.search).get("view");
-      const allowed: DashView[] = [
-        "home", "mock", "nimcet-pyq", "cuet-mock", "cuet-pyq",
-        "builder", "history", "contact", "pricing", "feedback",
-      ];
-      setView(requested && allowed.includes(requested as DashView) ? requested as DashView : "home");
-    };
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initialize from browser URL after hydration.
-    syncViewFromUrl();
-    window.addEventListener("popstate", syncViewFromUrl);
-    return () => window.removeEventListener("popstate", syncViewFromUrl);
+    const onPopState = () => setView(dashboardViewFromSearch(window.location.search));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   // Published notices from the admin panel. Drafts never reach this endpoint.
@@ -641,6 +661,9 @@ export default function DashboardPage() {
 
   return (
     <>
+      <Suspense fallback={null}>
+        <DashboardViewSync onChange={setView} />
+      </Suspense>
       {navReady && email !== null && (
         <DashNav
           email={email}

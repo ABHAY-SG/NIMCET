@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
@@ -19,18 +20,9 @@ import {
   X,
 } from "lucide-react";
 import AndroidAppModal from "@/components/android-app-modal";
+import type { DashView } from "@/lib/dashboard-view";
 
-export type DashView =
-  | "home"
-  | "mock"
-  | "nimcet-pyq"
-  | "cuet-mock"
-  | "cuet-pyq"
-  | "builder"
-  | "history"
-  | "contact"
-  | "pricing"
-  | "feedback";
+export type { DashView } from "@/lib/dashboard-view";
 
 type Item = {
   label: string;
@@ -113,9 +105,9 @@ function Row({
 
   if (item.href) {
     return (
-      <a href={item.href} {...shared} onClick={onClose}>
+      <Link href={item.href} {...shared} onClick={onClose}>
         {inner}
-      </a>
+      </Link>
     );
   }
   if (item.view) {
@@ -304,7 +296,7 @@ export default function DashSide({
   }, [mobileOpen, onClose]);
 
   const brand = (compact: boolean) => (
-    <a
+    <Link
       href="/dashboard"
       onClick={onClose}
       className={`flex min-w-0 items-center rounded-lg focus-visible:outline-offset-4 ${compact ? "justify-center" : ""}`}
@@ -329,7 +321,7 @@ export default function DashSide({
           </span>
         </span>
       )}
-    </a>
+    </Link>
   );
 
   return (

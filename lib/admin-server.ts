@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { parseAdminEmails } from "@/lib/admin";
 
 // SERVER ONLY — never import from client components. The service-role key
 // bypasses RLS entirely; it lives only in server env (SUPABASE_SERVICE_ROLE_KEY)
@@ -135,22 +136,12 @@ async function bearerSessionUser(): Promise<BearerResult> {
   }
 }
 
-// One entry per email. Tolerant of how values get pasted into dashboards
-// (wrapping quotes, padding, stray case) so a legitimately configured admin
-// is never locked out by formatting noise.
-function parseAllowlist(raw: string): string[] {
-  return raw
-    .split(",")
-    .map((s) => s.trim().replace(/^["']+|["']+$/g, "").trim().toLowerCase())
-    .filter(Boolean);
-}
-
 // The ONE server-side admin allowlist. Deliberately NOT NEXT_PUBLIC_*:
 // the browser-visible variable may exist as a convenience/legacy value, but
 // it must never be what grants page or database access. Empty list = NOT
 // CONFIGURED and every admin path fails closed with an explicit 503/message.
 export function serverAdminEmails(): { list: string[]; configured: boolean } {
-  const list = parseAllowlist(env("ADMIN_EMAILS"));
+  const list = parseAdminEmails(env("ADMIN_EMAILS"));
   return { list, configured: list.length > 0 };
 }
 

@@ -1,18 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { parseAdminEmails } from "@/lib/admin";
 import {
   OAUTH_INTENT_COOKIE,
   oauthRecoveryPath,
   readOAuthIntentCookie,
 } from "@/lib/oauth-return";
 
-// Proxy (the Next.js 16 rename of middleware) — a SESSION gate for /admin and
-// /dashboard, deliberately NOT an authorization gate for staff. It only
-// answers "is anyone signed in?" and forwards the request path so the server
-// gate can redirect back to the exact page after login.
+// Proxy (the Next.js 16 rename of middleware) — an entry/session gate for
+// /, /admin and /dashboard. It answers "is anyone signed in?" and forwards a
+// protected request path so the server gate can redirect back after login.
 //
-// Why the admin allowlist is NOT checked here: authorization depends on the
-// server-only ADMIN_EMAILS value, and this layer's environment is the wrong
+// Why the admin allowlist is NOT an authorization gate here: authorization
+// depends on the server-only ADMIN_EMAILS value, and this layer is the wrong
 // place to decide it (a stale build/deployment config here once bounced
 // legitimate admins). The authoritative checks run one layer down, on the
 // Node.js server, where env vars are read at request time:
@@ -20,6 +20,11 @@ import {
 //   - lib/admin-server.ts requireAdmin → every admin API route
 // A signed-in non-admin who reaches the pages is redirected to /dashboard by
 // the gate; no admin data is ever served because the APIs reject them too.
+//
+// The one allowlist use here is deliberately only a DESTINATION HINT for a
+// signed-in visitor opening "/": admin → /admin, everyone else → /dashboard.
+// /admin still re-checks the same allowlist server-side, so a stale proxy
+// value can never grant access.
 //
 // Admin and student flows are deliberately SEPARATE: a failed session check
 // for /admin lands on /admin/login?next=<path>; a failed check for /dashboard
@@ -48,7 +53,7 @@ export async function proxy(req: NextRequest) {
   }
 
   const admin = isAdminPath(path);
-  const rootPath = path === "/";
+  const rootEntry = path === "/";
   if (path === "/admin/login") return NextResponse.next();
 
   const studentGate = path === "/dashboard" || path.startsWith("/dashboard/");
@@ -72,14 +77,17 @@ export async function proxy(req: NextRequest) {
       });
       return res;
     }
-    if (!rootPath) return NextResponse.next();
+    if (!rootEntry) return NextResponse.next();
   }
 
+  // Preserve the full protected URL (including dashboard ?view=...) so a
+  // signed-out deep link returns to the same section after login.
+  const nextTarget = `${path}${req.nextUrl.search}`;
   const loginUrl = () => {
     const u = req.nextUrl.clone();
     u.pathname = admin ? "/admin/login" : "/login";
     u.search = "";
-    u.searchParams.set("next", `${path}${req.nextUrl.search}`);
+    u.searchParams.set("next", nextTarget);
     return u;
   };
 
@@ -90,17 +98,16 @@ export async function proxy(req: NextRequest) {
     ""
   ).trim();
   if (!url || !key) {
-    // Protected areas must fail closed when sessions cannot be verified. The
-    // homepage is public, so a missing/partial configuration must not turn it
-    // into a login redirect.
-    if (rootPath) return NextResponse.next();
+    // Cannot verify sessions at all → protected areas fail closed. The
+    // public root still renders as the marketing homepage.
+    if (rootEntry) return NextResponse.next();
     return NextResponse.redirect(loginUrl());
   }
 
   // Forward the concrete path in a request header; the admin server gate uses
   // it to build ?next= so the admin returns to the page they asked for.
   const requestHeaders = new Headers(req.headers);
-  if (admin) requestHeaders.set("x-admin-path", path);
+  if (admin) requestHeaders.set("x-admin-path", nextTarget);
 
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   const sb = createServerClient(url, key, {
@@ -134,8 +141,9 @@ export async function proxy(req: NextRequest) {
   }
 
   if (!user) {
-    // The public homepage remains available to signed-out visitors.
-    if (rootPath) return res;
+    // A signed-out visitor at "/" still gets the public homepage. Protected
+    // areas continue to fail closed to their respective login screens.
+    if (rootEntry) return res;
     return NextResponse.redirect(loginUrl());
   }
 
@@ -151,22 +159,20 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(u);
   }
 
-  if (rootPath) {
-    const email = (user.email || "").trim().toLowerCase();
-    const adminEmails = (process.env.ADMIN_EMAILS || "")
-      .split(",")
-      .map((value) => value.trim().replace(/^["']+|["']+$/g, "").trim().toLowerCase())
-      .filter(Boolean);
-    const destination = adminEmails.includes(email) ? "/admin" : "/dashboard";
-    const target = req.nextUrl.clone();
-    target.pathname = destination;
-    const redirect = NextResponse.redirect(target);
-    redirect.headers.set("Cache-Control", "private, no-store");
-    // Preserve refreshed Supabase cookie attributes on the redirect response.
-    res.headers.getSetCookie().forEach((cookie) => {
-      redirect.headers.append("Set-Cookie", cookie);
+  if (rootEntry) {
+    // Signed-in visitors should never be parked on the marketing homepage.
+    // This is only a starting destination; the server gate below still owns
+    // the actual admin authorization decision.
+    const email = (user.email || "").toLowerCase();
+    const isAllowlisted = !!email && parseAdminEmails(process.env.ADMIN_EMAILS).includes(email);
+    const destination = isAllowlisted ? "/admin" : "/dashboard";
+    const redirectRes = NextResponse.redirect(new URL(destination, req.url));
+    // Do not drop refreshed cookies from the session check.
+    res.cookies.getAll().forEach(({ name, value, ...options }) => {
+      redirectRes.cookies.set(name, value, options);
     });
-    return redirect;
+    redirectRes.headers.set("Cache-Control", "private, no-store");
+    return redirectRes;
   }
 
   return res;

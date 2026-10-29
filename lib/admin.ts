@@ -14,6 +14,16 @@ export function safeNextPath(value: string | null | undefined): string | null {
   return value;
 }
 
+// Same tolerant parsing used by the authoritative server allowlist and by the
+// proxy's root-entry destination hint. This is pure (no env read), so it is
+// safe to import in both places.
+export function parseAdminEmails(raw: string | null | undefined): string[] {
+  return (raw ?? "")
+    .split(",")
+    .map((s) => s.trim().replace(/^["']+|["']+$/g, "").trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export type QuestionRow = {
   id: string;
   exam: string;

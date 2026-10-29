@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -704,7 +705,7 @@ export default function ProfilePage() {
                 </Reveal>
 
                 <Reveal>
-                  <a href="/dashboard?view=history" className="dash-card dash-card-hover flex items-center justify-between gap-3 p-4">
+                  <Link href="/dashboard?view=history" className="dash-card dash-card-hover flex items-center justify-between gap-3 p-4">
                     <span className="flex min-w-0 items-center gap-3">
                       <span className="dash-icon-tile dash-icon-tile-sm"><History size={15} /></span>
                       <span className="min-w-0">
@@ -713,7 +714,7 @@ export default function ProfilePage() {
                       </span>
                     </span>
                     <ChevronRight size={15} style={{ color: "var(--muted)" }} />
-                  </a>
+                  </Link>
                 </Reveal>
 
                 <Reveal>
