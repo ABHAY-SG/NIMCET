@@ -2464,3 +2464,13 @@ body::before { background:radial-gradient(640px 340px at 12% -4%,var(--glow-1),t
 .hero-dots { opacity:.82; background-image:radial-gradient(color-mix(in srgb,var(--accent) 23%,transparent) 1.1px,transparent 1.5px); }
 .hero-glow,.hero-stage-glow { background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 22%,transparent),transparent 72%); }
 .ring-grad { --ring-a:var(--accent); --ring-b:var(--accent-2); }
+
+/* Dashboard welcome banner: remove the noisy dotted texture; keep a subtle theme-lit sheen. */
+.dash-hero.welcome-hero::before {
+  background-image:
+    radial-gradient(ellipse at 72% 24%, rgba(255,255,255,.13), transparent 28%),
+    radial-gradient(ellipse at 28% 110%, color-mix(in srgb, var(--welcome-mint) 12%, transparent), transparent 38%),
+    linear-gradient(112deg, transparent 20%, rgba(255,255,255,.08) 45%, transparent 66%);
+  background-size: auto, auto, 220% 100%;
+  background-position: center, center, 0 0;
+}
