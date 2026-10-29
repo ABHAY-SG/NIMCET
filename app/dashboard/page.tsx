@@ -1150,72 +1150,172 @@ export default function DashboardPage() {
           {view === "pricing" && (
             <div className="space-y-4">
               <Reveal immediate>
-                <div>
-                  <div className="dash-eyebrow">Access</div>
-                  <h1 className="dash-title mt-1">Plans</h1>
-                  <p className="dash-subtitle mt-1 max-w-2xl">
-                    Start free. Paid plans activate over UPI within a day on your registered email — full policy in{" "}
-                    <a href="/terms" className="dash-link underline underline-offset-2">Terms</a>.
-                  </p>
-                </div>
+                <section className="dash-hero welcome-hero">
+                  <span className="welcome-orbit welcome-orbit-one" aria-hidden="true" />
+                  <span className="welcome-orbit welcome-orbit-two" aria-hidden="true" />
+                  <div className="welcome-hero-top">
+                    <div className="welcome-greeting">
+                      <div className="welcome-eyebrow">
+                        <span className="welcome-live-dot" /> MEMBERSHIP
+                        <span className="welcome-eyebrow-line" />
+                        <span className="welcome-date">Flexible billing · Full preparation access</span>
+                      </div>
+                      <p className="welcome-salutation">Invest in your preparation</p>
+                      <h1 className="welcome-title">
+                        <span className="welcome-title-label">Plans &</span>
+                        <span className="welcome-name">Pricing</span>
+                      </h1>
+                      <p className="welcome-description">
+                        Choose monthly flexibility or save with a full year of focused NIMCET and CUET PG MCA practice.
+                      </p>
+                    </div>
+                    <div className="welcome-mini-stats">
+                      <div className="welcome-mini-stat welcome-stat-streak">
+                        <span className="welcome-mini-icon"><BookOpen size={18} /></span>
+                        <strong>120</strong>
+                        <span>Questions per NIMCET mock</span>
+                        <i className="welcome-stat-glint" aria-hidden="true" />
+                      </div>
+                      <div className="welcome-mini-stat welcome-stat-plan">
+                        <span className="welcome-mini-icon"><Trophy size={18} /></span>
+                        <strong>4</strong>
+                        <span>Exam subject areas</span>
+                        <i className="welcome-stat-glint" aria-hidden="true" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="welcome-quick-links">
+                    <div className="welcome-quick-link">
+                      <span className="welcome-link-icon"><CalendarDays size={19} /></span>
+                      <span><small>MONTHLY BILLING</small><strong>₹149 / month</strong></span>
+                    </div>
+                    <div className="welcome-quick-link">
+                      <span className="welcome-link-icon"><Sparkles size={19} /></span>
+                      <span><small>YEARLY BILLING</small><strong>₹699 / year</strong></span>
+                    </div>
+                    <div className="welcome-quick-link">
+                      <span className="welcome-link-icon"><Target size={19} /></span>
+                      <span><small>YEARLY SAVING</small><strong>₹1,089 · 61%</strong></span>
+                    </div>
+                  </div>
+                </section>
               </Reveal>
-              <div className="grid gap-3 md:grid-cols-3">
-                {[
-                  {
-                    name: "Free",
-                    price: "₹0",
-                    period: "forever",
-                    note: "Try the experience before paying.",
-                    features: ["Free 12-question sample mock", "Solutions and scorecard", "No card required"],
-                    action: { label: "Start free", onClick: () => selectView("mock") },
-                  },
-                  {
-                    name: "Monthly",
-                    price: "₹149",
-                    period: "/ month",
-                    note: "For a focused preparation month.",
-                    features: ["Unlimited mocks", "Full section analytics", "All previous-year sets", "Cancel anytime"],
-                    action: { label: "Choose Monthly", href: "mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Monthly%20plan" },
-                  },
-                  {
-                    name: "Annual",
-                    price: "₹699",
-                    period: "/ year",
-                    note: "For the full admission cycle.",
-                    features: ["12 months of full access", "Everything in Monthly", "Priority support"],
-                    action: { label: "Choose Annual", href: "mailto:abhayincodingworld@gmail.com?subject=Activate%20NIMCET%20Annual%20plan" },
-                  },
-                ].map((plan) => (
-                  <article key={plan.name} className="dash-card flex flex-col p-5">
-                    <div className="flex items-center justify-between gap-2">
-                      <h2 className="dash-title-sm">{plan.name}</h2>
-                      {plan.name === "Free" && <span className="dash-chip">Entry</span>}
+
+              <div className="grid gap-3 lg:grid-cols-2">
+                <article className="dash-card flex flex-col p-5 sm:p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="dash-eyebrow">Flexible access</div>
+                      <h2 className="dash-title mt-1">Monthly plan</h2>
+                      <p className="mt-1 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>For a focused month of exam preparation.</p>
                     </div>
-                    <div className="mt-3 flex items-baseline gap-1">
-                      <span className="mono text-[26px] font-extrabold leading-none" style={{ color: "var(--text)" }}>{plan.price}</span>
-                      <span className="text-[10.5px] font-semibold" style={{ color: "var(--muted)" }}>{plan.period}</span>
-                    </div>
-                    <p className="mt-1.5 text-[11px] leading-5" style={{ color: "var(--muted)" }}>{plan.note}</p>
-                    <ul className="mt-4 grid gap-2">
-                      {plan.features.map((feature) => (
+                    <span className="dash-icon-tile"><CalendarDays size={18} /></span>
+                  </div>
+                  <div className="mt-5 flex items-baseline gap-1">
+                    <span className="mono text-3xl font-extrabold leading-none" style={{ color: "var(--text)" }}>₹149</span>
+                    <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>/ month</span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {[
+                      ["Duration", "1 month"],
+                      ["NIMCET mock size", "120 questions"],
+                      ["Mathematics", "50 questions"],
+                      ["Logical reasoning", "40 questions"],
+                      ["Computer awareness", "20 questions"],
+                      ["English", "10 questions"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface-2, transparent)" }}>
+                        <div className="text-[10px] font-medium" style={{ color: "var(--muted)" }}>{label}</div>
+                        <div className="mt-1 text-[12px] font-bold" style={{ color: "var(--text)" }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4">
+                    <div className="dash-eyebrow">Plan features</div>
+                    <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {[
+                        "Full-length timed mock practice",
+                        "Instant scorecard and solutions",
+                        "Section-wise performance analytics",
+                        "Attempt history and progress tracking",
+                        "NIMCET and CUET PG MCA practice catalogue",
+                        "Email support for plan questions",
+                      ].map((feature) => (
                         <li key={feature} className="flex items-start gap-2 text-[11.5px] leading-5" style={{ color: "var(--text)" }}>
                           <Check size={13} className="mt-0.5 shrink-0" style={{ color: "var(--dash-success)" }} />
                           {feature}
                         </li>
                       ))}
                     </ul>
-                    <div className="mt-auto pt-5">
-                      {"href" in plan.action ? (
-                        <a href={plan.action.href} className="dash-btn dash-btn-secondary w-full">{plan.action.label} <ArrowRight size={13} /></a>
-                      ) : (
-                        <button type="button" onClick={plan.action.onClick} className="dash-btn dash-btn-primary w-full">{plan.action.label} <ArrowRight size={13} /></button>
-                      )}
+                  </div>
+                  <div className="mt-auto pt-5">
+                    <a href="mailto:abhayincodingworld@gmail.com?subject=Activate%20NimCuet%20Monthly%20plan" className="dash-btn dash-btn-secondary w-full">
+                      Choose Monthly <ArrowRight size={13} />
+                    </a>
+                  </div>
+                </article>
+
+                <article className="dash-card flex flex-col p-5 sm:p-6" style={{ borderColor: "var(--accent, var(--dash-success))" }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="dash-eyebrow">Best value</div>
+                      <h2 className="dash-title mt-1">Yearly plan</h2>
+                      <p className="mt-1 text-[11.5px] leading-5" style={{ color: "var(--muted)" }}>One plan for the full preparation cycle.</p>
                     </div>
-                  </article>
-                ))}
+                    <span className="dash-icon-tile"><Trophy size={18} /></span>
+                  </div>
+                  <div className="mt-5 flex flex-wrap items-baseline gap-2">
+                    <span className="mono text-3xl font-extrabold leading-none" style={{ color: "var(--text)" }}>₹699</span>
+                    <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>/ year</span>
+                    <span className="dash-chip">Save 61%</span>
+                  </div>
+                  <p className="mt-2 text-[11px]" style={{ color: "var(--muted)" }}>Equivalent to ₹58.25/month · Save ₹1,089 vs 12 monthly payments.</p>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {[
+                      ["Duration", "12 months"],
+                      ["NIMCET mock size", "120 questions"],
+                      ["Mathematics", "50 questions"],
+                      ["Logical reasoning", "40 questions"],
+                      ["Computer awareness", "20 questions"],
+                      ["English", "10 questions"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface-2, transparent)" }}>
+                        <div className="text-[10px] font-medium" style={{ color: "var(--muted)" }}>{label}</div>
+                        <div className="mt-1 text-[12px] font-bold" style={{ color: "var(--text)" }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4">
+                    <div className="dash-eyebrow">Everything included</div>
+                    <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {[
+                        "12 months of plan access",
+                        "Full-length timed mock practice",
+                        "Instant scorecards and solutions",
+                        "Section-wise performance analytics",
+                        "Attempt history and progress tracking",
+                        "NIMCET and CUET PG MCA practice catalogue",
+                        "Email support for plan questions",
+                        "Lower effective monthly cost",
+                      ].map((feature) => (
+                        <li key={feature} className="flex items-start gap-2 text-[11.5px] leading-5" style={{ color: "var(--text)" }}>
+                          <Check size={13} className="mt-0.5 shrink-0" style={{ color: "var(--dash-success)" }} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="mt-auto pt-5">
+                    <a href="mailto:abhayincodingworld@gmail.com?subject=Activate%20NimCuet%20Yearly%20plan" className="dash-btn dash-btn-primary w-full">
+                      Choose Yearly <ArrowRight size={13} />
+                    </a>
+                  </div>
+                </article>
               </div>
               <p className="flex items-start gap-2 text-[10.5px] leading-5" style={{ color: "var(--muted)" }}>
-                <Info size={13} className="mt-0.5 shrink-0" /> Plan changes are handled by the team over email; no payment details are stored in the dashboard.
+                <Info size={13} className="mt-0.5 shrink-0" />
+                Plan activation and renewals are handled by the team over email. No payment details are stored in the dashboard. See{" "}
+                <a href="/terms" className="dash-link underline underline-offset-2">Terms</a>.
               </p>
             </div>
           )}
