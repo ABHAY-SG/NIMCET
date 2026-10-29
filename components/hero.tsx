@@ -75,7 +75,7 @@ export default function Hero() {
             style={{ background: "color-mix(in srgb, var(--nav-bg) 70%, transparent)", border: "1px solid var(--border)", color: "var(--muted)", letterSpacing: "0.22em", animationDelay: "0.1s" }}
           >
             <span aria-hidden className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "var(--accent)" }} />
-            PREMIUM MOCKS · NIMCET + CUET PG
+            🏆 PREMIUM MOCK TESTS · NIMCET + CUET PG
           </p>
 
           <h1 className="mt-5" style={{ fontSize: "clamp(1.9rem, 5.5vw, 4.2rem)", lineHeight: 1.1, fontFamily: "var(--font-serif), Georgia, serif", overflowWrap: "anywhere" }}>
