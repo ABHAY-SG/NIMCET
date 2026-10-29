@@ -5,18 +5,16 @@ export default function Reveal({
   children,
   className = "",
   delay = 0,
-  immediate = false,
 }: {
   children: React.ReactNode;
   className?: string;
   delay?: number;
-  immediate?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (immediate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       el.classList.add("in");
       return;
     }
@@ -30,7 +28,7 @@ export default function Reveal({
   return (
     <div
       ref={ref}
-      className={`rv ${immediate ? "in" : ""} ${className}`}
+      className={`rv ${className}`}
       style={delay ? { transitionDelay: `${delay}s` } : undefined}
     >
       {children}
