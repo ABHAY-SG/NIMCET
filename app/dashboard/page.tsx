@@ -671,7 +671,7 @@ export default function DashboardPage() {
         >
           {view === "home" && (
             <div className="space-y-4">
-              <Reveal>
+              <Reveal immediate>
                 <section className="dash-hero welcome-hero">
                   <span className="welcome-orbit welcome-orbit-one" aria-hidden="true" />
                   <span className="welcome-orbit welcome-orbit-two" aria-hidden="true" />
@@ -712,7 +712,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <Reveal>
+              <Reveal immediate>
                 <section className="dash-card overflow-hidden">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3.5 sm:px-5" style={{ borderColor: "var(--dash-line)" }}>
                     <div>
@@ -756,7 +756,7 @@ export default function DashboardPage() {
 
               <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
                 <div className="min-w-0 space-y-4">
-                  <Reveal>
+                  <Reveal immediate>
                     {loading ? (
                       <div className="dash-card p-5">
                         <div className="flex items-center justify-between gap-4">
@@ -785,7 +785,7 @@ export default function DashboardPage() {
                     )}
                   </Reveal>
 
-                  <Reveal>
+                  <Reveal immediate>
                     <section id="series" className="scroll-mt-24">
                       <div className="flex flex-wrap items-end justify-between gap-3">
                         <div>
@@ -863,7 +863,7 @@ export default function DashboardPage() {
                     </section>
                   </Reveal>
 
-                  <Reveal>
+                  <Reveal immediate>
                     <section>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
@@ -901,7 +901,7 @@ export default function DashboardPage() {
                   </Reveal>
 
                   {deviceOnly.length > 0 && (
-                    <Reveal>
+                    <Reveal immediate>
                       <section>
                         <div className="flex items-center justify-between gap-2">
                           <div>
@@ -919,7 +919,7 @@ export default function DashboardPage() {
                 </div>
 
                 <aside className="min-w-0 space-y-4">
-                  <Reveal>
+                  <Reveal immediate>
                     <section className="dash-card p-4">
                       <div className="flex items-center gap-2">
                         <span className="dash-icon-tile dash-icon-tile-sm"><CalendarDays size={15} /></span>
@@ -949,7 +949,7 @@ export default function DashboardPage() {
                   </Reveal>
 
                   {notices.length > 0 && (
-                    <Reveal>
+                    <Reveal immediate>
                       <section className="dash-card p-4">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
@@ -979,7 +979,7 @@ export default function DashboardPage() {
                     </Reveal>
                   )}
 
-                  <Reveal>
+                  <Reveal immediate>
                     <section className="dash-card p-4">
                       <div className="flex items-center gap-2">
                         <span className="dash-icon-tile dash-icon-tile-sm"><Sparkles size={15} /></span>
@@ -1011,7 +1011,7 @@ export default function DashboardPage() {
 
           {view === "history" && (
             <div className="space-y-4">
-              <Reveal>
+              <Reveal immediate>
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
                     <div className="dash-eyebrow">Your record</div>
@@ -1082,7 +1082,7 @@ export default function DashboardPage() {
 
           {view === "contact" && (
             <div className="max-w-4xl space-y-4">
-              <Reveal>
+              <Reveal immediate>
                 <div>
                   <div className="dash-eyebrow">Support</div>
                   <h1 className="dash-title mt-1">Contact</h1>
@@ -1126,7 +1126,7 @@ export default function DashboardPage() {
 
           {view === "pricing" && (
             <div className="space-y-4">
-              <Reveal>
+              <Reveal immediate>
                 <div>
                   <div className="dash-eyebrow">Access</div>
                   <h1 className="dash-title mt-1">Plans</h1>
@@ -1199,7 +1199,7 @@ export default function DashboardPage() {
 
           {view === "feedback" && (
             <div className="max-w-2xl space-y-4">
-              <Reveal>
+              <Reveal immediate>
                 <div>
                   <div className="dash-eyebrow">Product feedback</div>
                   <h1 className="dash-title mt-1">Feedback</h1>
