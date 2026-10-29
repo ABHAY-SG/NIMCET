@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Bell,
   BellOff,
-  Check,
   ChevronDown,
   ChevronRight,
   Flame,
@@ -15,7 +14,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { signOutAll } from "@/lib/supabase";
-import { THEMES, applyTheme, useTheme, type ThemeId } from "@/lib/theme";
+import { THEMES, applyTheme, useTheme } from "@/lib/theme";
 import { formatStreak } from "@/lib/streak";
 import { ThemeIcon } from "@/components/theme-fab";
 import PasswordPrompt from "@/components/password-prompt";
@@ -56,7 +55,7 @@ export default function DashNav({
   subtitle?: string;
 }) {
   const router = useRouter();
-  const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell" | "theme">(null);
+  const [openMenu, setOpenMenu] = useState<null | "profile" | "streak" | "bell">(null);
   const theme = useTheme();
   const [imgOk, setImgOk] = useState(true);
 
@@ -77,8 +76,9 @@ export default function DashNav({
     return () => window.removeEventListener("keydown", onKey);
   }, [openMenu]);
 
-  const pickTheme = (t: ThemeId) => {
-    applyTheme(t);
+  const cycleTheme = () => {
+    const index = THEMES.findIndex((item) => item.id === theme);
+    applyTheme(THEMES[(index + 1) % THEMES.length].id);
     setOpenMenu(null);
   };
 
@@ -100,13 +100,13 @@ export default function DashNav({
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 backdrop-blur-xl backdrop-saturate-150"
+      className="dash-navbar fixed inset-x-0 top-0 z-50 backdrop-blur-2xl backdrop-saturate-150"
       style={{
         background: "color-mix(in srgb, var(--nav-bg) 92%, transparent)",
         borderBottom: "1px solid var(--dash-line)",
       }}
     >
-      <div className="mx-auto flex h-16 w-full max-w-[1560px] items-center justify-between gap-3 px-3 sm:px-5 lg:px-7">
+      <div className="dash-navbar-inner mx-auto flex h-16 w-full max-w-[1560px] items-center justify-between gap-3 px-3 sm:px-5 lg:px-7">
         <div className="flex min-w-0 items-center gap-2.5">
           {onMenuClick && (
             <span className="flex shrink-0 lg:hidden">
@@ -156,21 +156,19 @@ export default function DashNav({
               aria-label={`Daily streak: ${streak.current} days. View activity.`}
               aria-expanded={openMenu === "streak"}
               title="Daily streak"
-              className={`${iconBtn} hidden items-center gap-1.5 px-2.5 sm:flex`}
-              style={{ borderColor: "var(--dash-line)", color: "var(--text)", background: "transparent" }}
+              className="dash-navbar-streak relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border"
             >
-              <Flame size={15} style={{ color: streak.current > 0 ? "var(--dash-warning)" : "var(--muted)" }} />
-              <span className="mono text-[11.5px] font-extrabold">{streak.current}</span>
+              <Flame size={19} fill="currentColor" strokeWidth={1.8} style={{ color: streak.current > 0 ? "var(--dash-warning)" : "var(--muted)" }} />
+              <span className="dash-navbar-streak-count">{streak.current}</span>
             </button>
           )}
 
           <button
             type="button"
-            onClick={() => setOpenMenu((m) => (m === "theme" ? null : "theme"))}
-            aria-label={`Change theme. Current theme: ${currentTheme?.name ?? theme}.`}
-            aria-expanded={openMenu === "theme"}
-            title="Theme"
-            className={iconBtn}
+            onClick={cycleTheme}
+            aria-label={`Change theme. Current theme: ${currentTheme?.name ?? theme}. Click to switch to the next theme.`}
+            title={`Theme: ${currentTheme?.name ?? theme} · click to switch`}
+            className={`${iconBtn} dash-navbar-theme-button`}
             style={{ borderColor: "var(--dash-line)", color: currentTheme?.icon ?? "var(--text)", background: "transparent" }}
           >
             <ThemeIcon id={theme} />
@@ -271,28 +269,6 @@ export default function DashNav({
                   There is no announcements feed connected, so nothing is listed here rather than made-up news.
                 </p>
               </div>
-            </div>
-          )}
-
-          {openMenu === "theme" && (
-            <div className="menu-in absolute right-0 top-12 z-50 w-52 rounded-[var(--dash-radius)] p-1.5" style={panelStyle} role="dialog" aria-label="Theme">
-              <div className="px-3 pb-1.5 pt-2 dash-eyebrow">Appearance</div>
-              {THEMES.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => pickTheme(t.id)}
-                  className="tmenu flex w-full items-center gap-2.5 rounded-[9px] px-3 py-2 text-left text-[12.5px] font-semibold"
-                  style={t.id === theme ? { background: "var(--dash-surface-muted)", color: "var(--text)" } : undefined}
-                >
-                  <span className="tdot inline-block h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: t.dot, border: "1px solid var(--dash-line)" }} />
-                  <span className="flex items-center gap-2" style={{ color: t.icon }}>
-                    <ThemeIcon id={t.id} />
-                  </span>
-                  <span className="flex-1">{t.name}</span>
-                  {t.id === theme && <Check size={13} style={{ color: "var(--accent)" }} />}
-                </button>
-              ))}
             </div>
           )}
 
