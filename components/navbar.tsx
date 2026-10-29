@@ -2,6 +2,7 @@
 import { useEffect, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Flame } from "lucide-react";
 import { getAuthClient } from "@/lib/supabase";
 import { applyTheme, useTheme, THEMES, type ThemeId } from "@/lib/theme";
 
@@ -90,7 +91,7 @@ function LogoImg() {
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [themeOpen, setThemeOpen] = useState(false);
+  const [streak, setStreak] = useState<number | null>(null);
   const theme = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("");
@@ -166,20 +167,32 @@ export default function Navbar() {
   }, []);
 
 
-  const pick = (t: ThemeId) => {
-    applyTheme(t);
-    setThemeOpen(false);
+  const cycleTheme = () => {
+    const currentIndex = THEMES.findIndex((item) => item.id === theme);
+    const nextTheme = THEMES[(currentIndex + 1) % THEMES.length];
+    applyTheme(nextTheme.id);
   };
 
-  // Escape closes the theme popover (keyboard parity with the close overlay).
+  // Show the same current-day streak used by the welcome banner. The endpoint
+  // is authenticated and only returns the current user's aggregate stats.
   useEffect(() => {
-    if (!themeOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setThemeOpen(false);
+    let live = true;
+    if (!loggedIn) {
+      setStreak(null);
+      return () => { live = false; };
+    }
+    const loadStreak = async () => {
+      try {
+        const tzOffset = new Date().getTimezoneOffset();
+        const response = await fetch(`/api/student/stats?tzOffset=${tzOffset}`, { credentials: "same-origin" });
+        if (!response.ok) return;
+        const payload = await response.json() as { stats?: { streak?: number } | null };
+        if (live) setStreak(typeof payload.stats?.streak === "number" ? payload.stats.streak : 0);
+      } catch {}
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [themeOpen]);
+    void loadStreak();
+    return () => { live = false; };
+  }, [loggedIn]);
 
   const linkCls = "nlink shrink-0 rounded-full px-2.5 py-2 text-sm font-medium sm:px-3";
   const plainCls = "shrink-0 rounded-full px-2.5 py-2 text-sm font-medium text-[var(--muted)] transition-colors hover:text-[var(--text)] sm:px-3";
@@ -193,7 +206,7 @@ export default function Navbar() {
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 backdrop-blur-2xl backdrop-saturate-150"
+      className="site-navbar fixed inset-x-0 top-0 z-50 backdrop-blur-2xl backdrop-saturate-150"
       style={{
         background: scrolled
           ? "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)), color-mix(in srgb, var(--nav-bg) 82%, transparent)"
@@ -204,7 +217,7 @@ export default function Navbar() {
           : "inset 0 1px 0 0 rgba(255,255,255,0.12)",
       }}
     >
-      <div className="mx-auto flex h-16 w-full items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
+      <div className="site-navbar-inner mx-auto flex h-16 w-full items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
@@ -232,48 +245,22 @@ export default function Navbar() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-1">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setThemeOpen((v) => !v); }}
-              aria-label="Change theme"
-              className={plainCls + " flex items-center gap-1.5"}
-              title={theme}
-            >
-              <ActiveIcon />
-            </button>
-            {themeOpen && (
-              <>
-                <button
-                  type="button"
-                  aria-label="Close"
-                  onClick={() => setThemeOpen(false)}
-                  className="fixed inset-0 z-40 cursor-default bg-transparent"
-                />
-                <div
-                  className="menu-in absolute right-0 top-full z-[60] mt-3.5 w-48 overflow-hidden rounded-2xl p-1.5 backdrop-blur-2xl"
-                  style={{ background: "var(--bg)", border: "1px solid var(--border)", boxShadow: "0 18px 50px -12px rgba(0,0,0,0.35)" }}
-                >
-                  <div className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase" style={{ color: "var(--muted)", letterSpacing: "0.16em" }}>
-                    Theme
-                  </div>
-                  {THEMES.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => pick(t.id)}
-                      className="tmenu flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2 text-left text-sm font-medium"
-                      style={t.id === theme ? { background: "var(--pill)", color: "var(--text)" } : undefined}
-                    >
-                      <span className="tdot inline-block h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: t.dot, border: "1px solid var(--border)" }} />
-                      <span className="flex-1">{t.name}</span>
-                      {t.id === theme && <span>✓</span>}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={cycleTheme}
+            aria-label={`Change theme. Current theme: ${THEMES.find((item) => item.id === theme)?.name ?? theme}. Click to switch to the next theme.`}
+            className="navbar-icon-button flex shrink-0 items-center justify-center"
+            title={`Theme: ${THEMES.find((item) => item.id === theme)?.name ?? theme} · click to switch`}
+          >
+            <ActiveIcon />
+          </button>
+
+          {loggedIn && (
+            <a href="/dashboard" className="navbar-streak" aria-label={`Current study streak: ${streak ?? 0} days`} title="Your current study streak">
+              <span className="navbar-streak-icon"><Flame size={17} fill="currentColor" strokeWidth={1.8} /></span>
+              <span className="navbar-streak-count">{streak === null ? "—" : streak}</span>
+            </a>
+          )}
 
           {loggedIn ? (
             <a
@@ -331,23 +318,6 @@ export default function Navbar() {
           ) : (
             <a href="/login-choice" onClick={() => setOpen(false)} className={plainCls}>Log in</a>
           )}
-          <div className="flex gap-1.5 py-2">
-            {THEMES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => pick(t.id)}
-                className="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2"
-                style={{
-                  background: t.id === theme ? "var(--pill)" : "transparent",
-                  border: t.id === theme ? "1px solid var(--accent)" : "1px solid var(--border)",
-                }}
-              >
-                <span className="inline-block h-4 w-4 rounded-full" style={{ background: t.dot, border: "1px solid var(--border)" }} />
-                <span className="text-[9px] font-medium" style={{ color: "var(--muted)" }}>{t.name}</span>
-              </button>
-            ))}
-          </div>
         </nav>
       )}
     </header>
