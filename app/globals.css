@@ -2480,3 +2480,30 @@ body:has(.cbt) { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .dash-navbar, .dash-navbar .dash-btn-icon, .dash-navbar-streak, .dash-navbar-theme-button { transition: none; }
 }
+
+/* Final theme overrides: keep semantic status colours legible in every palette. */
+:root[data-theme="sunset"] {
+  --dash-success: #15803d; --dash-success-soft: rgba(21,128,61,.1);
+  --dash-warning: #b45309; --dash-warning-soft: rgba(180,83,9,.11);
+  --dash-danger: #dc2626; --dash-danger-soft: rgba(220,38,38,.09);
+}
+:root[data-theme="light"] {
+  --dash-success: #15803d; --dash-success-soft: rgba(21,128,61,.1);
+  --dash-warning: #a16207; --dash-warning-soft: rgba(161,98,7,.1);
+  --dash-danger: #b91c1c; --dash-danger-soft: rgba(185,28,28,.08);
+}
+:root[data-theme="ocean"] {
+  --dash-success: #047857; --dash-success-soft: rgba(4,120,87,.1);
+  --dash-warning: #a16207; --dash-warning-soft: rgba(161,98,7,.1);
+  --dash-danger: #b91c1c; --dash-danger-soft: rgba(185,28,28,.08);
+}
+:root[data-theme="midnight"] {
+  --dash-success: #4ade80; --dash-success-soft: rgba(74,222,128,.12);
+  --dash-warning: #fbbf24; --dash-warning-soft: rgba(251,191,36,.12);
+  --dash-danger: #f87171; --dash-danger-soft: rgba(248,113,113,.12);
+}
+:root[data-theme="forest"] {
+  --dash-success: #6ee7b7; --dash-success-soft: rgba(110,231,183,.12);
+  --dash-warning: #fcd34d; --dash-warning-soft: rgba(252,211,77,.12);
+  --dash-danger: #fca5a5; --dash-danger-soft: rgba(252,165,165,.12);
+}
