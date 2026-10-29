@@ -3,11 +3,11 @@
 // component is safe.
 
 export const THEMES = [
-  { id: "sunset", name: "Sunrise", dot: "#c2410c", icon: "#c2410c" },
-  { id: "light", name: "Light", dot: "#ffffff", icon: "#f59e0b" },
-  { id: "midnight", name: "Midnight", dot: "#1e293b", icon: "#1e293b" },
-  { id: "ocean", name: "Ocean", dot: "#0369a1", icon: "#0369a1" },
-  { id: "forest", name: "Forest", dot: "#059669", icon: "#059669" },
+  { id: "sunset", name: "Sunrise", dot: "#e9a86c", icon: "#c66b42" },
+  { id: "light", name: "Lavender", dot: "#b7a4e8", icon: "#7864b5" },
+  { id: "midnight", name: "Midnight", dot: "#283b45", icon: "#8fc9bf" },
+  { id: "ocean", name: "Ocean", dot: "#76c5d3", icon: "#287d91" },
+  { id: "forest", name: "Forest", dot: "#8cae79", icon: "#648553" },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];
