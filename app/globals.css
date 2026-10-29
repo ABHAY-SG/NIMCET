@@ -52,6 +52,73 @@
   --accent-2: #f59e0b;
 }
 
+/* Theme-aware semantic tokens shared by marketing, auth, dashboard and admin surfaces. */
+:root {
+  color-scheme: light;
+  --surface-1: var(--card);
+  --surface-2: color-mix(in srgb, var(--text) 3%, var(--card));
+  --surface-3: color-mix(in srgb, var(--text) 6%, var(--card));
+  --surface-border: var(--border);
+  --focus-ring: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+[data-theme="midnight"],
+[data-theme="forest"] { color-scheme: dark; }
+[data-theme="light"],
+[data-theme="ocean"],
+[data-theme="sunset"] { color-scheme: light; }
+
+/* Shared semantic tokens used by every dashboard/admin component. */
+:root {
+  --dash-surface: var(--card);
+  --dash-surface-muted: color-mix(in srgb, var(--text) 3.5%, var(--card));
+  --dash-surface-strong: color-mix(in srgb, var(--text) 6%, var(--card));
+  --dash-line: color-mix(in srgb, var(--text) 11%, transparent);
+  --dash-line-strong: color-mix(in srgb, var(--text) 18%, transparent);
+  --dash-accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+  --dash-accent-line: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+[data-theme="midnight"] {
+  --dash-success: #4ade80; --dash-success-soft: rgba(74,222,128,.12);
+  --dash-warning: #fbbf24; --dash-warning-soft: rgba(251,191,36,.12);
+  --dash-danger: #f87171; --dash-danger-soft: rgba(248,113,113,.12);
+}
+[data-theme="forest"] {
+  --dash-success: #6ee7b7; --dash-success-soft: rgba(110,231,183,.12);
+  --dash-warning: #fcd34d; --dash-warning-soft: rgba(252,211,77,.12);
+  --dash-danger: #fca5a5; --dash-danger-soft: rgba(252,165,165,.12);
+}
+[data-theme="sunset"] {
+  --dash-success: #15803d; --dash-success-soft: rgba(21,128,61,.1);
+  --dash-warning: #b45309; --dash-warning-soft: rgba(180,83,9,.11);
+  --dash-danger: #dc2626; --dash-danger-soft: rgba(220,38,38,.09);
+}
+[data-theme="light"] {
+  --dash-success: #15803d; --dash-success-soft: rgba(21,128,61,.1);
+  --dash-warning: #a16207; --dash-warning-soft: rgba(161,98,7,.1);
+  --dash-danger: #b91c1c; --dash-danger-soft: rgba(185,28,28,.08);
+}
+[data-theme="ocean"] {
+  --dash-success: #047857; --dash-success-soft: rgba(4,120,87,.1);
+  --dash-warning: #a16207; --dash-warning-soft: rgba(161,98,7,.1);
+  --dash-danger: #b91c1c; --dash-danger-soft: rgba(185,28,28,.08);
+}
+
+/* Make theme changes feel consistent across all shared surfaces, not just body. */
+body, header, nav, aside, main, section, article, footer,
+.dash-card, .dash-navbar, .dash-sidebar, .dash-nav-item,
+.dash-btn, .dash-chip, .dash-input, .glass, .auth-card, .admin-input {
+  transition-property: background-color, background, color, border-color, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  body, header, nav, aside, main, section, article, footer,
+  .dash-card, .dash-navbar, .dash-sidebar, .dash-nav-item,
+  .dash-btn, .dash-chip, .dash-input, .glass, .auth-card, .admin-input {
+    transition: none !important;
+  }
+}
+
 /* Shared design tokens: gold display palette, elevation, easing. */
 :root {
   --gold-1: #b45309; --gold-2: #ea580c; --gold-3: #f59e0b; --gold-4: #d97706;
