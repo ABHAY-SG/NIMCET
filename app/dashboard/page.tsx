@@ -234,13 +234,11 @@ export default function DashboardPage() {
   const [seriesReady, setSeriesReady] = useState(false);
   const [examFilter, setExamFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
-  const [navReady, setNavReady] = useState(false);
   const [note, setNote] = useState("");
   const [serverStats, setServerStats] = useState<AttemptStats | null>(null);
   const [statsTruncated, setStatsTruncated] = useState(false);
   const [todayLine, setTodayLine] = useState("");
   const [todayKey, setTodayKey] = useState("");
-  const [salutation, setSalutation] = useState("Good morning,");
   const [sideOpen, setSideOpen] = useState(false);
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [view, setView] = useState<DashView>("home");
@@ -319,20 +317,13 @@ export default function DashboardPage() {
 
       setTodayLine(line);
       setTodayKey(key);
-      const hour = now.getHours();
-      setSalutation(hour < 12 ? "Good morning," : hour < 17 ? "Good afternoon," : "Good evening,");
 
-      // Refresh at the next hour as well as when the local date changes, so
-      // the greeting follows the student’s local time even in an open tab.
-      const nextHour = new Date(now);
-      nextHour.setHours(hour + 1, 0, 0, 250);
       const nextMidnight = new Date(now);
       nextMidnight.setHours(24, 0, 0, 250);
-      const nextRefresh = Math.min(nextHour.getTime(), nextMidnight.getTime());
       if (!mounted) return;
       timer = setTimeout(() => {
         if (mounted) syncClock(true);
-      }, Math.max(1000, nextRefresh - now.getTime()));
+      }, Math.max(1000, nextMidnight.getTime() - now.getTime()));
     };
 
     syncClock(false);
@@ -464,13 +455,7 @@ export default function DashboardPage() {
         const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";
         setDisplayName(cleanDisplayName(full || (user.email ?? "").split("@")[0]));
         setAvatarUrl(resolveAvatarUrl(user.user_metadata));
-        // Render the dashboard navbar as soon as identity is known. Do not make
-        // the top navigation wait for stats or the published-test catalogue.
-        setNavReady(true);
-        // Start independent dashboard requests together. The navbar is already
-        // visible; the page data now waits for the slower request, not the sum
-        // of the stats API and the published-test catalogue round trips.
-        const statsPromise = loadCloudStats();
+        await loadCloudStats();
         // Published test series for the catalog. Failure hides the section —
         // never a fake list.
         try {
@@ -482,7 +467,6 @@ export default function DashboardPage() {
           if (!terror && tdata) setSeries(tdata as SeriesTest[]);
         } catch {}
         setSeriesReady(true);
-        await statsPromise;
       } catch (e) {
         setNote(e instanceof Error ? e.message : "Auth is not configured yet.");
       } finally {
@@ -641,7 +625,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      {navReady && email !== null && (
+      {!loading && email && (
         <DashNav
           email={email}
           displayName={displayName}
@@ -671,14 +655,14 @@ export default function DashboardPage() {
         >
           {view === "home" && (
             <div className="space-y-4">
-              <Reveal immediate>
+              <Reveal>
                 <section className="dash-hero welcome-hero">
                   <span className="welcome-orbit welcome-orbit-one" aria-hidden="true" />
                   <span className="welcome-orbit welcome-orbit-two" aria-hidden="true" />
                   <div className="welcome-hero-top">
                     <div className="welcome-greeting">
                       <div className="welcome-eyebrow"><span className="welcome-live-dot" /> YOUR STUDY SPACE <span className="welcome-eyebrow-line" /><span className="welcome-date"><CalendarDays size={11} /><time dateTime={todayKey || undefined}>{todayLine || "Today"}</time></span></div>
-                      <p className="welcome-salutation">{salutation}</p>
+                      <p className="welcome-salutation">Good evening,</p>
                       <h1 className="welcome-title"><span className="welcome-title-label">Welcome back,</span><span className="welcome-name">{loading ? "Student" : (cleanDisplayName(displayName) || "Student")}</span><span className="welcome-wave" aria-hidden="true">👋</span></h1>
                       <p className="welcome-description">Every focused attempt gets you closer. Let’s make today count.</p>
                     </div>
@@ -712,7 +696,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <Reveal immediate>
+              <Reveal>
                 <section className="dash-card overflow-hidden">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3.5 sm:px-5" style={{ borderColor: "var(--dash-line)" }}>
                     <div>
@@ -756,7 +740,7 @@ export default function DashboardPage() {
 
               <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
                 <div className="min-w-0 space-y-4">
-                  <Reveal immediate>
+                  <Reveal>
                     {loading ? (
                       <div className="dash-card p-5">
                         <div className="flex items-center justify-between gap-4">
@@ -785,7 +769,7 @@ export default function DashboardPage() {
                     )}
                   </Reveal>
 
-                  <Reveal immediate>
+                  <Reveal>
                     <section id="series" className="scroll-mt-24">
                       <div className="flex flex-wrap items-end justify-between gap-3">
                         <div>
@@ -863,7 +847,7 @@ export default function DashboardPage() {
                     </section>
                   </Reveal>
 
-                  <Reveal immediate>
+                  <Reveal>
                     <section>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
@@ -901,7 +885,7 @@ export default function DashboardPage() {
                   </Reveal>
 
                   {deviceOnly.length > 0 && (
-                    <Reveal immediate>
+                    <Reveal>
                       <section>
                         <div className="flex items-center justify-between gap-2">
                           <div>
@@ -919,7 +903,7 @@ export default function DashboardPage() {
                 </div>
 
                 <aside className="min-w-0 space-y-4">
-                  <Reveal immediate>
+                  <Reveal>
                     <section className="dash-card p-4">
                       <div className="flex items-center gap-2">
                         <span className="dash-icon-tile dash-icon-tile-sm"><CalendarDays size={15} /></span>
@@ -949,7 +933,7 @@ export default function DashboardPage() {
                   </Reveal>
 
                   {notices.length > 0 && (
-                    <Reveal immediate>
+                    <Reveal>
                       <section className="dash-card p-4">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
@@ -979,7 +963,7 @@ export default function DashboardPage() {
                     </Reveal>
                   )}
 
-                  <Reveal immediate>
+                  <Reveal>
                     <section className="dash-card p-4">
                       <div className="flex items-center gap-2">
                         <span className="dash-icon-tile dash-icon-tile-sm"><Sparkles size={15} /></span>
@@ -1011,7 +995,7 @@ export default function DashboardPage() {
 
           {view === "history" && (
             <div className="space-y-4">
-              <Reveal immediate>
+              <Reveal>
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
                     <div className="dash-eyebrow">Your record</div>
@@ -1082,7 +1066,7 @@ export default function DashboardPage() {
 
           {view === "contact" && (
             <div className="max-w-4xl space-y-4">
-              <Reveal immediate>
+              <Reveal>
                 <div>
                   <div className="dash-eyebrow">Support</div>
                   <h1 className="dash-title mt-1">Contact</h1>
@@ -1126,7 +1110,7 @@ export default function DashboardPage() {
 
           {view === "pricing" && (
             <div className="space-y-4">
-              <Reveal immediate>
+              <Reveal>
                 <div>
                   <div className="dash-eyebrow">Access</div>
                   <h1 className="dash-title mt-1">Plans</h1>
@@ -1199,7 +1183,7 @@ export default function DashboardPage() {
 
           {view === "feedback" && (
             <div className="max-w-2xl space-y-4">
-              <Reveal immediate>
+              <Reveal>
                 <div>
                   <div className="dash-eyebrow">Product feedback</div>
                   <h1 className="dash-title mt-1">Feedback</h1>
