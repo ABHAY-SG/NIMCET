@@ -239,6 +239,7 @@ export default function DashboardPage() {
   const [statsTruncated, setStatsTruncated] = useState(false);
   const [todayLine, setTodayLine] = useState("");
   const [todayKey, setTodayKey] = useState("");
+  const [salutation, setSalutation] = useState("Good morning,");
   const [sideOpen, setSideOpen] = useState(false);
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [view, setView] = useState<DashView>("home");
@@ -317,13 +318,20 @@ export default function DashboardPage() {
 
       setTodayLine(line);
       setTodayKey(key);
+      const hour = now.getHours();
+      setSalutation(hour < 12 ? "Good morning," : hour < 17 ? "Good afternoon," : "Good evening,");
 
+      // Refresh at the next hour as well as when the local date changes, so
+      // the greeting follows the student’s local time even in an open tab.
+      const nextHour = new Date(now);
+      nextHour.setHours(hour + 1, 0, 0, 250);
       const nextMidnight = new Date(now);
       nextMidnight.setHours(24, 0, 0, 250);
+      const nextRefresh = Math.min(nextHour.getTime(), nextMidnight.getTime());
       if (!mounted) return;
       timer = setTimeout(() => {
         if (mounted) syncClock(true);
-      }, Math.max(1000, nextMidnight.getTime() - now.getTime()));
+      }, Math.max(1000, nextRefresh - now.getTime()));
     };
 
     syncClock(false);
@@ -662,7 +670,7 @@ export default function DashboardPage() {
                   <div className="welcome-hero-top">
                     <div className="welcome-greeting">
                       <div className="welcome-eyebrow"><span className="welcome-live-dot" /> YOUR STUDY SPACE <span className="welcome-eyebrow-line" /><span className="welcome-date"><CalendarDays size={11} /><time dateTime={todayKey || undefined}>{todayLine || "Today"}</time></span></div>
-                      <p className="welcome-salutation">Good evening,</p>
+                      <p className="welcome-salutation">{salutation}</p>
                       <h1 className="welcome-title"><span className="welcome-title-label">Welcome back,</span><span className="welcome-name">{loading ? "Student" : (cleanDisplayName(displayName) || "Student")}</span><span className="welcome-wave" aria-hidden="true">👋</span></h1>
                       <p className="welcome-description">Every focused attempt gets you closer. Let’s make today count.</p>
                     </div>
