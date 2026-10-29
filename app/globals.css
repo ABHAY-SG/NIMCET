@@ -425,13 +425,12 @@ footer .nlink::after { display: none; }
 
 /* ============ premium editorial utilities ============ */
 
-/* Fraunces display serif for marketing headings — tight, optical, balanced. */
+/* Sora display headings pair cleanly with the editorial serif wordmarks. */
 .display {
-  font-family: var(--font-serif), var(--font-heading), Georgia, serif;
-  font-variation-settings: "opsz" 110;
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  line-height: 1.06;
+  font-family: var(--font-display), var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
   text-wrap: balance;
 }
 .display b, .display strong { font-weight: 600; }
@@ -472,19 +471,18 @@ footer .nlink::after { display: none; }
 }
 .lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
 
-/* Premium glass card — styles live in CSS so :hover elevation can win. */
+/* Premium cards use the active palette's surface and a quiet lift on hover. */
 .premium-card {
-  background: color-mix(in srgb, var(--nav-bg) 62%, transparent);
+  background: var(--card);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-1);
-  backdrop-filter: blur(20px) saturate(1.3);
-  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), border-color 0.4s var(--ease);
+  transition: transform 0.32s var(--ease), box-shadow 0.32s var(--ease), border-color 0.32s var(--ease);
 }
-.premium-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-2); }
+.premium-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 .premium-hi {
   border-color: transparent;
-  background: color-mix(in srgb, var(--nav-bg) 88%, transparent);
-  box-shadow: 0 26px 64px -30px color-mix(in srgb, var(--accent) 42%, rgba(0, 0, 0, 0.45));
+  background: color-mix(in srgb, var(--card) 92%, var(--accent) 8%);
+  box-shadow: 0 24px 58px -32px color-mix(in srgb, var(--accent) 46%, rgba(16, 26, 54, 0.38));
 }
 .premium-hi:hover { box-shadow: 0 36px 84px -34px color-mix(in srgb, var(--accent) 55%, rgba(0, 0, 0, 0.5)); }
 
@@ -2478,3 +2476,46 @@ body::before { background:radial-gradient(640px 340px at 12% -4%,var(--glow-1),t
 
 /* User-requested cleanup: remove the homepage dot sheet entirely. */
 .hero-dots { display: none !important; background-image: none !important; }
+
+/* Landing page mock interface preview. */
+.hero-stage {
+  background:
+    radial-gradient(ellipse at 2% 12%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 38%),
+    radial-gradient(ellipse at 95% 23%, color-mix(in srgb, var(--accent-2) 9%, transparent), transparent 36%);
+}
+.hero-preview-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+  border-radius: 26px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--card) 96%, var(--accent) 4%), var(--card) 62%);
+  box-shadow: var(--shadow-3);
+}
+.hero-preview-card::before {
+  content: "";
+  position: absolute;
+  top: -9rem;
+  right: -7rem;
+  width: 19rem;
+  height: 19rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.hero-preview-float {
+  position: absolute;
+  left: -1.25rem;
+  bottom: -1.15rem;
+}
+@media (max-width: 640px) {
+  .hero-preview-float {
+    position: relative;
+    inset: auto;
+    width: fit-content;
+    max-width: 100%;
+    margin: 12px auto 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-dots { animation: none; }
+}
