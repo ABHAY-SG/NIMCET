@@ -467,7 +467,10 @@ export default function DashboardPage() {
         // Render the dashboard navbar as soon as identity is known. Do not make
         // the top navigation wait for stats or the published-test catalogue.
         setNavReady(true);
-        await loadCloudStats();
+        // Start independent dashboard requests together. The navbar is already
+        // visible; the page data now waits for the slower request, not the sum
+        // of the stats API and the published-test catalogue round trips.
+        const statsPromise = loadCloudStats();
         // Published test series for the catalog. Failure hides the section —
         // never a fake list.
         try {
@@ -479,6 +482,7 @@ export default function DashboardPage() {
           if (!terror && tdata) setSeries(tdata as SeriesTest[]);
         } catch {}
         setSeriesReady(true);
+        await statsPromise;
       } catch (e) {
         setNote(e instanceof Error ? e.message : "Auth is not configured yet.");
       } finally {
