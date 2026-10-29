@@ -52,11 +52,13 @@ export async function proxy(req: NextRequest) {
   if (path === "/admin/login") return NextResponse.next();
 
   const studentGate = path === "/dashboard" || path.startsWith("/dashboard/");
-  if (!admin && !studentGate && !rootPath) {
+  if (!admin && !studentGate) {
     // Supabase normally returns OAuth codes to /auth/callback. If this project
     // is ever configured to fall back to the Site URL, the code lands on a
     // public page and @supabase/ssr consumes it client-side — the navbar
     // changes but nobody navigates. Recover it before the page renders.
+    // This must include "/": it is a public landing page, and OAuth can return
+    // the code there before the signed-in redirect below is considered.
     const intent = readOAuthIntentCookie(req.headers.get("cookie"));
     const recovery = oauthRecoveryPath(path, req.nextUrl.searchParams, intent);
     if (recovery) {
@@ -70,7 +72,7 @@ export async function proxy(req: NextRequest) {
       });
       return res;
     }
-    return NextResponse.next();
+    if (!rootPath) return NextResponse.next();
   }
 
   const loginUrl = () => {
@@ -88,7 +90,10 @@ export async function proxy(req: NextRequest) {
     ""
   ).trim();
   if (!url || !key) {
-    // Cannot verify sessions at all → fail closed.
+    // Protected areas must fail closed when sessions cannot be verified. The
+    // homepage is public, so a missing/partial configuration must not turn it
+    // into a login redirect.
+    if (rootPath) return NextResponse.next();
     return NextResponse.redirect(loginUrl());
   }
 
