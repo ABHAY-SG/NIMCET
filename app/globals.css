@@ -1,121 +1,58 @@
 @import "tailwindcss";
 
 /*
- * NIMCUET DESIGN SYSTEM — PALETTE RESET
- * Five complete, coordinated palettes. Surfaces, text, borders, controls,
- * focus states, dashboard surfaces and runner surfaces derive from these
- * semantic tokens rather than unrelated component-level colours.
+ * NIMCUET THEMES — distinct art direction for each environment.
  */
-:root,
-:root[data-theme="sunset"] {
-  color-scheme: light;
-  --bg: #f5f3ef;
-  --nav-bg: rgba(250, 249, 246, .88);
-  --text: #202c2a;
-  --muted: #687773;
-  --border: #dce3df;
-  --pill: #e9efeb;
-  --btn-bg: #176b59;
-  --btn-text: #ffffff;
-  --accent: #176b59;
-  --accent-fg: #ffffff;
-  --accent-2: #b18a52;
-  --card: #fcfbf8;
-  --surface-1: #fcfbf8;
-  --surface-2: #f2f4f0;
-  --surface-3: #e9eeea;
-  --surface-border: #dce3df;
-  --focus-ring: rgba(23, 107, 89, .28);
-  --glow-1: rgba(23, 107, 89, .08);
-  --glow-2: rgba(177, 138, 82, .08);
-  --gold-1: #176b59; --gold-2: #287c68; --gold-3: #b18a52; --gold-4: #176b59;
-  --dash-surface: #fcfbf8;
-  --dash-surface-muted: #f2f4f0;
-  --dash-surface-strong: #e9eeea;
-  --dash-line: #dce3df;
-  --dash-line-strong: #c7d2cc;
-  --dash-accent-soft: #e5f1ec;
-  --dash-accent-line: #b8d8cc;
-  --dash-success: #24744c; --dash-success-soft: #e7f3eb;
-  --dash-warning: #94621c; --dash-warning-soft: #f7efdf;
-  --dash-danger: #b54747; --dash-danger-soft: #f8e9e7;
-  --dash-info: #386a9a; --dash-info-soft: #e9f0f8;
-  --dash-shadow-xs: 0 1px 2px rgba(31, 48, 42, .04);
-  --dash-shadow: 0 8px 24px -18px rgba(31, 48, 42, .22), 0 1px 2px rgba(31, 48, 42, .04);
-  --dash-shadow-lg: 0 18px 42px -28px rgba(31, 48, 42, .28), 0 2px 5px rgba(31, 48, 42, .04);
-  --dash-ring: 0 0 0 3px var(--focus-ring);
-  --welcome-deep: #153d35; --welcome-mid: #176b59; --welcome-end: #2c8570;
-  --welcome-mint: #d2e7d8; --welcome-cyan: #e6d7b8; --welcome-line: rgba(255,255,255,.22);
+:root, :root[data-theme="sunset"] {
+ color-scheme:light; --bg:#fff7ed; --nav-bg:rgba(255,250,243,.92); --text:#3c2924; --muted:#8b6b5d; --border:#f0d9c5; --pill:#fbe8d7;
+ --btn-bg:#b84f32; --btn-text:#fffaf4; --accent:#c65d3b; --accent-fg:#fffaf4; --accent-2:#e7a45b; --card:#fffdf9;
+ --surface-1:#fffdf9; --surface-2:#fff1e2; --surface-3:#f8dfc8; --surface-border:#f0d9c5; --focus-ring:rgba(198,93,59,.32); --glow-1:rgba(245,158,91,.19); --glow-2:rgba(216,105,66,.12);
+ --gold-1:#b84f32; --gold-2:#dc7548; --gold-3:#f0b65f; --gold-4:#a94a34;
+ --dash-surface:#fffdf9; --dash-surface-muted:#fff1e2; --dash-surface-strong:#f8dfc8; --dash-line:#f0d9c5; --dash-line-strong:#e5c3a5; --dash-accent-soft:#fce7d8; --dash-accent-line:#efc3a4;
+ --dash-success:#28734c; --dash-success-soft:#e4f3e9; --dash-warning:#a45b12; --dash-warning-soft:#fff0d4; --dash-danger:#b7443e; --dash-danger-soft:#fde8e5; --dash-info:#366d9a; --dash-info-soft:#e8f1fc;
+ --dash-shadow-xs:0 1px 2px rgba(87,48,31,.05); --dash-shadow:0 10px 28px -20px rgba(87,48,31,.25),0 1px 3px rgba(87,48,31,.05); --dash-shadow-lg:0 22px 52px -30px rgba(87,48,31,.29),0 3px 7px rgba(87,48,31,.05); --dash-ring:0 0 0 3px var(--focus-ring);
+ --welcome-deep:#6f302b; --welcome-mid:#b84f32; --welcome-end:#e58b4e; --welcome-mint:#ffe2b5; --welcome-cyan:#ffd3b7; --welcome-line:rgba(255,248,239,.3);
 }
 :root[data-theme="light"] {
-  color-scheme: light;
-  --bg: #f6f5fb; --nav-bg: rgba(251,250,255,.9); --text: #29253b; --muted: #716b85;
-  --border: #e2deed; --pill: #eeebf7; --btn-bg: #6254a8; --btn-text: #fff;
-  --accent: #6254a8; --accent-fg: #fff; --accent-2: #9c83c7; --card: #fdfcff;
-  --surface-1: #fdfcff; --surface-2: #f4f1fa; --surface-3: #ebe6f5; --surface-border: #e2deed;
-  --focus-ring: rgba(98,84,168,.27); --glow-1: rgba(98,84,168,.09); --glow-2: rgba(156,131,199,.1);
-  --gold-1: #6254a8; --gold-2: #7b6bb8; --gold-3: #b69bd7; --gold-4: #6254a8;
-  --dash-surface: #fdfcff; --dash-surface-muted: #f4f1fa; --dash-surface-strong: #ebe6f5;
-  --dash-line: #e2deed; --dash-line-strong: #cec7e1; --dash-accent-soft: #efebfa; --dash-accent-line: #d0c6ed;
-  --dash-success: #24744c; --dash-success-soft: #e7f3eb; --dash-warning: #94621c; --dash-warning-soft: #f7efdf;
-  --dash-danger: #b54747; --dash-danger-soft: #f8e9e7; --dash-info: #386a9a; --dash-info-soft: #e9f0f8;
-  --dash-shadow-xs: 0 1px 2px rgba(41,37,59,.04); --dash-shadow: 0 8px 24px -18px rgba(41,37,59,.22), 0 1px 2px rgba(41,37,59,.04);
-  --dash-shadow-lg: 0 18px 42px -28px rgba(41,37,59,.28), 0 2px 5px rgba(41,37,59,.04); --dash-ring: 0 0 0 3px var(--focus-ring);
-  --welcome-deep: #30294c; --welcome-mid: #6254a8; --welcome-end: #8070bf;
-  --welcome-mint: #e4dcf5; --welcome-cyan: #d8d4f8; --welcome-line: rgba(255,255,255,.22);
+ color-scheme:light; --bg:#f7f5fc; --nav-bg:rgba(252,250,255,.92); --text:#302944; --muted:#7b718f; --border:#e5ddf2; --pill:#eee7f8;
+ --btn-bg:#6f5aa7; --btn-text:#fff; --accent:#7864b5; --accent-fg:#fff; --accent-2:#b7a4e8; --card:#fff;
+ --surface-1:#fff; --surface-2:#f2edfa; --surface-3:#e8def5; --surface-border:#e5ddf2; --focus-ring:rgba(120,100,181,.3); --glow-1:rgba(183,164,232,.19); --glow-2:rgba(216,194,243,.16);
+ --gold-1:#6f5aa7; --gold-2:#8a75c2; --gold-3:#c0a9e7; --gold-4:#6f5aa7;
+ --dash-surface:#fff; --dash-surface-muted:#f2edfa; --dash-surface-strong:#e8def5; --dash-line:#e5ddf2; --dash-line-strong:#d0c2e8; --dash-accent-soft:#f0eafb; --dash-accent-line:#d5c7ee;
+ --dash-success:#26734d; --dash-success-soft:#e5f4eb; --dash-warning:#94630c; --dash-warning-soft:#fff3d6; --dash-danger:#b43f51; --dash-danger-soft:#fce9ed; --dash-info:#426caa; --dash-info-soft:#eaf1fd;
+ --dash-shadow-xs:0 1px 2px rgba(48,41,68,.04); --dash-shadow:0 10px 28px -20px rgba(48,41,68,.19),0 1px 3px rgba(48,41,68,.04); --dash-shadow-lg:0 22px 52px -30px rgba(48,41,68,.24),0 3px 7px rgba(48,41,68,.04); --dash-ring:0 0 0 3px var(--focus-ring);
+ --welcome-deep:#393052; --welcome-mid:#6f5aa7; --welcome-end:#9c86cf; --welcome-mint:#e8dcff; --welcome-cyan:#d9d1ff; --welcome-line:rgba(255,255,255,.28);
 }
 :root[data-theme="midnight"] {
-  color-scheme: dark;
-  --bg: #101719; --nav-bg: rgba(20,29,31,.9); --text: #e8efec; --muted: #a0b1ac;
-  --border: #2e3d3b; --pill: #1d2b29; --btn-bg: #8ed3b6; --btn-text: #10241d;
-  --accent: #8ed3b6; --accent-fg: #10241d; --accent-2: #d4b77b; --card: #182221;
-  --surface-1: #182221; --surface-2: #1e2a28; --surface-3: #263431; --surface-border: #2e3d3b;
-  --focus-ring: rgba(142,211,182,.32); --glow-1: rgba(73,153,125,.13); --glow-2: rgba(212,183,123,.08);
-  --gold-1: #8ed3b6; --gold-2: #a8dfc7; --gold-3: #d4b77b; --gold-4: #8ed3b6;
-  --dash-surface: #182221; --dash-surface-muted: #1e2a28; --dash-surface-strong: #263431;
-  --dash-line: #2e3d3b; --dash-line-strong: #40534e; --dash-accent-soft: #223d34; --dash-accent-line: #3d6656;
-  --dash-success: #8ed3b6; --dash-success-soft: #203a30; --dash-warning: #e6c782; --dash-warning-soft: #3a3020;
-  --dash-danger: #f0a09a; --dash-danger-soft: #402726; --dash-info: #9fc8f0; --dash-info-soft: #233447;
-  --dash-shadow-xs: 0 1px 2px rgba(0,0,0,.16); --dash-shadow: 0 10px 28px -18px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.18);
-  --dash-shadow-lg: 0 20px 48px -28px rgba(0,0,0,.58), 0 2px 5px rgba(0,0,0,.2); --dash-ring: 0 0 0 3px var(--focus-ring);
-  --welcome-deep: #172925; --welcome-mid: #234d40; --welcome-end: #376d59;
-  --welcome-mint: #b5e5ce; --welcome-cyan: #d4c08e; --welcome-line: rgba(232,239,236,.2);
+ color-scheme:dark; --bg:#0d151b; --nav-bg:rgba(15,24,31,.92); --text:#e8f0f3; --muted:#9babb4; --border:#293b45; --pill:#1b2a33;
+ --btn-bg:#9bd5c7; --btn-text:#10201f; --accent:#9bd5c7; --accent-fg:#10201f; --accent-2:#d6bb83; --card:#15232b;
+ --surface-1:#15232b; --surface-2:#1b2c35; --surface-3:#243943; --surface-border:#293b45; --focus-ring:rgba(155,213,199,.34); --glow-1:rgba(65,143,148,.17); --glow-2:rgba(214,187,131,.1);
+ --gold-1:#9bd5c7; --gold-2:#c0e7db; --gold-3:#d6bb83; --gold-4:#9bd5c7;
+ --dash-surface:#15232b; --dash-surface-muted:#1b2c35; --dash-surface-strong:#243943; --dash-line:#293b45; --dash-line-strong:#3b515d; --dash-accent-soft:#203d40; --dash-accent-line:#3c6668;
+ --dash-success:#8fe0b6; --dash-success-soft:#1d392e; --dash-warning:#f1cd82; --dash-warning-soft:#3c3220; --dash-danger:#ffaaa4; --dash-danger-soft:#43282b; --dash-info:#a8d1f4; --dash-info-soft:#21384c;
+ --dash-shadow-xs:0 1px 2px rgba(0,0,0,.22); --dash-shadow:0 12px 32px -20px rgba(0,0,0,.56),0 1px 3px rgba(0,0,0,.22); --dash-shadow-lg:0 24px 56px -30px rgba(0,0,0,.65),0 3px 8px rgba(0,0,0,.24); --dash-ring:0 0 0 3px var(--focus-ring);
+ --welcome-deep:#10232d; --welcome-mid:#1d4853; --welcome-end:#286a70; --welcome-mint:#b4ead8; --welcome-cyan:#e5cf9d; --welcome-line:rgba(232,240,243,.2);
 }
 :root[data-theme="ocean"] {
-  color-scheme: light;
-  --bg: #f0f5f7; --nav-bg: rgba(248,251,252,.9); --text: #20323b; --muted: #657b84;
-  --border: #d9e4e8; --pill: #e6eff2; --btn-bg: #286779; --btn-text: #fff;
-  --accent: #286779; --accent-fg: #fff; --accent-2: #b38d63; --card: #fbfdfe;
-  --surface-1: #fbfdfe; --surface-2: #f0f5f7; --surface-3: #e5eef1; --surface-border: #d9e4e8;
-  --focus-ring: rgba(40,103,121,.27); --glow-1: rgba(40,103,121,.09); --glow-2: rgba(179,141,99,.09);
-  --gold-1: #286779; --gold-2: #438294; --gold-3: #b38d63; --gold-4: #286779;
-  --dash-surface: #fbfdfe; --dash-surface-muted: #f0f5f7; --dash-surface-strong: #e5eef1;
-  --dash-line: #d9e4e8; --dash-line-strong: #c3d4da; --dash-accent-soft: #e5f0f2; --dash-accent-line: #b9d5dc;
-  --dash-success: #24744c; --dash-success-soft: #e7f3eb; --dash-warning: #94621c; --dash-warning-soft: #f7efdf;
-  --dash-danger: #b54747; --dash-danger-soft: #f8e9e7; --dash-info: #286779; --dash-info-soft: #e5f0f2;
-  --dash-shadow-xs: 0 1px 2px rgba(32,50,59,.04); --dash-shadow: 0 8px 24px -18px rgba(32,50,59,.22), 0 1px 2px rgba(32,50,59,.04);
-  --dash-shadow-lg: 0 18px 42px -28px rgba(32,50,59,.28), 0 2px 5px rgba(32,50,59,.04); --dash-ring: 0 0 0 3px var(--focus-ring);
-  --welcome-deep: #173943; --welcome-mid: #286779; --welcome-end: #438294;
-  --welcome-mint: #d2e8e9; --welcome-cyan: #e9d8bf; --welcome-line: rgba(255,255,255,.22);
+ color-scheme:light; --bg:#eff8fb; --nav-bg:rgba(247,252,254,.92); --text:#173845; --muted:#62818d; --border:#cfe5eb; --pill:#dff1f5;
+ --btn-bg:#176b80; --btn-text:#fff; --accent:#287d91; --accent-fg:#fff; --accent-2:#71c5d3; --card:#fbfeff;
+ --surface-1:#fbfeff; --surface-2:#eaf6f9; --surface-3:#d9eef3; --surface-border:#cfe5eb; --focus-ring:rgba(40,125,145,.3); --glow-1:rgba(113,197,211,.2); --glow-2:rgba(40,125,145,.1);
+ --gold-1:#176b80; --gold-2:#287d91; --gold-3:#71c5d3; --gold-4:#176b80;
+ --dash-surface:#fbfeff; --dash-surface-muted:#eaf6f9; --dash-surface-strong:#d9eef3; --dash-line:#cfe5eb; --dash-line-strong:#afd4de; --dash-accent-soft:#e0f2f6; --dash-accent-line:#b3dfe7;
+ --dash-success:#24734e; --dash-success-soft:#e4f4e9; --dash-warning:#94610c; --dash-warning-soft:#fff2d5; --dash-danger:#b43f4d; --dash-danger-soft:#fce9eb; --dash-info:#176b80; --dash-info-soft:#e0f2f6;
+ --dash-shadow-xs:0 1px 2px rgba(23,56,69,.04); --dash-shadow:0 10px 28px -20px rgba(23,56,69,.2),0 1px 3px rgba(23,56,69,.04); --dash-shadow-lg:0 22px 52px -30px rgba(23,56,69,.24),0 3px 7px rgba(23,56,69,.04); --dash-ring:0 0 0 3px var(--focus-ring);
+ --welcome-deep:#124653; --welcome-mid:#176b80; --welcome-end:#39a3b5; --welcome-mint:#bdebf0; --welcome-cyan:#b4e3ec; --welcome-line:rgba(255,255,255,.26);
 }
 :root[data-theme="forest"] {
-  color-scheme: dark;
-  --bg: #111a16; --nav-bg: rgba(21,32,26,.9); --text: #e8f0e9; --muted: #a1b5a6;
-  --border: #304238; --pill: #1e2e24; --btn-bg: #b4d3a4; --btn-text: #1b2a1e;
-  --accent: #b4d3a4; --accent-fg: #1b2a1e; --accent-2: #d2bd86; --card: #19251e;
-  --surface-1: #19251e; --surface-2: #202e25; --surface-3: #2a3b2e; --surface-border: #304238;
-  --focus-ring: rgba(180,211,164,.3); --glow-1: rgba(101,153,103,.12); --glow-2: rgba(210,189,134,.08);
-  --gold-1: #b4d3a4; --gold-2: #c9dfbd; --gold-3: #d2bd86; --gold-4: #b4d3a4;
-  --dash-surface: #19251e; --dash-surface-muted: #202e25; --dash-surface-strong: #2a3b2e;
-  --dash-line: #304238; --dash-line-strong: #43594a; --dash-accent-soft: #263d2d; --dash-accent-line: #496b50;
-  --dash-success: #b4d3a4; --dash-success-soft: #263a2b; --dash-warning: #e6cb8d; --dash-warning-soft: #3a3323;
-  --dash-danger: #f0a5a0; --dash-danger-soft: #402927; --dash-info: #a9c9ed; --dash-info-soft: #243447;
-  --dash-shadow-xs: 0 1px 2px rgba(0,0,0,.16); --dash-shadow: 0 10px 28px -18px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.18);
-  --dash-shadow-lg: 0 20px 48px -28px rgba(0,0,0,.58), 0 2px 5px rgba(0,0,0,.2); --dash-ring: 0 0 0 3px var(--focus-ring);
-  --welcome-deep: #1c3324; --welcome-mid: #31583a; --welcome-end: #49784c;
-  --welcome-mint: #cde4b8; --welcome-cyan: #e2d5a7; --welcome-line: rgba(232,240,233,.2);
+ color-scheme:dark; --bg:#111a14; --nav-bg:rgba(19,29,22,.93); --text:#e9f0e7; --muted:#a1b39e; --border:#304536; --pill:#1e2d22;
+ --btn-bg:#c0d9a8; --btn-text:#1b2a1e; --accent:#a9cb91; --accent-fg:#1b2a1e; --accent-2:#d8c28b; --card:#18251c;
+ --surface-1:#18251c; --surface-2:#202f24; --surface-3:#2b3c2e; --surface-border:#304536; --focus-ring:rgba(169,203,145,.32); --glow-1:rgba(120,164,101,.15); --glow-2:rgba(216,194,139,.09);
+ --gold-1:#a9cb91; --gold-2:#c0d9a8; --gold-3:#d8c28b; --gold-4:#a9cb91;
+ --dash-surface:#18251c; --dash-surface-muted:#202f24; --dash-surface-strong:#2b3c2e; --dash-line:#304536; --dash-line-strong:#455e4b; --dash-accent-soft:#263b2a; --dash-accent-line:#496d4d;
+ --dash-success:#b5dca0; --dash-success-soft:#263a2b; --dash-warning:#e8cd8b; --dash-warning-soft:#3a3323; --dash-danger:#f2a5a0; --dash-danger-soft:#42292a; --dash-info:#a9c9ed; --dash-info-soft:#243447;
+ --dash-shadow-xs:0 1px 2px rgba(0,0,0,.22); --dash-shadow:0 12px 32px -20px rgba(0,0,0,.56),0 1px 3px rgba(0,0,0,.22); --dash-shadow-lg:0 24px 56px -30px rgba(0,0,0,.65),0 3px 8px rgba(0,0,0,.24); --dash-ring:0 0 0 3px var(--focus-ring);
+ --welcome-deep:#1b3022; --welcome-mid:#2e5738; --welcome-end:#527747; --welcome-mint:#d2e9bc; --welcome-cyan:#e6d5a6; --welcome-line:rgba(233,240,231,.2);
 }
-
 /* Shared layout and component tokens. */
 :root {
   --dash-radius-xs: 8px; --dash-radius-sm: 11px; --dash-radius: 15px; --dash-radius-lg: 20px;
@@ -2507,68 +2444,23 @@ body:has(.cbt) { overflow: hidden; }
 }
 
 
-/* ---- Cohesive palette application: no legacy gold/teal theme bleed ---- */
-body { background: var(--bg); color: var(--text); }
-.card-bg, .dash-card, .dash-navbar, .dash-sidebar, .auth-card,
-.glass, .admin-panel, .admin-card {
-  color: var(--text);
-}
-.dash-card { background: var(--dash-surface); border-color: var(--dash-line); box-shadow: var(--dash-shadow); }
-.dash-card-muted { background: var(--dash-surface-muted); }
-.dash-btn-primary { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
-.dash-btn-secondary { background: var(--dash-surface); color: var(--text); border-color: var(--dash-line-strong); }
-.dash-btn-secondary:hover, .dash-btn-ghost:hover { background: var(--dash-accent-soft); border-color: var(--dash-accent-line); color: var(--accent); }
-.dash-chip-success { background: var(--dash-success-soft); border-color: color-mix(in srgb, var(--dash-success) 24%, transparent); color: var(--dash-success); }
-.dash-chip-warning { background: var(--dash-warning-soft); border-color: color-mix(in srgb, var(--dash-warning) 24%, transparent); color: var(--dash-warning); }
-.dash-chip-danger { background: var(--dash-danger-soft); border-color: color-mix(in srgb, var(--dash-danger) 24%, transparent); color: var(--dash-danger); }
-.dash-alert-danger { background: var(--dash-danger-soft); border-color: color-mix(in srgb, var(--dash-danger) 24%, transparent); color: var(--dash-danger); }
-.dash-alert-success { background: var(--dash-success-soft); border-color: color-mix(in srgb, var(--dash-success) 24%, transparent); color: var(--dash-success); }
-.site-navbar, .dash-navbar { background: var(--nav-bg); border-color: var(--border); }
-.nlink.active, .site-navbar .nlink.active { color: var(--accent); }
-.headline-warm { background-image: linear-gradient(100deg, var(--gold-1), var(--gold-2) 38%, var(--gold-3) 68%, var(--gold-4)); }
-.dash-hero.welcome-hero {
-  background:
-    radial-gradient(ellipse at 12% -18%, color-mix(in srgb, var(--welcome-mint) 22%, transparent), transparent 42%),
-    radial-gradient(ellipse at 88% 8%, color-mix(in srgb, var(--welcome-cyan) 18%, transparent), transparent 34%),
-    linear-gradient(118deg, var(--welcome-deep) 0%, var(--welcome-mid) 52%, var(--welcome-end) 100%);
-  border-color: color-mix(in srgb, var(--welcome-mint) 26%, transparent);
-}
-.welcome-hero .welcome-live-dot { background: var(--welcome-mint); }
-.welcome-hero .welcome-mini-icon, .welcome-hero .welcome-link-icon { color: var(--welcome-mint); }
-.welcome-hero .welcome-quick-link:hover { border-color: color-mix(in srgb, var(--welcome-mint) 45%, transparent); }
-.navbar-streak { color: #a96c26; border-color: color-mix(in srgb, #c18a46 30%, var(--border)); }
-:root[data-theme="midnight"] .navbar-streak, :root[data-theme="forest"] .navbar-streak { color: #e6c782; }
-:root[data-theme="midnight"] .navbar-streak, :root[data-theme="forest"] .navbar-streak { background: color-mix(in srgb, #c18a46 12%, var(--nav-bg)); }
-
-/* The mock runner keeps exam-state meaning but inherits the active site's
-   surfaces, typography and primary accent in every theme. */
-:root .cbt-runner {
-  --cbt-bg: var(--bg);
-  --cbt-surface: var(--card);
-  --cbt-surface-2: var(--surface-2);
-  --cbt-ink: var(--text);
-  --cbt-muted: var(--muted);
-  --cbt-line: var(--border);
-  --cbt-teal: var(--accent);
-  --cbt-teal-dark: var(--accent);
-  --cbt-navy: var(--text);
-  --cbt-ring: var(--focus-ring);
-}
-.cbt-runner .cbt-option, .cbt-runner .cbt-qbtn, .cbt-runner .cbt-nav-head,
-.cbt-runner .cbt-modal, .cbt-runner .cbt-drawer, .cbt-runner .cbt-state-card {
-  border-color: var(--border);
-}
-.cbt-runner .cbt-option, .cbt-runner .cbt-qbtn, .cbt-runner .cbt-nav-head,
-.cbt-runner .cbt-modal, .cbt-runner .cbt-drawer, .cbt-runner .cbt-state-card {
-  background-color: var(--card);
-  color: var(--text);
-}
-.cbt-runner .cbt-option[data-selected="true"] { border-color: var(--accent); background: var(--dash-accent-soft); }
-.cbt-runner .cbt-option[data-selected="true"] .cbt-option-text { color: var(--text); }
-.cbt-runner .cbt-btn-primary, .cbt-runner .cbt-btn-submit { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
-.cbt-runner .cbt-btn-secondary { background: var(--surface-1); color: var(--text); border-color: var(--border); }
-.cbt-runner .cbt-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
-.cbt-runner .cbt-nav-head h2, .cbt-runner .cbt-modal-head h2, .cbt-runner .cbt-drawer-head h2,
-.cbt-runner .cbt-overlay-card h2, .cbt-runner .cbt-state-card h1 { color: var(--text); }
-.cbt-runner .cbt-modal-copy, .cbt-runner .cbt-hint { color: var(--muted); }
-.cbt-runner .cbt-option[data-selected="true"] { box-shadow: 0 0 0 2px var(--focus-ring); }
+/* Theme-aware application layer; keep homepage atmosphere, never hide its dots. */
+body { background:var(--bg); color:var(--text); }
+body::before { background:radial-gradient(640px 340px at 12% -4%,var(--glow-1),transparent 65%),radial-gradient(720px 380px at 88% 2%,var(--glow-2),transparent 65%),radial-gradient(900px 500px at 50% 110%,var(--glow-1),transparent 60%); }
+.dash-card { background:var(--dash-surface); border-color:var(--dash-line); box-shadow:var(--dash-shadow); }
+.dash-card-muted { background:var(--dash-surface-muted); }
+.dash-btn-primary { background:var(--btn-bg); color:var(--btn-text); border-color:var(--btn-bg); }
+.dash-btn-secondary { background:var(--dash-surface); color:var(--text); border-color:var(--dash-line-strong); }
+.dash-btn-secondary:hover,.dash-btn-ghost:hover { background:var(--dash-accent-soft); border-color:var(--dash-accent-line); color:var(--accent); }
+.site-navbar,.dash-navbar { background:var(--nav-bg); border-color:var(--border); }
+.nlink.active,.site-navbar .nlink.active { color:var(--accent); }
+.headline-warm { background-image:linear-gradient(100deg,var(--gold-1),var(--gold-2) 38%,var(--gold-3) 68%,var(--gold-4)); }
+.dash-hero.welcome-hero { background:radial-gradient(ellipse at 12% -18%,color-mix(in srgb,var(--welcome-mint) 24%,transparent),transparent 42%),radial-gradient(ellipse at 88% 8%,color-mix(in srgb,var(--welcome-cyan) 20%,transparent),transparent 34%),linear-gradient(118deg,var(--welcome-deep),var(--welcome-mid) 52%,var(--welcome-end)); border-color:color-mix(in srgb,var(--welcome-mint) 28%,transparent); }
+.welcome-hero .welcome-live-dot { background:var(--welcome-mint); }
+.welcome-hero .welcome-mini-icon,.welcome-hero .welcome-link-icon { color:var(--welcome-mint); }
+.welcome-hero .welcome-quick-link:hover { border-color:color-mix(in srgb,var(--welcome-mint) 45%,transparent); }
+.navbar-streak { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 30%,var(--border)); background:color-mix(in srgb,var(--accent) 10%,var(--nav-bg)); }
+/* Homepage dots remain present in every theme, tinted by that theme's accent. */
+.hero-dots { opacity:.82; background-image:radial-gradient(color-mix(in srgb,var(--accent) 23%,transparent) 1.1px,transparent 1.5px); }
+.hero-glow,.hero-stage-glow { background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 22%,transparent),transparent 72%); }
+.ring-grad { --ring-a:var(--accent); --ring-b:var(--accent-2); }
