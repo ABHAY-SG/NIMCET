@@ -178,7 +178,6 @@ export default function Navbar() {
   useEffect(() => {
     let live = true;
     if (!loggedIn) {
-      setStreak(null);
       return () => { live = false; };
     }
     const loadStreak = async () => {
