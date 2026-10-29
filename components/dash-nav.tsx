@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Bell,
   BellOff,
+  Check,
   ChevronDown,
   ChevronRight,
   Flame,
