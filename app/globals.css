@@ -2381,3 +2381,41 @@ body:has(.cbt) { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .navbar-icon-button, .navbar-streak, .site-navbar .nlink { transition: none; }
 }
+
+
+/* Dashboard navbar refinement: premium glass rail, floating streak counter, tactile theme cycle. */
+.dash-navbar {
+  border-bottom-color: color-mix(in srgb, var(--dash-line) 76%, transparent) !important;
+  box-shadow: 0 10px 34px -27px rgba(2,6,23,.48), inset 0 1px 0 rgba(255,255,255,.22);
+  transition: background .25s ease, box-shadow .25s ease;
+}
+.dash-navbar-inner { max-width: 1600px; }
+.dash-navbar .dash-btn-icon { transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+.dash-navbar .dash-btn-icon:hover { transform: translateY(-1px); }
+.dash-navbar-streak {
+  color: var(--dash-warning);
+  border-color: color-mix(in srgb, var(--dash-warning) 35%, var(--dash-line));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--dash-warning) 13%, var(--dash-surface)), color-mix(in srgb, var(--dash-warning) 4%, transparent));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 5px 14px -12px var(--dash-warning);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.dash-navbar-streak:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--dash-warning) 65%, var(--dash-line));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 8px 18px -13px var(--dash-warning);
+}
+.dash-navbar-streak-count {
+  position: absolute; top: -5px; right: -5px; z-index: 1;
+  min-width: 17px; height: 17px; padding: 0 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg); border-radius: 999px;
+  background: var(--dash-warning); color: #fff;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px; font-weight: 900; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.dash-navbar-theme-button { transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+.dash-navbar-theme-button:hover { transform: translateY(-1px) rotate(-5deg); border-color: color-mix(in srgb, var(--accent) 55%, var(--dash-line)) !important; background: color-mix(in srgb, var(--accent) 8%, var(--dash-surface)) !important; }
+@media (prefers-reduced-motion: reduce) {
+  .dash-navbar, .dash-navbar .dash-btn-icon, .dash-navbar-streak, .dash-navbar-theme-button { transition: none; }
+}
