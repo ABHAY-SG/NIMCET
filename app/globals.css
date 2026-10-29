@@ -2264,11 +2264,11 @@ body:has(.cbt) { overflow: hidden; }
   position: relative; isolation: isolate; overflow: hidden;
   padding: 1.4rem 1.45rem 1.1rem; border: 1px solid rgba(255,255,255,.72);
   border-radius: 16px; color: #fff;
-  background: radial-gradient(ellipse at 8% 0%, color-mix(in srgb, var(--welcome-mint) 22%, transparent), transparent 42%), radial-gradient(ellipse at 100% 100%, color-mix(in srgb, var(--welcome-cyan) 32%, transparent), transparent 45%), linear-gradient(118deg, var(--welcome-deep) 0%, var(--welcome-mid) 45%, var(--welcome-end) 100%);
+  background: radial-gradient(ellipse at 12% -18%, rgba(167,243,208,.30), transparent 42%), radial-gradient(ellipse at 88% 8%, rgba(96,165,250,.24), transparent 34%), radial-gradient(ellipse at 78% 115%, rgba(45,212,191,.25), transparent 43%), radial-gradient(ellipse at 48% 58%, rgba(99,102,241,.13), transparent 52%), linear-gradient(118deg, var(--welcome-deep) 0%, var(--welcome-mid) 48%, var(--welcome-end) 100%);
   box-shadow: 0 14px 34px -25px rgba(1,65,82,.8), inset 0 1px 0 rgba(255,255,255,.16);
   animation: welcome-enter .65s cubic-bezier(.2,.75,.25,1) both;
 }
-.dash-hero.welcome-hero::before { content:""; position:absolute; z-index:-1; inset:0; pointer-events:none; opacity:.4; background:linear-gradient(112deg,transparent 20%,rgba(255,255,255,.07) 45%,transparent 66%); background-size:220% 100%; animation:welcome-sheen 11s ease-in-out infinite; }
+.dash-hero.welcome-hero::before { content:""; position:absolute; z-index:-1; inset:0; pointer-events:none; opacity:.48; background:radial-gradient(ellipse at 72% 24%,rgba(255,255,255,.13),transparent 28%),radial-gradient(ellipse at 28% 110%,rgba(45,212,191,.12),transparent 38%),linear-gradient(112deg,transparent 20%,rgba(255,255,255,.08) 45%,transparent 66%),radial-gradient(rgba(255,255,255,.16) .7px,transparent .7px); background-size:auto,auto,220% 100%,18px 18px; background-position:center,center,0 0,center; animation:welcome-sheen 11s ease-in-out infinite; }
 .dash-hero.welcome-hero::after { content:""; position:absolute; z-index:-1; inset:0; pointer-events:none; border-radius:inherit; background:linear-gradient(135deg,rgba(255,255,255,.12),transparent 22%,transparent 76%,rgba(110,231,249,.11)); mask-image:linear-gradient(#000,transparent 68%); }
 .welcome-orbit { position:absolute; z-index:-1; pointer-events:none; border:1px solid rgba(167,243,208,.12); border-radius:50%; }
 .welcome-orbit-one { width:310px;height:310px;right:17%;top:-245px;box-shadow:0 0 0 22px rgba(110,231,249,.025),0 0 0 52px rgba(110,231,249,.02);animation:welcome-orbit 18s linear infinite; }
