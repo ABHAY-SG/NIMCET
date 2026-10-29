@@ -2384,14 +2384,7 @@ body:has(.cbt) { overflow: hidden; }
 @media(max-width:390px){.welcome-hero-top{flex-direction:column}.welcome-mini-stats{width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}.welcome-mini-stat{min-height:66px}}
 @media(prefers-reduced-motion:reduce){.dash-hero.welcome-hero,.welcome-quick-link,.welcome-mini-stat,.welcome-wave,.welcome-live-dot,.welcome-stat-glint,.welcome-orbit-one,.dash-hero.welcome-hero::before{animation:none!important;transition:none!important}}
 
-/* Theme palettes are deliberately declared AFTER the component base styles so they win the cascade. */
-.dash-hero.welcome-hero { --welcome-mint:#a7f3d0; --welcome-cyan:#6ee7f9; --welcome-deep:#062e3b; --welcome-mid:#075765; --welcome-end:#087b91; --welcome-line:rgba(255,255,255,.2); }
-:root[data-theme="sunset"] .dash-hero.welcome-hero { --welcome-mint:#fed7aa; --welcome-cyan:#fda4af; --welcome-deep:#431407; --welcome-mid:#9a3412; --welcome-end:#c2410c; --welcome-line:rgba(255,237,213,.28); }
-:root[data-theme="light"] .dash-hero.welcome-hero { --welcome-mint:#ddd6fe; --welcome-cyan:#c4b5fd; --welcome-deep:#292653; --welcome-mid:#4c4592; --welcome-end:#7168cf; --welcome-line:rgba(255,255,255,.28); }
-:root[data-theme="midnight"] .dash-hero.welcome-hero { --welcome-mint:#67e8f9; --welcome-cyan:#818cf8; --welcome-deep:#070b22; --welcome-mid:#172554; --welcome-end:#164e8a; --welcome-line:rgba(148,163,255,.25); }
-:root[data-theme="ocean"] .dash-hero.welcome-hero { --welcome-mint:#bae6fd; --welcome-cyan:#67e8f9; --welcome-deep:#082f49; --welcome-mid:#075985; --welcome-end:#0284c7; --welcome-line:rgba(255,255,255,.26); }
-:root[data-theme="forest"] .dash-hero.welcome-hero { --welcome-mint:#bbf7d0; --welcome-cyan:#6ee7b7; --welcome-deep:#052e26; --welcome-mid:#065f46; --welcome-end:#0f766e; --welcome-line:rgba(187,247,208,.22); }
-
+/* Legacy per-theme welcome palettes removed; the reset palette above is authoritative. */
 
 /* Premium public navbar: compact glass capsule controls and a live streak badge. */
 .site-navbar {
