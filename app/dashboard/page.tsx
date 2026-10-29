@@ -234,6 +234,7 @@ export default function DashboardPage() {
   const [seriesReady, setSeriesReady] = useState(false);
   const [examFilter, setExamFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const [navReady, setNavReady] = useState(false);
   const [note, setNote] = useState("");
   const [serverStats, setServerStats] = useState<AttemptStats | null>(null);
   const [statsTruncated, setStatsTruncated] = useState(false);
@@ -463,6 +464,9 @@ export default function DashboardPage() {
         const full = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || meta.full_name || meta.name || "";
         setDisplayName(cleanDisplayName(full || (user.email ?? "").split("@")[0]));
         setAvatarUrl(resolveAvatarUrl(user.user_metadata));
+        // Render the dashboard navbar as soon as identity is known. Do not make
+        // the top navigation wait for stats or the published-test catalogue.
+        setNavReady(true);
         await loadCloudStats();
         // Published test series for the catalog. Failure hides the section —
         // never a fake list.
@@ -633,7 +637,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      {!loading && email && (
+      {navReady && email !== null && (
         <DashNav
           email={email}
           displayName={displayName}
