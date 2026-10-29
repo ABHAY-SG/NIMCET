@@ -2534,9 +2534,6 @@ body { background: var(--bg); color: var(--text); }
 .nlink.active, .site-navbar .nlink.active { color: var(--accent); }
 .headline-warm { background-image: linear-gradient(100deg, var(--gold-1), var(--gold-2) 38%, var(--gold-3) 68%, var(--gold-4)); }
 .dash-hero.welcome-hero {
-  --welcome-mint: var(--welcome-mint);
-  --welcome-cyan: var(--welcome-cyan);
-  --welcome-line: var(--welcome-line);
   background:
     radial-gradient(ellipse at 12% -18%, color-mix(in srgb, var(--welcome-mint) 22%, transparent), transparent 42%),
     radial-gradient(ellipse at 88% 8%, color-mix(in srgb, var(--welcome-cyan) 18%, transparent), transparent 34%),
